@@ -1,0 +1,162 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: OpenVPN eu-central-1
+Resources:
+#===========================================
+# TOP LEVEL DEFINITIONS
+#===========================================
+
+#---Top Level VPC Definition
+#-------------------------------------------
+    VPC:
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock: 172.16.0.0/16
+            EnableDnsHostnames: true
+            EnableDnsSupport: true
+            Tags:
+            -   Key: Name
+                Value: VPN.VPC
+            -   Key: Application
+                Value: OpenVPN
+#-------------------------------------------
+
+#===========================================
+# PUBLIC SUBNET DEFINITIONS
+#===========================================
+
+#--- VPC Internet Gateway
+#-------------------------------------------
+    InternetGateway:
+        Type: AWS::EC2::InternetGateway
+        Properties:
+            Tags:
+            -   Key: Name
+                Value: VPN.IGW
+            -   Key: Application
+                Value: OpenVPN
+    AttachInternetGateway:
+        Type: AWS::EC2::VPCGatewayAttachment
+        Properties:
+            VpcId:
+                Ref: VPC
+            InternetGatewayId:
+                Ref: InternetGateway
+#-------------------------------------------
+
+#--- AZ1 Public Subnet
+#-------------------------------------------
+    PublicSubnetAZ1:
+        Type: AWS::EC2::Subnet
+        Properties:
+            VpcId:
+                Ref: VPC
+            CidrBlock: 172.16.128.0/20
+            AvailabilityZone: eu-central-1a
+            MapPublicIpOnLaunch: true
+            Tags:
+            -   Key: Name
+                Value: VPN.PubAZ1
+            -   Key: Application
+                Value: OpenVPN
+#-------------------------------------------
+
+#--- Public Subnet Route Table
+#-------------------------------------------
+    PublicSubnetRouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId:
+                Ref: VPC
+            Tags:
+            -   Key: Name
+                Value: VPN.Public
+            -   Key: Application
+                Value: OpenVPN
+    PublicSubnetRoute:
+        DependsOn: AttachInternetGateway
+        Type: AWS::EC2::Route
+        Properties:
+            RouteTableId:
+                Ref: PublicSubnetRouteTable
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId:
+                Ref: InternetGateway
+#-------------------------------------------
+    PublicSubnetAZ1RouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: PublicSubnetAZ1
+            RouteTableId:
+                Ref: PublicSubnetRouteTable
+#-------------------------------------------
+
+#===========================================
+# PRIVATE SUBNET DEFINITIONS
+#===========================================
+
+#--- AZ1 NAT Gateway & EIP
+#-------------------------------------------
+    NATAZ1EIP:
+        DependsOn: AttachInternetGateway
+        Type: AWS::EC2::EIP
+        Properties:
+            Domain: vpc
+#-------------------------------------------
+    NATGatewayAZ1:
+        DependsOn: AttachInternetGateway
+        Type: AWS::EC2::NatGateway
+        Properties:
+            AllocationId:
+                Fn::GetAtt:
+                - NATAZ1EIP
+                - AllocationId
+            SubnetId:
+                Ref: PublicSubnetAZ1
+#-------------------------------------------
+
+#--- AZ1 Private Subnet
+#-------------------------------------------
+    PrivateSubnetAZ1:
+        Type: AWS::EC2::Subnet
+        Properties:
+            VpcId:
+                Ref: VPC
+            CidrBlock: 172.16.0.0/19
+            AvailabilityZone: eu-central-1a
+            Tags:
+            -   Key: Name
+                Value: VPN.PrivAZ1
+            -   Key: Application
+                Value: OpenVPN
+#-------------------------------------------
+
+#--- Private Subnet Route Table
+#-------------------------------------------
+    PrivateSubnetAZ1RouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId:
+                Ref: VPC
+            Tags:
+            -   Key: Name
+                Value: VPN.PrivAZ1
+            -   Key: Application
+                Value: OpenVPN
+    PrivateSubnetAZ1Route:
+        Type: AWS::EC2::Route
+        Properties:
+            RouteTableId:
+                Ref: PrivateSubnetAZ1RouteTable
+            DestinationCidrBlock: 0.0.0.0/0
+            NatGatewayId:
+                Ref: NATGatewayAZ1
+#-------------------------------------------
+    PrivateSubnetAZ1RouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: PrivateSubnetAZ1
+            RouteTableId:
+                Ref: PrivateSubnetAZ1RouteTable
+#-------------------------------------------
