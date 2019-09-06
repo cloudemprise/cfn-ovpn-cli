@@ -38,9 +38,9 @@ Resources:
         Type: AWS::EC2::VPCGatewayAttachment
         Properties:
             VpcId:
-                Ref: VPC
+                !Ref VPC
             InternetGatewayId:
-                Ref: InternetGateway
+                !Ref InternetGateway
 #-------------------------------------------
 
 #--- AZ1 Public Subnet
@@ -49,7 +49,7 @@ Resources:
         Type: AWS::EC2::Subnet
         Properties:
             VpcId:
-                Ref: VPC
+                !Ref VPC
             CidrBlock: 172.16.128.0/20
             AvailabilityZone: eu-central-1a
             MapPublicIpOnLaunch: true
@@ -66,7 +66,7 @@ Resources:
         Type: AWS::EC2::RouteTable
         Properties:
             VpcId:
-                Ref: VPC
+                !Ref VPC
             Tags:
             -   Key: Name
                 Value: VPN.Public
@@ -77,18 +77,18 @@ Resources:
         Type: AWS::EC2::Route
         Properties:
             RouteTableId:
-                Ref: PublicSubnetRouteTable
+                !Ref PublicSubnetRouteTable
             DestinationCidrBlock: 0.0.0.0/0
             GatewayId:
-                Ref: InternetGateway
+                !Ref InternetGateway
 #-------------------------------------------
     PublicSubnetAZ1RouteTableAssociation:
         Type: AWS::EC2::SubnetRouteTableAssociation
         Properties:
             SubnetId:
-                Ref: PublicSubnetAZ1
+                !Ref PublicSubnetAZ1
             RouteTableId:
-                Ref: PublicSubnetRouteTable
+                !Ref PublicSubnetRouteTable
 #-------------------------------------------
 
 #===========================================
@@ -112,7 +112,7 @@ Resources:
                 - NATAZ1EIP
                 - AllocationId
             SubnetId:
-                Ref: PublicSubnetAZ1
+                !Ref PublicSubnetAZ1
 #-------------------------------------------
 
 #--- AZ1 Private Subnet
@@ -121,7 +121,7 @@ Resources:
         Type: AWS::EC2::Subnet
         Properties:
             VpcId:
-                Ref: VPC
+                !Ref VPC
             CidrBlock: 172.16.0.0/19
             AvailabilityZone: eu-central-1a
             Tags:
@@ -137,7 +137,7 @@ Resources:
         Type: AWS::EC2::RouteTable
         Properties:
             VpcId:
-                Ref: VPC
+                !Ref VPC
             Tags:
             -   Key: Name
                 Value: VPN.PrivAZ1
@@ -147,16 +147,94 @@ Resources:
         Type: AWS::EC2::Route
         Properties:
             RouteTableId:
-                Ref: PrivateSubnetAZ1RouteTable
+                !Ref PrivateSubnetAZ1RouteTable
             DestinationCidrBlock: 0.0.0.0/0
             NatGatewayId:
-                Ref: NATGatewayAZ1
+                !Ref NATGatewayAZ1
 #-------------------------------------------
     PrivateSubnetAZ1RouteTableAssociation:
         Type: AWS::EC2::SubnetRouteTableAssociation
         Properties:
             SubnetId:
-                Ref: PrivateSubnetAZ1
+                !Ref PrivateSubnetAZ1
             RouteTableId:
-                Ref: PrivateSubnetAZ1RouteTable
+                !Ref PrivateSubnetAZ1RouteTable
 #-------------------------------------------
+
+#===========================================
+# SECURITY GROUP DEFINITIONS
+#===========================================
+
+#--- Public Subnet Security Group
+#-------------------------------------------
+    PublicSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            VpcId:
+                !Ref VPC
+            GroupDescription: OpenVPN PublicSecurityGroup
+            Tags:
+            -   Key: Name
+                Value: VPN.SG-Public
+            -   Key: Application
+                Value: OpenVPN
+            SecurityGroupIngress:
+            -   Description: SSH External
+                IpProtocol: tcp
+                FromPort: 22
+                ToPort: 22
+                CidrIp: 0.0.0.0/0
+            -   Description: OpenVPN TCP
+                IpProtocol: tcp
+                FromPort: 1194
+                ToPort: 1194
+                CidrIp: 0.0.0.0/0
+            -   Description: OpenVPN UDP
+                IpProtocol: udp
+                FromPort: 1194
+                ToPort: 1194
+                CidrIp: 0.0.0.0/0
+            -   Description: Ping External
+                IpProtocol: icmp
+                FromPort: 8
+                ToPort: -1
+                CidrIp: 0.0.0.0/0
+            -   Description: Ping Local
+                IpProtocol: icmp
+                FromPort: 8
+                ToPort: -1
+                CidrIp: 172.16.0.0/16
+
+#--- Private Subnet Security Group
+#-------------------------------------------
+    PrivateSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            VpcId:
+                !Ref VPC
+            GroupDescription: OpenVPN PrivateSecurityGroup
+            Tags:
+            -   Key: Name
+                Value: VPN.SG-Private
+            -   Key: Application
+                Value: OpenVPN
+    PrivateInboundRuleSSH:
+        Type: AWS::EC2::SecurityGroupIngress
+        Properties:
+          GroupId:
+            !GetAtt PrivateSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId:
+            !GetAtt PublicSecurityGroup.GroupId
+    PrivateInboundRuleICMP:
+        Type: AWS::EC2::SecurityGroupIngress
+        Properties:
+          GroupId:
+            !GetAtt PrivateSecurityGroup.GroupId
+          IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          SourceSecurityGroupId:
+            !GetAtt PublicSecurityGroup.GroupId
