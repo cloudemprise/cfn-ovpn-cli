@@ -20,6 +20,7 @@ Resources:
                 Value: "OpenVPN"
 #-------------------------------------------
 
+
 #===========================================
 # PUBLIC SUBNET DEFINITIONS
 #===========================================
@@ -90,6 +91,7 @@ Resources:
             RouteTableId:
                 !Ref PublicSubnetRouteTable
 #-------------------------------------------
+
 
 #===========================================
 # PRIVATE SUBNET DEFINITIONS
@@ -164,6 +166,7 @@ Resources:
 #===========================================
 # SECURITY GROUP DEFINITIONS
 #===========================================
+
 
 #--- Public Subnet Security Group
 #-------------------------------------------
@@ -240,8 +243,9 @@ Resources:
             !GetAtt PublicSecurityGroup.GroupId
 #-------------------------------------------
 
+
 #===========================================
-# NACL DEFINITIONS
+# PUBLIC NACL DEFINITIONS
 #===========================================
 
 #--- Public NACL Group
@@ -275,7 +279,7 @@ Resources:
             RuleNumber: 10
             Protocol: 6
             RuleAction: allow
-            CidrBlock: 10.0.0.0/16
+            CidrBlock: 172.16.0.0/16
             PortRange:
                 From: 80
                 To: 80
@@ -289,7 +293,7 @@ Resources:
             RuleNumber: 11
             Protocol: 6
             RuleAction: allow
-            CidrBlock: 10.0.0.0/16
+            CidrBlock: 172.16.0.0/16
             PortRange:
                 From: 443
                 To: 443
@@ -413,7 +417,7 @@ Resources:
             RuleNumber: 10
             Protocol: 6
             RuleAction: allow
-            CidrBlock: 10.0.0.0/16
+            CidrBlock: 172.16.0.0/16
             PortRange:
                 From: 22
                 To: 22
@@ -554,4 +558,156 @@ Resources:
             Protocol: -1
             RuleAction: deny
             CidrBlock: 0.0.0.0/0
+#-------------------------------------------
+
+
+#===========================================
+# Private NACL DEFINITIONS
+#===========================================
+
+#--- Private NACL Group
+#-------------------------------------------
+    PrivateNAcl:
+        Type: AWS::EC2::NetworkAcl
+        Properties:
+            VpcId:
+                !Ref VPC
+            Tags:
+            -   Key: "Name"
+                Value: "VPN.PrivateNAcl"
+            -   Key: "Application"
+                Value: "OpenVPN"
+#-------------------------------------------
+    PrivateSubetNAclAssociation:
+        Type: AWS::EC2::SubnetNetworkAclAssociation
+        Properties:
+            NetworkAclId:
+                !Ref PrivateNAcl
+            SubnetId:
+                !Ref PrivateSubnetAZ1
+
+#--- Ingress Private NACL Group
+#-------------------------------------------
+    PrivateNAclIngress10:
+        Type: AWS::EC2::NetworkAclEntry
+        Properties:
+            NetworkAclId:
+                !Ref PrivateNAcl
+            Egress: 'false'
+            RuleNumber: 10
+            Protocol: 6
+            RuleAction: allow
+            CidrBlock: 172.16.0.0/16
+            PortRange:
+                From: 22
+                To: 22
+#-------------------------------------------
+    PrivateNAclIngress30:
+        Type: AWS::EC2::NetworkAclEntry
+        Properties:
+            NetworkAclId:
+                !Ref PrivateNAcl
+            Egress: 'false'
+            RuleNumber: 30
+            Protocol: 1
+            RuleAction: allow
+            CidrBlock: 172.16.0.0/16
+            Icmp:
+                Type: -1
+                Code: -1
+#-------------------------------------------
+    PrivateNAclIngress60:
+        Type: AWS::EC2::NetworkAclEntry
+        Properties:
+            NetworkAclId:
+                !Ref PrivateNAcl
+            Egress: 'false'
+            RuleNumber: 60
+            Protocol: 6
+            RuleAction: allow
+            CidrBlock: 0.0.0.0/0
+            PortRange:
+                From: 1024
+                To: 65535
+#-------------------------------------------
+    PrivateNAclIngress100:
+        Type: AWS::EC2::NetworkAclEntry
+        Properties:
+            NetworkAclId:
+                !Ref PrivateNAcl
+            Egress: 'false'
+            RuleNumber: 100
+            Protocol: -1
+            RuleAction: deny
+            CidrBlock: 0.0.0.0/0
+#--- Egress Private NACL Group
+#-------------------------------------------
+    PrivateNAclEgress20:
+        Type: AWS::EC2::NetworkAclEntry
+        Properties:
+            NetworkAclId:
+                !Ref PrivateNAcl
+            Egress: 'true'
+            RuleNumber: 20
+            Protocol: 6
+            RuleAction: allow
+            CidrBlock: 172.16.0.0/16
+            PortRange:
+                From: 1024
+                To: 65535
+#-------------------------------------------
+    PrivateNAclEgress30:
+        Type: AWS::EC2::NetworkAclEntry
+        Properties:
+            NetworkAclId:
+                !Ref PrivateNAcl
+            Egress: 'true'
+            RuleNumber: 30
+            Protocol: 1
+            RuleAction: allow
+            CidrBlock: 172.16.0.0/16
+            Icmp:
+                Type: -1
+                Code: -1
+#-------------------------------------------
+    PrivateNAclEgress50:
+        Type: AWS::EC2::NetworkAclEntry
+        Properties:
+            NetworkAclId:
+                !Ref PrivateNAcl
+            Egress: 'true'
+            RuleNumber: 50
+            Protocol: 6
+            RuleAction: allow
+            CidrBlock: 0.0.0.0/0
+            PortRange:
+                From: 80
+                To: 80
+#-------------------------------------------
+    PrivateNAclEgress51:
+        Type: AWS::EC2::NetworkAclEntry
+        Properties:
+            NetworkAclId:
+                !Ref PrivateNAcl
+            Egress: 'true'
+            RuleNumber: 51
+            Protocol: 6
+            RuleAction: allow
+            CidrBlock: 0.0.0.0/0
+            PortRange:
+                From: 443
+                To: 443
+#-------------------------------------------
+    PrivateNAclEgress100:
+        Type: AWS::EC2::NetworkAclEntry
+        Properties:
+            NetworkAclId:
+                !Ref PrivateNAcl
+            Egress: 'true'
+            RuleNumber: 100
+            Protocol: -1
+            RuleAction: deny
+            CidrBlock: 0.0.0.0/0
+#-------------------------------------------
+
 
