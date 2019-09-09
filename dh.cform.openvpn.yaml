@@ -110,9 +110,7 @@ Resources:
         Type: AWS::EC2::NatGateway
         Properties:
             AllocationId:
-                Fn::GetAtt:
-                - NATAZ1EIP
-                - AllocationId
+                !GetAtt NATAZ1EIP.AllocationId
             SubnetId:
                 !Ref PublicSubnetAZ1
 #-------------------------------------------
@@ -711,3 +709,29 @@ Resources:
 #-------------------------------------------
 
 
+#===========================================
+# LAUNCH TEMPLATE DEFINITIONS
+#===========================================
+
+#--- Private Launch Template 
+#-------------------------------------------
+    PrivateLaunchTemplate:
+        DependsOn: PrivateSubnetAZ1
+        Type: AWS::EC2::LaunchTemplate
+        Properties:
+          LaunchTemplateName: VPN.PrivateLaunchTemplate
+          LaunchTemplateData: 
+            ImageId: "ami-0cc293023f983ed53"
+            InstanceType: "t2.micro"
+            KeyName: "dh.SSH.Default_eu-central-1"
+            UserData: ""
+            NetworkInterfaces:
+            -   Description: "Private Cert Authority"
+                AssociatePublicIpAddress: 'false'
+                PrivateIpAddress: "172.0.0.10"
+                DeleteOnTermination: 'true'
+                DeviceIndex: "0"
+                SubnetId: 
+                    Ref: PrivateSubnetAZ1
+                Groups:
+                -   Ref: PrivateSecurityGroup
