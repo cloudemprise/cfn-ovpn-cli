@@ -1,0 +1,373 @@
+# https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-vpc.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'VPC Dual AZ Public-Private'
+
+Metadata: {}
+Conditions: {}
+
+
+Parameters:
+#===========================================
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SUBNET CIDR DEFINITIONS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  VPCCIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/16
+    Description: CIDR Block for the VPC
+    Type: String
+#--- AZ-A Public Subnet
+#-------------------------------------------
+  PublicSubnetACIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.128.0/20
+    Description: CIDR Block for the public DMZ subnet A located in Availability Zone A.
+    Type: String
+#--- AZ-B Public Subnet
+#-------------------------------------------
+  PublicSubnetBCIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.144.0/20
+    Description: CIDR Block for the public DMZ subnet B located in Availability Zone B
+    Type: String
+#--- AZ-A Private Subnet
+#-------------------------------------------
+  PrivateSubnetACIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/19
+    Description: CIDR block for private subnet A located in Availability Zone A.
+    Type: String
+#--- AZ-B Private Subnet
+#-------------------------------------------
+  PrivateSubnetBCIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.32.0/19
+    Description: CIDR block for private subnet B located in Availability Zone B.
+    Type: String
+#-------------------------------------------
+
+
+
+Resources:
+#===========================================
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# TOP LEVEL CIDR DEFINITION
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#---Top Level VPC Definition
+#-------------------------------------------
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock:
+        Ref: VPCCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+#-------------------------------------------
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SUBNET DEFINITIONS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- AZ-A Public Subnet
+#-------------------------------------------
+  PublicSubnetA:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock:
+        Ref: PublicSubnetACIDR
+      MapPublicIpOnLaunch: true
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value: Public Subnet AZ-A
+      AvailabilityZone:
+        'Fn::Select':
+          - '0'
+          - 'Fn::GetAZs':
+              Ref: 'AWS::Region'
+#--- AZ-B Public Subnet
+#-------------------------------------------
+  PublicSubnetB:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock:
+        Ref: PublicSubnetBCIDR
+      MapPublicIpOnLaunch: true
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value: Public Subnet AZ-B
+      AvailabilityZone:
+        'Fn::Select':
+          - '1'
+          - 'Fn::GetAZs':
+              Ref: 'AWS::Region'
+#--- AZ1 Private Subnet
+#-------------------------------------------
+  PrivateSubnetA:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock:
+        Ref: PrivateSubnetACIDR
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value: Private Subnet AZ-A
+      AvailabilityZone:
+        'Fn::Select':
+          - '0'
+          - 'Fn::GetAZs':
+              Ref: 'AWS::Region'
+#--- AZ-B Private Subnet
+#-------------------------------------------
+  PrivateSubnetB:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock:
+        Ref: PrivateSubnetBCIDR
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value: Private Subnet AZ-B
+      AvailabilityZone:
+        'Fn::Select':
+          - '1'
+          - 'Fn::GetAZs':
+              Ref: 'AWS::Region'
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ROUTE TABLE DEFINITIONS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- Public Route Table
+#-------------------------------------------
+  RouteTablePublic:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value: Public Route Table
+  RouteTablePublicAssociationA:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId:
+        Ref: RouteTablePublic
+      SubnetId:
+        Ref: PublicSubnetA
+  RouteTablePublicAssociationB:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId:
+        Ref: RouteTablePublic
+      SubnetId:
+        Ref: PublicSubnetB
+  RouteTablePublicRoute0:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        Ref: RouteTablePublic
+      GatewayId:
+        Ref: Igw
+
+#--- Private A Route Table
+#-------------------------------------------
+  RouteTablePrivateA:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value: Private Route Table A
+  RouteTablePrivateAAssociation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId:
+        Ref: RouteTablePrivateA
+      SubnetId:
+        Ref: PrivateSubnetA
+  RouteTablePrivateARoute0:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        Ref: RouteTablePrivateA
+      NatGatewayId:
+        Ref: NatGw1
+
+#--- Private B Route Table
+#-------------------------------------------
+  RouteTablePrivateB:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value: Private Route Table B
+  RouteTablePrivateBAssociation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId:
+        Ref: RouteTablePrivateB
+      SubnetId:
+        Ref: PrivateSubnetB
+  RouteTablePrivateBRoute0:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        Ref: RouteTablePrivateB
+      NatGatewayId:
+        Ref: NatGw1
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# GATEWAY DEFINITIONS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- Internet Gateway
+#-------------------------------------------
+  Igw:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties: {}
+  IGWAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId:
+        Ref: VPC
+      InternetGatewayId:
+        Ref: Igw
+
+#--- NAT Gateway
+#-------------------------------------------
+  NatGw1:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      SubnetId:
+        Ref: PublicSubnetA
+      AllocationId:
+        'Fn::GetAtt':
+          - NatGw1ElasticIP
+          - AllocationId
+      Tags:
+        - Key: Name
+          Value: NAT GW A
+  NatGw1ElasticIP:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+#-------------------------------------------
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# NESTED STACKS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- Public/Private NACLs
+#-------------------------------------------
+  NaclDefs:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-nacl.yaml
+      Parameters:
+        VPCID:
+          Ref: VPC
+        PublicSubnetIdA:
+          Ref: PublicSubnetA
+        PublicSubnetIdB:
+          Ref: PublicSubnetB
+        PrivateSubnetIdA:
+          Ref: PrivateSubnetA
+        PrivateSubnetIdB:
+          Ref: PrivateSubnetB
+      TimeoutInMinutes: 5
+#-------------------------------------------
+
+
+
+
+Outputs:
+#===========================================
+
+
+#---Top Level VPC CIDR Export
+#-------------------------------------------
+  VPCCIDR:
+    Description: VPC CIDR
+    Value:
+      Ref: VPCCIDR
+    Export:
+      Name:
+        Fn::Sub: ${AWS::StackName}-VPCCIDR
+#---Top Level VPCID Export
+#-------------------------------------------
+  VPCID:
+    Description: VPC ID
+    Value:
+      Ref: VPC
+    Export:
+      Name:
+        Fn::Sub: ${AWS::StackName}-VPCID
+#---Public Subnet AZ-A Export
+#-------------------------------------------
+  PublicSubnetIdA:
+    Description: Public Subnet ID AZ-A
+    Value:
+      Ref: PublicSubnetA
+    Export:
+      Name: 
+        Fn::Sub: ${AWS::StackName}-PublicSubnetIdA
+#---Public Subnet AZ-B Export
+#-------------------------------------------
+  PublicSubnetIdB:
+    Description: Public Subnet ID AZ-B
+    Value:
+      Ref: PublicSubnetB
+    Export:
+      Name: 
+        Fn::Sub: ${AWS::StackName}-PublicSubnetIdB
+#---Private Subnet AZ-A Export
+#-------------------------------------------
+  PrivateSubnetIdA:
+    Description: Private Subnet ID AZ-A
+    Value:
+      Ref: PrivateSubnetA
+    Export:
+      Name: 
+        Fn::Sub: ${AWS::StackName}-PrivateSubnetIdA
+#---Private Subnet AZ-B Export
+#-------------------------------------------
+  PrivateSubnetIdB:
+    Description: Private Subnet ID AZ-B
+    Value:
+      Ref: PrivateSubnetB
+    Export:
+      Name: 
+        Fn::Sub: ${AWS::StackName}-PrivateSubnetIdB
+#-------------------------------------------
