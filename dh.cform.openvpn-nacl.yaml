@@ -1,6 +1,6 @@
 # https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-nacl.yaml
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'NACLs for personal OpenVPN instance.'
+Description: 'NACLs for personal OpenVPN Instance.'
 
 Metadata: {}
 Conditions: {}
