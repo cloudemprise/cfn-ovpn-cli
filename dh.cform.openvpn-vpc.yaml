@@ -309,7 +309,19 @@ Resources:
       TimeoutInMinutes: 5
 #-------------------------------------------
 
-
+#--- Public/Private Security Groups
+#-------------------------------------------
+  SGDefs:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-sg.yaml
+      Parameters:
+        VPCID:
+          Ref: VPC
+        ApplicationName:
+          Ref: AWS::StackName
+      TimeoutInMinutes: 5
+#-------------------------------------------
 
 
 Outputs:

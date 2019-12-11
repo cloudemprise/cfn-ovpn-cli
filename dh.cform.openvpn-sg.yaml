@@ -1,0 +1,117 @@
+# https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-nacl.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Security groups for personal OpenVPN Instance.'
+
+Metadata: {}
+Conditions: {}
+
+
+Parameters:
+#===========================================
+
+#--- Parameter Types
+#-------------------------------------------
+  VPCID:
+    Description: VPC to create the SG into.
+    Type: AWS::EC2::VPC::Id
+#-------------------------------------------
+  ApplicationName:
+    Description: The Application Name
+    Type: String
+#-------------------------------------------
+
+
+Resources:
+#===========================================
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SECURITY GROUP DEFINITIONS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- Public Subnet Security Group
+#-------------------------------------------
+  PublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Public Security Group
+      VpcId:
+        Ref: VPCID
+      SecurityGroupIngress:
+        - Description: SSH External
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - Description: OpenVPN TCP
+          IpProtocol: tcp
+          FromPort: 1194
+          ToPort: 1194
+          CidrIp: 0.0.0.0/0
+        - Description: OpenVPN UDP
+          IpProtocol: udp
+          FromPort: 1194
+          ToPort: 1194
+          CidrIp: 0.0.0.0/0
+        - Description: Ping External
+          IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+        - Description: Ping Local
+          IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 172.16.0.0/16
+
+#--- Private Subnet Security Group
+#-------------------------------------------
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Private Security Group
+      VpcId:
+        Ref: VPCID
+#-------------------------------------------
+  PrivateInboundRuleSSH:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId:
+        !GetAtt PrivateSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId:
+        !GetAtt PublicSecurityGroup.GroupId
+#-------------------------------------------
+  PrivateInboundRuleICMP:
+      Type: AWS::EC2::SecurityGroupIngress
+      Properties:
+        GroupId:
+          !GetAtt PrivateSecurityGroup.GroupId
+        IpProtocol: icmp
+        FromPort: 8
+        ToPort: -1
+        SourceSecurityGroupId:
+          !GetAtt PublicSecurityGroup.GroupId
+#-------------------------------------------
+
+
+
+Outputs:
+#===========================================
+
+
+#---Public Security Group Export
+#-------------------------------------------
+  SGPublicId:
+    Description: Public SG ID
+    Value: 
+      Ref: PublicSecurityGroup
+#---Private Security Group Export
+#-------------------------------------------
+  SGPrivateId:
+    Description: Private SG ID
+    Value: 
+      Ref: PrivateSecurityGroup
