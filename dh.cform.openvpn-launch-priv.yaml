@@ -1,0 +1,77 @@
+#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-launch-priv.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Launch Template EC2 Certificate Authority for OpenVPN Implementation.
+  A Nested Stack that comprises: 
+  Bla Bla.
+  Inputs include:
+  Bla Bla.
+  Outputs include:
+  Bla Bla.
+#-------------------------------------------
+
+Metadata: {}
+Conditions: {}
+
+
+Parameters:
+#===========================================
+
+#--- Cert Authority Private Subnet 
+#-------------------------------------------
+  PrivateSubnetIdA:
+    Description: Private Subnet ID AZ-A
+    Type: AWS::EC2::Subnet::Id
+#--- Private Security Group Resource ID
+#-------------------------------------------
+  PrivateSgResourceId:
+    Description: Private Security Group ID AZ-A
+    Type: AWS::EC2::SecurityGroup::Id
+#-------------------------------------------
+
+
+
+Resources:
+#===========================================
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# LAUNCH TEMPLATE DEFINITION
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- Private Launch Template 
+#-------------------------------------------
+  PrivateLaunchTemplate:
+    Type: "AWS::EC2::LaunchTemplate"
+    Properties:
+      LaunchTemplateName: "dh.cform.openvpn-private-launch-template"
+      LaunchTemplateData:
+        IamInstanceProfile: 
+          Arn: "arn:aws:iam::255822906044:instance-profile/dh.InstProfile.Managed.SysAdmin"
+        SecurityGroupIds: 
+        - !Ref PrivateSgResourceId
+        ImageId: "ami-0d4c3eabb9e72650a"
+        InstanceType: "t2.micro"
+        KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+        TagSpecifications: 
+        - 
+          ResourceType: "instance"
+          Tags: 
+          - 
+            Key: "Name"
+            Value: "openvpn-private"
+        - 
+          ResourceType: "volume"
+          Tags: 
+          - 
+            Key: "Name"
+            Value: "openvpn-private"
+        UserData: ""
+#-------------------------------------------
+
+
+
+Outputs: {}
+#Outputs:
+#===========================================

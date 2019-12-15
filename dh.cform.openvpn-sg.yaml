@@ -1,6 +1,17 @@
 # https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-sg.yaml
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Nested Stack: SGDefs. Security Groups Definitions'
+Description: >
+  NetSec Defense-In-Depth Restrictive Security Group Definitions.
+  A Nested Stack that comprises: 
+  Private & Public Security Group Rule Definitions.
+  Inputs include:
+  VPC Top Level VPC ID.
+  VPC Top Level CIDR Definition.
+  Outputs include:
+  Private Security Group Resource ID.
+  Public Security Group Resource ID.
+#-------------------------------------------
+
 
 Metadata: {}
 Conditions: {}
@@ -14,6 +25,10 @@ Parameters:
   VPCID:
     Description: VPC to create the SG into.
     Type: AWS::EC2::VPC::Id
+#-------------------------------------------
+  VPCCIDR:
+    Description: Top Level VPC CIDR Block
+    Type: String
 #-------------------------------------------
 #  ApplicationName:
 #    Description: The Application Name
@@ -63,7 +78,8 @@ Resources:
           IpProtocol: icmp
           FromPort: 8
           ToPort: -1
-          CidrIp: 172.16.0.0/16
+          CidrIp: 
+            Ref: VPCCIDR
 
 #--- Private Subnet Security Group
 #-------------------------------------------
@@ -99,19 +115,19 @@ Resources:
 
 
 
+#Outputs: {}
 Outputs:
 #===========================================
 
 
 #---Public Security Group Export
 #-------------------------------------------
-  SGPublicId:
-    Description: Public SG ID
-    Value: 
-      Ref: PublicSecurityGroup
+  PublicSgResourceId:
+    Description: Public SG Resource ID.
+    Value: !Ref PublicSecurityGroup
+
 #---Private Security Group Export
 #-------------------------------------------
-  SGPrivateId:
-    Description: Private SG ID
-    Value: 
-      Ref: PrivateSecurityGroup
+  PrivateSgResourceId:
+    Description: Private SG Resource ID.
+    Value: !Ref PrivateSecurityGroup

@@ -1,6 +1,18 @@
 # https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-nacl.yaml
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'NACLs for personal OpenVPN Instance.'
+Description: >
+  NetSec Defense-In-Depth Restrictive NACL Definitions.
+  A Nested Stack that comprises: 
+  Ingress Private & Public NACL Definitions.
+  Egress Private & Public NACL Definitions.
+  Inputs include:
+  VPC Top Level VPC ID.
+  VPC Top Level CIDR Definition.
+  Private & Public Subnet IDs.
+  Outputs include:
+  To be determined.
+#-------------------------------------------
+
 
 Metadata: {}
 Conditions: {}
@@ -14,6 +26,10 @@ Parameters:
   VPCID:
     Description: VPC to create the NACL into.
     Type: AWS::EC2::VPC::Id
+#-------------------------------------------
+  VPCCIDR:
+    Description: Top Level VPC CIDR Block
+    Type: String
 #-------------------------------------------
   PublicSubnetIdA:
     Description: Public Subnet ID AZ-A
@@ -47,6 +63,10 @@ Resources:
     Properties:
       VpcId:
         Ref: VPCID
+      Tags:
+        - Key: Name
+          Value: 
+            !Sub ${AWS::StackName}-PubNacl
 #-------------------------------------------
   PublicSubetNAclAssociationA:
     Type: AWS::EC2::SubnetNetworkAclAssociation
@@ -72,6 +92,10 @@ Resources:
     Properties:
       VpcId:
         Ref: VPCID
+      Tags:
+        - Key: Name
+          Value: 
+            !Sub ${AWS::StackName}-PrivNacl
 #-------------------------------------------
   PrivateSubetNAclAssociationA:
     Type: AWS::EC2::SubnetNetworkAclAssociation
@@ -107,7 +131,8 @@ Resources:
       RuleNumber: 10
       Protocol: 6
       RuleAction: allow
-      CidrBlock: 172.16.0.0/16
+      CidrBlock:
+        Ref: VPCCIDR
       PortRange:
         From: 80
         To: 80
@@ -121,7 +146,8 @@ Resources:
       RuleNumber: 11
       Protocol: 6
       RuleAction: allow
-      CidrBlock: 172.16.0.0/16
+      CidrBlock:
+        Ref: VPCCIDR
       PortRange:
         From: 443
         To: 443
@@ -245,7 +271,8 @@ Resources:
       RuleNumber: 10
       Protocol: 6
       RuleAction: allow
-      CidrBlock: 172.16.0.0/16
+      CidrBlock:
+        Ref: VPCCIDR
       PortRange:
         From: 22
         To: 22
@@ -405,7 +432,8 @@ Resources:
       RuleNumber: 10
       Protocol: 6
       RuleAction: allow
-      CidrBlock: 172.16.0.0/16
+      CidrBlock:
+        Ref: VPCCIDR
       PortRange:
         From: 22
         To: 22
@@ -419,7 +447,8 @@ Resources:
       RuleNumber: 30
       Protocol: 1
       RuleAction: allow
-      CidrBlock: 172.16.0.0/16
+      CidrBlock:
+        Ref: VPCCIDR
       Icmp:
         Type: -1
         Code: -1
@@ -459,7 +488,8 @@ Resources:
       RuleNumber: 20
       Protocol: 6
       RuleAction: allow
-      CidrBlock: 172.16.0.0/16
+      CidrBlock:
+        Ref: VPCCIDR
       PortRange:
         From: 1024
         To: 65535
@@ -473,7 +503,8 @@ Resources:
       RuleNumber: 30
       Protocol: 1
       RuleAction: allow
-      CidrBlock: 172.16.0.0/16
+      CidrBlock:
+        Ref: VPCCIDR
       Icmp:
         Type: -1
         Code: -1
@@ -520,19 +551,20 @@ Resources:
 
 
 
-Outputs:
+Outputs: {}
+#Outputs:
 #===========================================
 
 
 #---Public NACL Export
 #-------------------------------------------
-  NAclPublicId:
-    Description: Public NACL ID
-    Value: 
-      Ref: PublicNAcl
+#  NAclPublicId:
+#    Description: Public NACL ID
+#    Value: 
+#      Ref: PublicNAcl
 #---Private NACL Export
 #-------------------------------------------
-  NAclPrivateId:
-    Description: Private NACL ID
-    Value: 
-      Ref: PrivateNAcl
+#  NAclPrivateId:
+#    Description: Private NACL ID
+#    Value: 
+#      Ref: PrivateNAcl
