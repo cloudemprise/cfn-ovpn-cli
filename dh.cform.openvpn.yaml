@@ -1,6 +1,18 @@
 # https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-sg.yaml
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Openvpn'
+Description: >
+  An OpenVPN implementation that comprises:
+  Highly Available EC2 Instance bla bla.
+  Autoscaling Group bla bla.
+  Isolated Certificate Authority bla bla.
+  Nested Stack as follows:
+  Bla Bla.
+  Inputs:
+  Bla Bla.
+  Outputs.
+  Bla Bla.
+#-------------------------------------------
+
 
 Metadata: {}
 
@@ -101,6 +113,8 @@ Resources:
       Parameters:
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
+        VPCCIDR:
+          Ref: VPCCIDR          
         PublicSubnetIdA:
           !GetAtt VPCDef.Outputs.PublicSubnetIdA
         PublicSubnetIdB:
@@ -114,7 +128,7 @@ Resources:
 
 #--- Public/Private Security Groups
 #-------------------------------------------
-  SGDefs:
+  SgDefs:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCDef
     Properties:
@@ -122,10 +136,41 @@ Resources:
       Parameters:
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
+        VPCCIDR:
+          Ref: VPCCIDR
 #        ApplicationName:
 #          Ref: AWS::StackName
       TimeoutInMinutes: 5
 #-------------------------------------------
+
+
+#--- Private/Public Launch Templates
+#-------------------------------------------
+  LaunchPrivDef:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: VPCDef
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-launch-priv.yaml
+      Parameters:
+        PrivateSubnetIdA:
+          !GetAtt VPCDef.Outputs.PrivateSubnetIdA
+        PrivateSgResourceId:
+          !GetAtt SgDefs.Outputs.PrivateSgResourceId
+      TimeoutInMinutes: 5
+#-------------------------------------------
+  LaunchPubDef:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: VPCDef
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-launch-pub.yaml
+      Parameters:
+        PublicSubnetIdA:
+          !GetAtt VPCDef.Outputs.PublicSubnetIdA
+        PublicSgResourceId:
+          !GetAtt SgDefs.Outputs.PublicSgResourceId
+      TimeoutInMinutes: 5
+#-------------------------------------------
+
 
 
 Outputs:

@@ -1,6 +1,21 @@
 # https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-vpc.yaml
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Nested Stack: VPCDef. VPC & Multi AZ Public-Private Subnet Definitions'
+Description: >
+  A Nested Stack that comprises: 
+  VPC Top Level Definition.
+  Multi-AZ Private & Public Subnet Definitions.
+  Internet Gateway Definition.
+  NAT Gateway Definition.
+  Multi-AZ Private & Public Route Table Definitions.
+  Inputs include:
+  VPC Top Level CIDR Definition.
+  Private & Public Subnet CIDR Definitions.
+  Outputs include:
+  VPC ID
+  Private Subnet IDs
+  Public Subnet IDs
+#-------------------------------------------
+
 
 Metadata: {}
 Conditions: {}
@@ -12,23 +27,23 @@ Parameters:
 #--- CIDR Strings
 #-------------------------------------------
   VPCCIDR:
-    Description: CIDR Block for the VPC
+    Description: Top Level VPC CIDR Block
     Type: String
 #-------------------------------------------
   PublicSubnetACIDR:
-    Description: CIDR Block for the public DMZ subnet A located in Availability Zone A.
+    Description: Public Subnet CIDR Block AZ-A.
     Type: String
 #-------------------------------------------
   PublicSubnetBCIDR:
-    Description: CIDR Block for the public DMZ subnet B located in Availability Zone B
+    Description: Public Subnet CIDR Block AZ-B.
     Type: String
 #-------------------------------------------
   PrivateSubnetACIDR:
-    Description: CIDR block for private subnet A located in Availability Zone A.
+    Description: Private Subnet CIDR Block AZ-A.
     Type: String
 #-------------------------------------------
   PrivateSubnetBCIDR:
-    Description: CIDR block for private subnet B located in Availability Zone B.
+    Description: Private Subnet CIDR Block AZ-B.
     Type: String
 #-------------------------------------------
 
@@ -51,6 +66,10 @@ Resources:
         Ref: VPCCIDR
       EnableDnsHostnames: true
       EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: 
+            !Sub ${AWS::StackName}-VPC
 #-------------------------------------------
 
 
@@ -69,14 +88,16 @@ Resources:
       MapPublicIpOnLaunch: true
       VpcId:
         Ref: VPC
-      Tags:
-        - Key: Name
-          Value: Public Subnet AZ-A
       AvailabilityZone:
         'Fn::Select':
           - '0'
           - 'Fn::GetAZs':
               Ref: 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: 
+            !Sub ${AWS::StackName}-PubSubnetA
+
 #--- AZ-B Public Subnet
 #-------------------------------------------
   PublicSubnetB:
@@ -87,14 +108,16 @@ Resources:
       MapPublicIpOnLaunch: true
       VpcId:
         Ref: VPC
-      Tags:
-        - Key: Name
-          Value: Public Subnet AZ-B
       AvailabilityZone:
         'Fn::Select':
           - '1'
           - 'Fn::GetAZs':
               Ref: 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: 
+            !Sub ${AWS::StackName}-PubSubnetB
+
 #--- AZ1 Private Subnet
 #-------------------------------------------
   PrivateSubnetA:
@@ -105,14 +128,16 @@ Resources:
       MapPublicIpOnLaunch: false
       VpcId:
         Ref: VPC
-      Tags:
-        - Key: Name
-          Value: Private Subnet AZ-A
       AvailabilityZone:
         'Fn::Select':
           - '0'
           - 'Fn::GetAZs':
               Ref: 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: 
+            !Sub ${AWS::StackName}-PrivSubnetA
+
 #--- AZ-B Private Subnet
 #-------------------------------------------
   PrivateSubnetB:
@@ -123,14 +148,15 @@ Resources:
       MapPublicIpOnLaunch: false
       VpcId:
         Ref: VPC
-      Tags:
-        - Key: Name
-          Value: Private Subnet AZ-B
       AvailabilityZone:
         'Fn::Select':
           - '1'
           - 'Fn::GetAZs':
               Ref: 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: 
+            !Sub ${AWS::StackName}-PrivSubnetB
 #-------------------------------------------
 
 
@@ -149,6 +175,11 @@ Resources:
       Tags:
         - Key: Name
           Value: Public Route Table
+      Tags:
+        - Key: Name
+          Value: 
+            !Sub ${AWS::StackName}-PubRoute
+#-------------------------------------------
   RouteTablePublicAssociationA:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
@@ -156,6 +187,7 @@ Resources:
         Ref: RouteTablePublic
       SubnetId:
         Ref: PublicSubnetA
+#-------------------------------------------
   RouteTablePublicAssociationB:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
@@ -163,6 +195,7 @@ Resources:
         Ref: RouteTablePublic
       SubnetId:
         Ref: PublicSubnetB
+#-------------------------------------------
   RouteTablePublicRoute0:
     Type: 'AWS::EC2::Route'
     Properties:
@@ -171,6 +204,7 @@ Resources:
         Ref: RouteTablePublic
       GatewayId:
         Ref: Igw
+#-------------------------------------------
 
 #--- Private A Route Table
 #-------------------------------------------
@@ -181,7 +215,9 @@ Resources:
         Ref: VPC
       Tags:
         - Key: Name
-          Value: Private Route Table A
+          Value: 
+            !Sub ${AWS::StackName}-PrivRouteA
+#-------------------------------------------
   RouteTablePrivateAAssociation1:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
@@ -189,6 +225,7 @@ Resources:
         Ref: RouteTablePrivateA
       SubnetId:
         Ref: PrivateSubnetA
+#-------------------------------------------
   RouteTablePrivateARoute0:
     Type: 'AWS::EC2::Route'
     Properties:
@@ -197,6 +234,7 @@ Resources:
         Ref: RouteTablePrivateA
       NatGatewayId:
         Ref: NatGw1
+#-------------------------------------------
 
 #--- Private B Route Table
 #-------------------------------------------
@@ -207,7 +245,9 @@ Resources:
         Ref: VPC
       Tags:
         - Key: Name
-          Value: Private Route Table B
+          Value: 
+            !Sub ${AWS::StackName}-PrivRouteB
+#-------------------------------------------
   RouteTablePrivateBAssociation1:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
@@ -215,6 +255,7 @@ Resources:
         Ref: RouteTablePrivateB
       SubnetId:
         Ref: PrivateSubnetB
+#-------------------------------------------
   RouteTablePrivateBRoute0:
     Type: 'AWS::EC2::Route'
     Properties:
@@ -244,6 +285,7 @@ Resources:
         Ref: VPC
       InternetGatewayId:
         Ref: Igw
+#-------------------------------------------
 
 
 #--- NAT Gateway
