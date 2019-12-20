@@ -45,7 +45,7 @@ Resources:
   PublicLaunchTemplate:
     Type: "AWS::EC2::LaunchTemplate"
     Properties:
-      LaunchTemplateName: "dh.cform.openvpn-public-launch-template"
+      LaunchTemplateName: "dh.cform.openvpn-launch-tmplt-pub"
       LaunchTemplateData:
         IamInstanceProfile: 
           Arn: "arn:aws:iam::255822906044:instance-profile/dh.InstProfile.Managed.SysAdmin"
