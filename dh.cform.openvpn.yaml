@@ -148,7 +148,7 @@ Resources:
 #-------------------------------------------
   LaunchPrivDef:
     Type: AWS::CloudFormation::Stack
-    DependsOn: VPCDef
+    DependsOn: SgDefs
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-launch-priv.yaml
       Parameters:
@@ -160,7 +160,7 @@ Resources:
 #-------------------------------------------
   LaunchPubDef:
     Type: AWS::CloudFormation::Stack
-    DependsOn: VPCDef
+    DependsOn: SgDefs
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-launch-pub.yaml
       Parameters:
@@ -172,7 +172,42 @@ Resources:
 #-------------------------------------------
 
 
+#--- Private & Public EC2 Instances 
+#-------------------------------------------
 
+  PrivateEC2Instance:
+    Type: AWS::EC2::Instance
+    DependsOn: LaunchPrivDef
+    Properties: 
+      LaunchTemplate:
+        LaunchTemplateId:
+          !GetAtt LaunchPrivDef.Outputs.PrivLaunchTmpltId
+        Version: 1
+      AvailabilityZone:
+        'Fn::Select':
+          - '0'
+          - 'Fn::GetAZs':
+              Ref: 'AWS::Region'
+      DisableApiTermination: false
+#      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
+      ImageId: "ami-0d4c3eabb9e72650a"
+      InstanceType: "t2.micro"
+      KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+      Monitoring: false
+      SubnetId: !GetAtt VPCDef.Outputs.PrivateSubnetIdA
+      SecurityGroupIds: 
+        - !GetAtt SgDefs.Outputs.PrivateSgResourceId
+      Tags: 
+        - 
+          Key: "Name"
+          Value: "openvpn-private"
+      UserData: ""
+
+
+
+
+
+#Outputs: {}
 Outputs:
 #===========================================
 
