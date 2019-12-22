@@ -175,13 +175,13 @@ Resources:
 #--- Private & Public EC2 Instances 
 #-------------------------------------------
 
-  PrivateEC2Instance:
+  PublicEC2Instance:
     Type: AWS::EC2::Instance
-    DependsOn: LaunchPrivDef
+    DependsOn: LaunchPubDef
     Properties: 
       LaunchTemplate:
         LaunchTemplateId:
-          !GetAtt LaunchPrivDef.Outputs.PrivLaunchTmpltId
+          !GetAtt LaunchPubDef.Outputs.PubLaunchTmpltId
         Version: 1
       AvailabilityZone:
         'Fn::Select':
@@ -189,23 +189,51 @@ Resources:
           - 'Fn::GetAZs':
               Ref: 'AWS::Region'
       DisableApiTermination: false
-#      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
+      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
       ImageId: "ami-0d4c3eabb9e72650a"
       InstanceType: "t2.micro"
       KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
       Monitoring: false
-      SubnetId: !GetAtt VPCDef.Outputs.PrivateSubnetIdA
+      SubnetId: !GetAtt VPCDef.Outputs.PublicSubnetIdA
       SecurityGroupIds: 
-        - !GetAtt SgDefs.Outputs.PrivateSgResourceId
+        - !GetAtt SgDefs.Outputs.PublicSgResourceId
       Tags: 
         - 
           Key: "Name"
-          Value: "openvpn-private"
-      UserData: ""
+          Value: "openvpn-public"
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+            # Update Packages, inc. aws-cfn-bootstrap
+            yum update -y
+            # Start cfn-init
+            /opt/aws/bin/cfn-init -v -s ${AWS::StackId} -r PublicEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
+            # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
+            /opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
+            # All done so signal success
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region}
+    Metadata:
+      Comment: Metadata description here.
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            yum:
+              httpd: []
+          files:
+            "/var/www/html/index.html":
+              content: !Sub |
+                Hello from ${AWS::StackId}.
+              mode: '000644'
+              owner: root
+              group: root
+          services:
+            sysvinit:
+              httpd:
+                enabled: true
+                ensureRunning: true
 
-
-
-
+#-------------------------------------------
 
 #Outputs: {}
 Outputs:
