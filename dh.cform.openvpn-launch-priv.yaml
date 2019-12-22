@@ -47,8 +47,8 @@ Resources:
     Properties:
       LaunchTemplateName: "dh.cform.openvpn-launch-tmplt-priv"
       LaunchTemplateData:
-#        IamInstanceProfile:
-#          Arn: "arn:aws:iam::255822906044:instance-profile/dh.InstProfile.Managed.SysAdmin"
+        IamInstanceProfile:
+          Name: "dh.InstProfile.Managed.SysAdmin"
         SecurityGroupIds: 
         - !Ref PrivateSgResourceId
         ImageId: "ami-0d4c3eabb9e72650a"
@@ -68,6 +68,7 @@ Resources:
             Key: "Name"
             Value: "openvpn-private"
         UserData: ""
+
 #-------------------------------------------
 
 

@@ -47,8 +47,8 @@ Resources:
     Properties:
       LaunchTemplateName: "dh.cform.openvpn-launch-tmplt-pub"
       LaunchTemplateData:
-        IamInstanceProfile: 
-          Arn: "arn:aws:iam::255822906044:instance-profile/dh.InstProfile.Managed.SysAdmin"
+        IamInstanceProfile:
+          Name: "dh.InstProfile.Managed.SysAdmin"
         SecurityGroupIds: 
         - !Ref PublicSgResourceId
         ImageId: "ami-0d4c3eabb9e72650a"
@@ -72,6 +72,19 @@ Resources:
 
 
 
-Outputs: {}
-#Outputs:
+#Outputs: {}
+Outputs:
 #===========================================
+
+
+#---Top Level VPCID Export
+#-------------------------------------------
+  PubLaunchTmpltId:
+    Description: ID of the launch template.
+    Value:
+      Ref: PublicLaunchTemplate
+#    Export:
+#      Name:
+#        Fn::Sub: ${AWS::StackName}-VPCID
+#---Public Subnet AZ-A Export
+#-------------------------------------------
