@@ -17,11 +17,12 @@ Conditions: {}
 Parameters:
 #===========================================
 
-#--- Server Public Subnet 
+#--- AWS-Specific Parameter Type
 #-------------------------------------------
   PublicSubnetIdA:
     Description: Public Subnet ID AZ-A
     Type: AWS::EC2::Subnet::Id
+#-------------------------------------------
 #--- Public Security Group Resource ID
 #-------------------------------------------
   PublicSgResourceId:
@@ -30,43 +31,56 @@ Parameters:
 #-------------------------------------------
 
 
-
 Resources:
 #===========================================
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# LAUNCH TEMPLATE DEFINITION
+# PUBLIC EC2 DEFINITION
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#--- Private Launch Template 
+#--- Public EC2 Instance
 #-------------------------------------------
-  PublicLaunchTemplate:
-    Type: "AWS::EC2::LaunchTemplate"
+
+  PublicEC2Instance:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:    
+        Count: 1
+        Timeout: "PT5M"
     Properties:
-      LaunchTemplateName: "dh.cform.openvpn-launch-tmplt-pub"
-      LaunchTemplateData:
-        IamInstanceProfile:
-          Name: "dh.InstProfile.Managed.SysAdmin"
-        SecurityGroupIds: 
+      AvailabilityZone:
+        'Fn::Select':
+          - '0'
+          - 'Fn::GetAZs':
+              Ref: 'AWS::Region'
+      DisableApiTermination: false
+      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
+      ImageId: "ami-0d4c3eabb9e72650a"
+      InstanceType: "t2.micro"
+      KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+      Monitoring: false
+      SubnetId:
+        Ref: PublicSubnetIdA
+      SecurityGroupIds:
         - !Ref PublicSgResourceId
-        ImageId: "ami-0d4c3eabb9e72650a"
-        InstanceType: "t2.micro"
-        KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
-        TagSpecifications: 
-        - 
-          ResourceType: "instance"
-          Tags: 
-          - 
-            Key: "Name"
-            Value: "openvpn-public"
-        - 
-          ResourceType: "volume"
-          Tags: 
-          - 
-            Key: "Name"
-            Value: "openvpn-public"
+      Tags:
+        -
+          Key: "Name"
+          Value: "openvpn-public"
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+            # Update Packages, inc. aws-cfn-bootstrap
+            yum update -y
+            # Start cfn-init
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
+            # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
+            #/opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
+            # All done so signal success
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region}
     Metadata:
       Comment: Metadata description here.
       AWS::CloudFormation::Init:
@@ -91,17 +105,17 @@ Resources:
 
 
 
-#Outputs: {}
-Outputs:
+Outputs: {}
+#Outputs:
 #===========================================
 
 
 #---Top Level VPCID Export
 #-------------------------------------------
-  PubLaunchTmpltId:
-    Description: ID of the launch template.
-    Value:
-      Ref: PublicLaunchTemplate
+#  PubLaunchTmpltId:
+#    Description: ID of the launch template.
+#    Value:
+#      Ref: PublicLaunchTemplate
 #    Export:
 #      Name:
 #        Fn::Sub: ${AWS::StackName}-VPCID
