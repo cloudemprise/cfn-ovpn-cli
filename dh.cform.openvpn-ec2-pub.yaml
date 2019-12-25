@@ -42,33 +42,57 @@ Resources:
 
 #--- Public EC2 Instance
 #-------------------------------------------
-
   PublicEC2Instance:
     Type: AWS::EC2::Instance
+#.............................
     CreationPolicy:
       ResourceSignal:    
         Count: 1
         Timeout: "PT5M"
+#.............................
     Properties:
+#.............................
+      Tags:
+        -
+          Key: "Name"
+          Value: "openvpn-public"
+#.............................
       AvailabilityZone:
         'Fn::Select':
           - '0'
           - 'Fn::GetAZs':
               Ref: 'AWS::Region'
+#.............................
       DisableApiTermination: false
       IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
       ImageId: "ami-0d4c3eabb9e72650a"
       InstanceType: "t2.micro"
       KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
       Monitoring: false
-      SubnetId:
-        Ref: PublicSubnetIdA
-      SecurityGroupIds:
-        - !Ref PublicSgResourceId
-      Tags:
-        -
-          Key: "Name"
-          Value: "openvpn-public"
+#      SubnetId:
+#        Ref: PublicSubnetIdA
+#      SecurityGroupIds:
+#        - !Ref PublicSgResourceId
+#.............................
+      BlockDeviceMappings: 
+      - 
+        DeviceName: "/dev/xvda"
+        Ebs: 
+          Encrypted: true
+          VolumeSize: 8
+          VolumeType: "gp2"
+          DeleteOnTermination: true
+#.............................
+      NetworkInterfaces: 
+      - 
+        Description: "Primary Public NIC"
+        DeleteOnTermination: true
+        DeviceIndex: 0
+        PrivateIpAddress: 10.0.128.10
+        SubnetId: !Ref PublicSubnetIdA
+        GroupSet: 
+          - !Ref PublicSgResourceId
+#.............................
       UserData:
         Fn::Base64:
           !Sub |
@@ -81,6 +105,7 @@ Resources:
             #/opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
             # All done so signal success
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region}
+#.............................
     Metadata:
       Comment: Metadata description here.
       AWS::CloudFormation::Init:
