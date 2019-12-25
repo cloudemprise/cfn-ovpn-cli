@@ -100,7 +100,7 @@ Resources:
             # Update Packages, inc. aws-cfn-bootstrap
             yum update -y
             # Start cfn-init
-            /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
+            /opt/aws/bin/cfn-init -v --configsets Step1 --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
             # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
             #/opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
             # All done so signal success
@@ -109,7 +109,10 @@ Resources:
     Metadata:
       Comment: Metadata description here.
       AWS::CloudFormation::Init:
-        config:
+        configSets:
+          Step1:
+            - Installation
+        Installation:
           packages:
             yum:
               httpd: []
