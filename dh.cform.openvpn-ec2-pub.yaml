@@ -108,6 +108,12 @@ Resources:
 #.............................
     Metadata:
       Comment: Metadata description here.
+      AWS::CloudFormation::Authentication: 
+        rolebased: 
+          type: "S3"
+          buckets: 
+            - "dh.scripts"
+          roleName: "dh.InstProfile.Managed.SysAdmin"
       AWS::CloudFormation::Init:
         configSets:
           Step1:
@@ -118,7 +124,7 @@ Resources:
               httpd: []
               iptables-services: []
           sources:
-            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/iptables/dh.cform.openvpn-ec2-pub-iptables.tar.gz"
+            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/iptables/dh.cform.openvpn-ec2-pub-iptables.sh.tar.gz"
           files:
             "/var/www/html/index.html":
               content: !Sub |
@@ -129,7 +135,6 @@ Resources:
           commands:
             iptables:
               cwd: "/tmp"
-              command: "chmod +x dh.cform.openvpn-ec2-pub-iptables.sh"
               command: "/bin/bash dh.cform.openvpn-ec2-pub-iptables.sh"
           services:
             sysvinit:
