@@ -108,23 +108,42 @@ Resources:
 #.............................
     Metadata:
       Comment: Metadata description here.
+#,,,,,,,,,,,,,,
       AWS::CloudFormation::Authentication: 
         rolebased: 
           type: "S3"
           buckets: 
             - "dh.scripts"
           roleName: "dh.InstProfile.Managed.SysAdmin"
+#,,,,,,,,,,,,,,
       AWS::CloudFormation::Init:
         configSets:
           Step1:
-            - Installation
-        Installation:
+            - configWebServer
+            - configIPtables
+            - configLogs
+            - configRepo
+#            - configHardenSsh
+#            - configOpenvpn
+#,,,,,,,,,,,,,,
+#        configTemplate:
+#          packages: {}
+#          groups: {}
+#          users: {}
+#          sources: {}
+#          files: {}
+#          commands: {}
+#          services: {}
+#,,,,,,,,,,,,,,
+        configRepo:
+          commands:
+            epel:
+              command: "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
+#,,,,,,,,,,,,,,
+        configWebServer:
           packages:
             yum:
               httpd: []
-              iptables-services: []
-          sources:
-            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/iptables/dh.cform.openvpn-ec2-pub-iptables.sh.tar.gz"
           files:
             "/var/www/html/index.html":
               content: !Sub |
@@ -132,18 +151,82 @@ Resources:
               mode: '000644'
               owner: root
               group: root
-          commands:
-            iptables:
-              cwd: "/tmp"
-              command: "/bin/bash dh.cform.openvpn-ec2-pub-iptables.sh"
           services:
             sysvinit:
               httpd:
                 enabled: true
                 ensureRunning: true
+#,,,,,,,,,,,,,,
+        configIPtables:
+          packages:
+            yum:
+              iptables-services: []
+          sources:
+            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/iptables/dh.cform.openvpn-ec2-pub-iptables.sh.tar.gz"
+          commands:
+            iptables:
+              cwd: "/tmp"
+              command: "/bin/bash dh.cform.openvpn-ec2-pub-iptables.sh"
+          services:
               iptables:
                 enables: true
                 ensureRunning: true
+#,,,,,,,,,,,,,,
+        configLogs:
+          files:
+#---------------------------
+            "/etc/rsyslog.d/30-iptables.conf":
+              content: |
+                :msg, startswith, "IPTlog" -/var/log/dh.vpn.svr.iptables.log
+                & stop
+              mode: '000644'
+              owner: root
+              group: root
+#---------------------------
+            "/etc/logrotate.d/dh.vpnlogs":
+              content: |
+                /var/log/dh.vpn.svr.*.log
+                {
+                 notifempty
+                 rotate 21
+                 maxsize 500k
+                 daily
+                 maxage 7
+                 copytruncate
+                 dateext
+                 dateformat .%Y%m%d-%H-%s
+                 compress
+                 nomail
+                 sharedscripts
+                 postrotate
+                   systemctl restart rsyslog.service
+                 endscript
+                }
+              mode: '000644'
+              owner: root
+              group: root
+#---------------------------
+            "/etc/cron.d/dh.vpn.logSchedule":
+              content: |
+                */30 * * * * root /sbin/logrotate /etc/logrotate.d/dh.vpnlogs
+              mode: '000644'
+              owner: root
+              group: root
+#          commands:
+#            rsyslog:
+#              command: "systemctl restart rsyslog.service"
+          services:
+              rsyslog:
+                enables: true
+                ensureRunning: true
+                files:
+                  - "/etc/rsyslog.d/30-iptables.conf"
+              crond:
+                enable: true
+                ensureRunning: true
+                files:
+                  - "/etc/cron.d/dh.vpn.logSchedule"
+
 
 #-------------------------------------------
 

@@ -226,14 +226,14 @@ Resources:
       SubnetId:
         Ref: PrivateSubnetA
 #-------------------------------------------
-  RouteTablePrivateARoute0:
-    Type: 'AWS::EC2::Route'
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      RouteTableId:
-        Ref: RouteTablePrivateA
-      NatGatewayId:
-        Ref: NatGw1
+#  RouteTablePrivateARoute0:
+#    Type: 'AWS::EC2::Route'
+#    Properties:
+#      DestinationCidrBlock: 0.0.0.0/0
+#      RouteTableId:
+#        Ref: RouteTablePrivateA
+#      NatGatewayId:
+#        Ref: NatGw1
 #-------------------------------------------
 
 #--- Private B Route Table
@@ -256,14 +256,14 @@ Resources:
       SubnetId:
         Ref: PrivateSubnetB
 #-------------------------------------------
-  RouteTablePrivateBRoute0:
-    Type: 'AWS::EC2::Route'
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      RouteTableId:
-        Ref: RouteTablePrivateB
-      NatGatewayId:
-        Ref: NatGw1
+#  RouteTablePrivateBRoute0:
+#    Type: 'AWS::EC2::Route'
+#    Properties:
+#      DestinationCidrBlock: 0.0.0.0/0
+#      RouteTableId:
+#        Ref: RouteTablePrivateB
+#      NatGatewayId:
+#        Ref: NatGw1
 #-------------------------------------------
 
 
@@ -290,20 +290,20 @@ Resources:
 
 #--- NAT Gateway
 #-------------------------------------------
-  NatGw1:
-    Type: 'AWS::EC2::NatGateway'
-    Properties:
-      SubnetId:
-        Ref: PublicSubnetA
-      AllocationId:
-        'Fn::GetAtt':
-          - NatGw1ElasticIP
-          - AllocationId
+#  NatGw1:
+#    Type: 'AWS::EC2::NatGateway'
+#    Properties:
+#      SubnetId:
+#        Ref: PublicSubnetA
+#      AllocationId:
+#        'Fn::GetAtt':
+#          - NatGw1ElasticIP
+#          - AllocationId
 #-------------------------------------------
-  NatGw1ElasticIP:
-    Type: 'AWS::EC2::EIP'
-    Properties:
-      Domain: vpc
+#  NatGw1ElasticIP:
+#    Type: 'AWS::EC2::EIP'
+#    Properties:
+#      Domain: vpc
 #-------------------------------------------
 
 
