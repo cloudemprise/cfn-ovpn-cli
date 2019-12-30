@@ -119,12 +119,12 @@ Resources:
       AWS::CloudFormation::Init:
         configSets:
           Step1:
+            - configRepo
             - configWebServer
             - configIPtables
             - configLogs
-            - configRepo
-#            - configHardenSsh
-#            - configOpenvpn
+            - configHardenSsh
+            - configOpenvpn
 #,,,,,,,,,,,,,,
 #        configTemplate:
 #          packages: {}
@@ -134,12 +134,12 @@ Resources:
 #          files: {}
 #          commands: {}
 #          services: {}
-#,,,,,,,,,,,,,,
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
         configRepo:
           commands:
             epel:
               command: "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
-#,,,,,,,,,,,,,,
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
         configWebServer:
           packages:
             yum:
@@ -156,7 +156,7 @@ Resources:
               httpd:
                 enabled: true
                 ensureRunning: true
-#,,,,,,,,,,,,,,
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
         configIPtables:
           packages:
             yum:
@@ -171,7 +171,7 @@ Resources:
               iptables:
                 enables: true
                 ensureRunning: true
-#,,,,,,,,,,,,,,
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
         configLogs:
           files:
 #---------------------------
@@ -212,20 +212,85 @@ Resources:
               mode: '000644'
               owner: root
               group: root
-#          commands:
-#            rsyslog:
-#              command: "systemctl restart rsyslog.service"
           services:
               rsyslog:
                 enables: true
                 ensureRunning: true
                 files:
                   - "/etc/rsyslog.d/30-iptables.conf"
-              crond:
-                enable: true
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        configHardenSsh:
+          packages:
+            yum:
+              fail2ban: []
+          sources:
+            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/ssh/dh.cform.openvpn-ec2-pub-ssh.sh.tar.gz"
+          files:
+            "/etc/fail2ban/jail.local":
+              content: |
+                [sshd]
+                enabled = true
+                ignoreip = 127.0.0.1/8
+                bantime = 600
+                findtime = 600
+                maxretry = 3
+                banaction = iptables-multiport
+              mode: '000644'
+              owner: root
+              group: root
+          commands:
+            HardenSsh:
+              cwd: "/tmp"
+              command: "/bin/bash dh.cform.openvpn-ec2-pub-ssh.sh"
+              command: "systemctl enable fail2ban.service;systemctl start fail2ban.service"
+          services:
+              sshd:
+                enables: true
                 ensureRunning: true
                 files:
-                  - "/etc/cron.d/dh.vpn.logSchedule"
+                  - "/etc/ssh/sshd_config"
+              fail2ban:
+                enables: true
+                ensureRunning: true
+                files:
+                  - "/etc/fail2ban/jail.local"
+                packages: 
+                  yum: 
+                    - "fail2ban"
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        configOpenvpn:
+          packages:
+            yum:
+              openvpn: []
+          sources:
+            /etc/openvpn/server: "https://s3.eu-central-1.amazonaws.com/dh.scripts/openvpn/dh.vpn.svr.xxx1194.conf.tar.gz"
+          files:
+            "/usr/local/bin/vpn-server-status":
+              content: |
+                #!/bin/bash
+                systemctl status openvpn-server@dh.vpn.svr.udp1194
+                systemctl status openvpn-server@dh.vpn.svr.tcp1194
+                journalctl -u openvpn-server@dh.vpn.svr.udp1194
+                journalctl -u openvpn-server@dh.vpn.svr.tcp1194
+              mode: '000755'
+              owner: ec2-user
+              group: ec2-user
+          commands:
+            enableLogTimestamps:
+              cwd: "/usr/lib/systemd/system"
+              command: "cp openvpn-server@.service openvpn-server@.service.bak;sed -i 's/ --suppress-timestamps//g' openvpn-server@.service"
+            addPATH:
+              command: |
+                printf '\nPATH="/usr/local/bin:$PATH"\n' >> /home/ec2-user/.bashrc
+          services:
+              openvpn:
+                enables: true
+                ensureRunning: true
+                files:
+                  - "/etc/openvpn/server/dh.vpn.svr.udp1194.conf"
+                  - "/etc/openvpn/server/dh.vpn.svr.tcp1194.conf"
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
 
 
 #-------------------------------------------
