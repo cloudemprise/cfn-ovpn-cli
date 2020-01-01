@@ -48,7 +48,7 @@ Resources:
     CreationPolicy:
       ResourceSignal:    
         Count: 1
-        Timeout: "PT3M"
+        Timeout: "PT5M"
 #.............................
     Properties:
 #.............................
@@ -125,7 +125,8 @@ Resources:
             - configLogs
             - configHardenSsh
             - configOpenvpn
-#,,,,,,,,,,,,,,
+            - configEasyRSA
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 #        configTemplate:
 #          packages: {}
 #          groups: {}
@@ -242,7 +243,7 @@ Resources:
             HardenSsh:
               cwd: "/tmp"
               command: "/bin/bash dh.cform.openvpn-ec2-pub-ssh.sh"
-              command: "systemctl enable fail2ban.service;systemctl start fail2ban.service"
+              command: "systemctl start fail2ban.service;systemctl enable fail2ban.service"
           services:
               sshd:
                 enables: true
@@ -263,7 +264,7 @@ Resources:
             yum:
               openvpn: []
           sources:
-            /etc/openvpn/server: "https://s3.eu-central-1.amazonaws.com/dh.scripts/openvpn/dh.vpn.svr.xxx1194.conf.tar.gz"
+            /etc/openvpn/server: "https://s3.eu-central-1.amazonaws.com/dh.scripts/openvpn/server/dh.vpn.svr.xxx1194.conf.tar.gz"
           files:
             "/usr/local/bin/vpn-server-status":
               content: |
@@ -276,10 +277,16 @@ Resources:
               owner: ec2-user
               group: ec2-user
           commands:
-            enableLogTimestamps:
+            1a_gen-HMAC:
+              cwd: "/etc/openvpn/server"
+              command: "openvpn --genkey --secret HMAC-sig.key"
+            1b_gen-HMAC:
+              cwd: "/etc/openvpn/server"
+              command: "aws s3 cp HMAC-sig.key s3://dh.scripts/openvpn/client/"
+            2_enableLogTimestamps:
               cwd: "/usr/lib/systemd/system"
               command: "cp openvpn-server@.service openvpn-server@.service.bak;sed -i 's/ --suppress-timestamps//g' openvpn-server@.service"
-            addPATH:
+            3_addPATH:
               command: |
                 printf '\nPATH="/usr/local/bin:$PATH"\n' >> /home/ec2-user/.bashrc
           services:
@@ -290,7 +297,67 @@ Resources:
                   - "/etc/openvpn/server/dh.vpn.svr.udp1194.conf"
                   - "/etc/openvpn/server/dh.vpn.svr.tcp1194.conf"
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        configEasyRSA:
+          packages:
+            yum:
+              easy-rsa: []
+          sources:
+            /usr/local/easy-rsa: "https://s3.eu-central-1.amazonaws.com/dh.scripts/easyrsa/openvpn/gen-reqs/dh.cform.easyrsa.vars.tar.gz"
+          commands:
+            1a_initPKI:
+              command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
+            1b_initPKI:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa init-pki"
+            2a_genDH:
+              cwd: "/usr/local/easy-rsa"
+              command: "mv vars.gen-dh vars"
+            2b_genDH:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa gen-dh"
+            2c_genDH:
+              cwd: "/usr/local/easy-rsa/pki"
+              command: "cp dh.pem /etc/openvpn/server/"
+            3a_genSVR:
+              cwd: "/usr/local/easy-rsa"
+              command: "mv vars.dh.vpn.svr vars"
+            3b_genSVR:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa gen-req dh.vpn.svr nopass"
+            3c_genSVR:
+              cwd: "/usr/local/easy-rsa/pki/private"
+              command: "cp dh.vpn.svr.key /etc/openvpn/server/"
+            3d_genSVR:
+              cwd: "/usr/local/easy-rsa/pki/reqs"
+              command: "aws s3 cp dh.vpn.svr.req s3://dh.scripts/easyrsa/openvpn/sign-reqs/"
+            4a_genClnt1:
+              cwd: "/usr/local/easy-rsa"
+              command: "mv vars.dh.vpn.client.pfSn-ravi vars"
+            4b_genClnt1:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa gen-req dh.vpn.client.pfSn-ravi nopass"
+            4c_genClnt1:
+              cwd: "/usr/local/easy-rsa/pki/private"
+              command: "aws s3 cp dh.vpn.client.pfSn-ravi.key s3://dh.scripts/openvpn/client/"
+            4d_genClnt1:
+              cwd: "/usr/local/easy-rsa/pki/reqs"
+              command: "aws s3 cp dh.vpn.client.pfSn-ravi.req s3://dh.scripts/easyrsa/openvpn/sign-reqs/"
+            5a_genClnt2:
+              cwd: "/usr/local/easy-rsa"
+              command: "mv vars.dh.vpn.client.pfSn-virt vars"
+            5b_genClnt2:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa gen-req dh.vpn.client.pfSn-virt nopass"
+            5c_genClnt2:
+              cwd: "/usr/local/easy-rsa/pki/private"
+              command: "aws s3 cp dh.vpn.client.pfSn-virt.key s3://dh.scripts/openvpn/client/"
+            5d_genClnt2:
+              cwd: "/usr/local/easy-rsa/pki/reqs"
+              command: "aws s3 cp dh.vpn.client.pfSn-virt.req s3://dh.scripts/easyrsa/openvpn/sign-reqs/"
 
+
+#          services: {}
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
 #-------------------------------------------
