@@ -158,6 +158,18 @@ Resources:
           !GetAtt SgDefs.Outputs.PublicSgResourceId
       TimeoutInMinutes: 5
 #-------------------------------------------
+  InstancePrivDef:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: InstancePubDef
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-priv.yaml
+      Parameters:
+        PrivateSubnetIdA:
+          !GetAtt VPCDef.Outputs.PrivateSubnetIdA
+        PrivateSgResourceId:
+          !GetAtt SgDefs.Outputs.PrivateSgResourceId
+      TimeoutInMinutes: 5
+#-------------------------------------------
 
 
 
