@@ -1,4 +1,5 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-launch-pub.yaml
+#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-priv.yaml
+
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Launch Template EC2 Server for OpenVPN Implementation.
@@ -19,14 +20,14 @@ Parameters:
 
 #--- AWS-Specific Parameter Type
 #-------------------------------------------
-  PublicSubnetIdA:
-    Description: Public Subnet ID AZ-A
+  PrivateSubnetIdA:
+    Description: Private Subnet ID AZ-A
     Type: AWS::EC2::Subnet::Id
 #-------------------------------------------
-#--- Public Security Group Resource ID
+#--- Private Security Group Resource ID
 #-------------------------------------------
-  PublicSgResourceId:
-    Description: Public Security Group ID AZ-A
+  PrivateSgResourceId:
+    Description: Private Security Group ID AZ-A
     Type: AWS::EC2::SecurityGroup::Id
 #-------------------------------------------
 
@@ -36,13 +37,13 @@ Resources:
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PUBLIC EC2 DEFINITION
+# PRIVATE EC2 DEFINITION
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#--- Public EC2 Instance
+#--- Private EC2 Instance
 #-------------------------------------------
-  PublicEC2Instance:
+  PrivateEC2Instance:
     Type: AWS::EC2::Instance
 #.............................
     CreationPolicy:
@@ -55,7 +56,7 @@ Resources:
       Tags:
         -
           Key: "Name"
-          Value: "openvpn-public"
+          Value: "openvpn-private"
 #.............................
       AvailabilityZone:
         'Fn::Select':
@@ -71,9 +72,9 @@ Resources:
       KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
       Monitoring: false
 #      SubnetId:
-#        Ref: PublicSubnetIdA
+#        Ref: PrivateSubnetIdA
 #      SecurityGroupIds:
-#        - !Ref PublicSgResourceId
+#        - !Ref PrivateSgResourceId
 #.............................
       BlockDeviceMappings: 
       - 
@@ -86,13 +87,13 @@ Resources:
 #.............................
       NetworkInterfaces: 
       - 
-        Description: "Primary Public NIC"
+        Description: "Primary Private NIC"
         DeleteOnTermination: true
         DeviceIndex: 0
-        PrivateIpAddress: 10.0.128.10
-        SubnetId: !Ref PublicSubnetIdA
+        PrivateIpAddress: 10.0.0.10
+        SubnetId: !Ref PrivateSubnetIdA
         GroupSet: 
-          - !Ref PublicSgResourceId
+          - !Ref PrivateSgResourceId
 #.............................
       UserData:
         Fn::Base64:
@@ -101,11 +102,11 @@ Resources:
             # Update Packages, inc. aws-cfn-bootstrap
             yum update -y
             # Start cfn-init
-            /opt/aws/bin/cfn-init -v --configsets Step1 --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
+            /opt/aws/bin/cfn-init -v --configsets Step1 --stack ${AWS::StackId} --resource PrivateEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
             # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
             #/opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
             # All done so signal success
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PrivateEC2Instance --region ${AWS::Region}
 #.............................
     Metadata:
       Comment: Metadata description here.
@@ -122,12 +123,10 @@ Resources:
           Step1:
             - configMisc
             - configRepo
-#            - configWebServer
             - configIPtables
             - configLogs
             - configHardenSsh
-            - configOpenvpn
-            - configEasyRSA
+#            - configEasyRSA
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 #        configTemplate:
 #          packages: {}
@@ -173,35 +172,16 @@ Resources:
               command: "systemctl enable yum-cron"
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-# This is included just for a quick initial test
-#        configWebServer:
-#          packages:
-#            yum:
-#              httpd: []
-#          files:
-#            "/var/www/html/index.html":
-#              content: !Sub |
-#                <h1>Hello from ${AWS::StackId}<h1>
-#              mode: '000644'
-#              owner: root
-#              group: root
-#          services:
-#            sysvinit:
-#              httpd:
-#                enabled: true
-#                ensureRunning: true
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
         configIPtables:
           packages:
             yum:
               iptables-services: []
           sources:
-            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/iptables/dh.cform.openvpn-ec2-pub-iptables.sh.tar.gz"
+            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/iptables/dh.cform.openvpn-ec2-priv-iptables.sh.tar.gz"
           commands:
             iptables:
               cwd: "/tmp"
-              command: "./dh.cform.openvpn-ec2-pub-iptables.sh"
+              command: "./dh.cform.openvpn-ec2-priv-iptables.sh"
           services:
               iptables:
                 enables: true
@@ -291,62 +271,6 @@ Resources:
                   - "/etc/ssh/sshd_config"
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-        configOpenvpn:
-          packages:
-            yum:
-              openvpn: []
-          sources:
-            /etc/openvpn/server: "https://s3.eu-central-1.amazonaws.com/dh.scripts/openvpn/server/dh.vpn.svr.xxx1194.conf.tar.gz"
-          files:
-#---------------------------
-            "/etc/sysctl.d/30-dh.openvpn.conf":
-              content: |
-                net.ipv4.ip_forward = 1
-                net.ipv6.conf.default.disable_ipv6 = 1
-                net.ipv6.conf.all.disable_ipv6 = 1
-                kernel.randomize_va_space = 1
-                net.ipv4.conf.default.rp_filter = 1
-                net.ipv4.conf.all.rp_filter = 1
-                net.ipv4.tcp_syncookies = 1
-              mode: '000644'
-              owner: root
-              group: root
-#---------------------------
-            "/usr/local/bin/vpn-server-status":
-              content: |
-                #!/bin/bash
-                systemctl status openvpn-server@dh.vpn.svr.udp1194
-                systemctl status openvpn-server@dh.vpn.svr.tcp1194
-                journalctl -u openvpn-server@dh.vpn.svr.udp1194
-                journalctl -u openvpn-server@dh.vpn.svr.tcp1194
-              mode: '000755'
-              owner: ec2-user
-              group: ec2-user
-#---------------------------
-          commands:
-            1a_kernelParams:
-              command: "sysctl -p /etc/sysctl.d/30-dh.openvpn.conf"
-            2a_gen-HMAC:
-              cwd: "/etc/openvpn/server"
-              command: "openvpn --genkey --secret HMAC-sig.key"
-            2b_gen-HMAC:
-              cwd: "/etc/openvpn/server"
-              command: "aws s3 cp HMAC-sig.key s3://dh.scripts/openvpn/client/"
-            3_enableLogTimestamps:
-              cwd: "/usr/lib/systemd/system"
-              command: "cp openvpn-server@.service openvpn-server@.service.bak;sed -i 's/ --suppress-timestamps//g' openvpn-server@.service"
-            4_addPATH:
-              command: |
-                printf '\nPATH="/usr/local/bin:$PATH"\n' >> /home/ec2-user/.bashrc
-          services:
-              openvpn:
-                enables: true
-                ensureRunning: true
-                files:
-                  - "/etc/openvpn/server/dh.vpn.svr.udp1194.conf"
-                  - "/etc/openvpn/server/dh.vpn.svr.tcp1194.conf"
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
         configEasyRSA:
           packages:
             yum:
@@ -423,9 +347,9 @@ Outputs: {}
 #  PubLaunchTmpltId:
 #    Description: ID of the launch template.
 #    Value:
-#      Ref: PublicLaunchTemplate
+#      Ref: PrivateLaunchTemplate
 #    Export:
 #      Name:
 #        Fn::Sub: ${AWS::StackName}-VPCID
-#---Public Subnet AZ-A Export
+#---Private Subnet AZ-A Export
 #-------------------------------------------
