@@ -1,0 +1,5 @@
+set_var EASYRSA_BATCH "yes"
+set_var EASYRSA_ALGO ec
+set_var EASYRSA_CURVE secp384r1
+#set_var EASYRSA_KEY_SIZE 3072
+set_var EASYRSA_KEY_SIZE 1024

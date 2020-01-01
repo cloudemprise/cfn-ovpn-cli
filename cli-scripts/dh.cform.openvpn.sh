@@ -3,7 +3,8 @@
 S3_TEMPLATE_LOCATION="s3://dh.cform-templates/openvpn/"
 S3_IPTABLES_LOCATION="s3://dh.scripts/iptables/"
 S3_SSH_LOCATION="s3://dh.scripts/ssh/"
-S3_OPENVPN_LOCATION="s3://dh.scripts/openvpn/"
+S3_OPENVPN_LOCATION="s3://dh.scripts/openvpn/server/"
+S3_EASYRSA_LOCATION="s3://dh.scripts/easyrsa/openvpn/gen-reqs/"
 
 
 
@@ -30,5 +31,9 @@ cd openvpn-configs/
 tar -zcf - dh.vpn.svr.*1194.conf | aws s3 cp - ${S3_OPENVPN_LOCATION}dh.vpn.svr.xxx1194.conf.tar.gz
 cd ..
 
+cd easyrsa-configs/
+tar -zcf - vars.* | aws s3 cp - ${S3_EASYRSA_LOCATION}dh.cform.easyrsa.vars.tar.gz
+cd ..
+
 #Create cloudformation stack
-aws cloudformation create-stack --stack-name OpenVPNTest01 --template-url https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn.yaml --tags Key=Name,Value=OpenVPN-Test --on-failure DO_NOTHING
+aws cloudformation create-stack --stack-name OpenVPNTest02 --template-url https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn.yaml --tags Key=Name,Value=OpenVPN-Test --on-failure DO_NOTHING
