@@ -1,4 +1,4 @@
-set_var EASYRSA_REQ_CN "dh.vpn.client.pfSn-ravi"
+set_var EASYRSA_REQ_CN "dh.vpn.pfSn-ravi.client"
 set_var EASYRSA_BATCH "yes"
 set_var EASYRSA_ALGO ec
 set_var EASYRSA_CURVE secp384r1
