@@ -126,7 +126,7 @@ Resources:
             - configIPtables
             - configLogs
             - configHardenSsh
-#            - configEasyRSA
+            - configEasyRSA
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 #        configTemplate:
 #          packages: {}
@@ -178,8 +178,23 @@ Resources:
               iptables-services: []
           sources:
             /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/iptables/dh.cform.openvpn-ec2-priv-iptables.sh.tar.gz"
+          files:
+            "/etc/sysctl.d/30-dh.iptables.conf":
+              content: |
+                net.ipv4.ip_forward = 0
+                net.ipv6.conf.default.disable_ipv6 = 1
+                net.ipv6.conf.all.disable_ipv6 = 1
+                kernel.randomize_va_space = 1
+                net.ipv4.conf.default.rp_filter = 1
+                net.ipv4.conf.all.rp_filter = 1
+                net.ipv4.tcp_syncookies = 1
+              mode: '000644'
+              owner: root
+              group: root
           commands:
-            iptables:
+            1_kernelParams:
+              command: "sysctl -p /etc/sysctl.d/30-dh.iptables.conf"
+            2_iptRules:
               cwd: "/tmp"
               command: "./dh.cform.openvpn-ec2-priv-iptables.sh"
           services:
@@ -193,7 +208,7 @@ Resources:
 #---------------------------
             "/etc/rsyslog.d/30-iptables.conf":
               content: |
-                :msg, startswith, "IPTlog" -/var/log/dh.vpn.svr.iptables.log
+                :msg, startswith, "IPTlog" -/var/log/dh.vpn.server.iptables.log
                 & stop
               mode: '000644'
               owner: root
@@ -201,7 +216,7 @@ Resources:
 #---------------------------
             "/etc/logrotate.d/dh.vpnlogs":
               content: |
-                /var/log/dh.vpn.svr.*.log
+                /var/log/dh.vpn.server.*.log
                 {
                  notifempty
                  rotate 21
@@ -275,60 +290,40 @@ Resources:
           packages:
             yum:
               easy-rsa: []
+          files:
+            "/usr/local/easy-rsa/vars":
+              content: |
+                set_var EASYRSA_REQ_CN "dh.vpn.cert-auth"
+                set_var EASYRSA_BATCH "yes"
+                set_var EASYRSA_ALGO ec
+                set_var EASYRSA_CURVE secp384r1
+                set_var EASYRSA_KEY_SIZE 4096
+              mode: '000644'
+              owner: root
+              group: root
           sources:
-            /usr/local/easy-rsa: "https://s3.eu-central-1.amazonaws.com/dh.scripts/easyrsa/openvpn/gen-reqs/dh.cform.easyrsa.vars.tar.gz"
+            /tmp/sign-reqs: "https://s3.eu-central-1.amazonaws.com/dh.scripts/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
           commands:
             1a_initPKI:
               command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
             1b_initPKI:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa init-pki"
-            2a_genDH:
+            2a_buildCA:
               cwd: "/usr/local/easy-rsa"
-              command: "mv vars.gen-dh vars"
-            2b_genDH:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-dh"
-            2c_genDH:
+              command: "./easyrsa build-ca nopass"
+            2b_buildCA:
               cwd: "/usr/local/easy-rsa/pki"
-              command: "cp dh.pem /etc/openvpn/server/"
-            3a_genSVR:
+              command: "tar -zcf - ca.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/dh.easyrsa.ca.crt.tar.gz"
+            3_importReqs:
               cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.svr vars"
-            3b_genSVR:
+              command: "for REQUEST in /tmp/sign-reqs/*; do ./easyrsa import-req $REQUEST $(basename $REQUEST .req); done"
+            4a_signReqs:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.svr nopass"
-            3c_genSVR:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "cp dh.vpn.svr.key /etc/openvpn/server/"
-            3d_genSVR:
-              cwd: "/usr/local/easy-rsa/pki/reqs"
-              command: "aws s3 cp dh.vpn.svr.req s3://dh.scripts/easyrsa/openvpn/sign-reqs/"
-            4a_genClnt1:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.client.pfSn-ravi vars"
-            4b_genClnt1:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.client.pfSn-ravi nopass"
-            4c_genClnt1:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.client.pfSn-ravi.key s3://dh.scripts/openvpn/client/"
-            4d_genClnt1:
-              cwd: "/usr/local/easy-rsa/pki/reqs"
-              command: "aws s3 cp dh.vpn.client.pfSn-ravi.req s3://dh.scripts/easyrsa/openvpn/sign-reqs/"
-            5a_genClnt2:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.client.pfSn-virt vars"
-            5b_genClnt2:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.client.pfSn-virt nopass"
-            5c_genClnt2:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.client.pfSn-virt.key s3://dh.scripts/openvpn/client/"
-            5d_genClnt2:
-              cwd: "/usr/local/easy-rsa/pki/reqs"
-              command: "aws s3 cp dh.vpn.client.pfSn-virt.req s3://dh.scripts/easyrsa/openvpn/sign-reqs/"
-
+              command: "for REQUEST in /usr/local/easy-rsa/pki/reqs/*; do EntityName=$(basename $REQUEST .req); ./easyrsa sign-req ${EntityName##*.} $EntityName; done"
+            4b_signReqs:
+              cwd: "/usr/local/easy-rsa/pki/issued"
+              command: "tar -zcf - *.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.tar.gz"
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 

@@ -18,6 +18,8 @@ aws s3 cp dh.cform.openvpn-ec2-priv.yaml $S3_TEMPLATE_LOCATION
 #aws s3 cp dh.cform.openvpn-ec2-priv.yaml $S3_TEMPLATE_LOCATION
 
 #Compress & Upload iptables script to S3
+# Public instance script
+# Private instance script
 cd iptables-scripts/
 tar -zcf - dh.cform.openvpn-ec2-pub-iptables.sh | aws s3 cp - ${S3_IPTABLES_LOCATION}dh.cform.openvpn-ec2-pub-iptables.sh.tar.gz
 tar -zcf - dh.cform.openvpn-ec2-priv-iptables.sh | aws s3 cp - ${S3_IPTABLES_LOCATION}dh.cform.openvpn-ec2-priv-iptables.sh.tar.gz
@@ -25,17 +27,20 @@ cd ..
 
 
 #Compress & Upload sshd hardening script to S3
+# Use for both public & private instances
 cd ssh-scripts/
 tar -zcf - dh.cform.openvpn-ec2-harden-ssh.sh | aws s3 cp - ${S3_SSH_LOCATION}dh.cform.openvpn-ec2-harden-ssh.sh.tar.gz
 cd ..
 
 #Compress & Upload openvpn server configs to S3
+# Both udp & tcp server configs
 cd openvpn-configs/
-tar -zcf - dh.vpn.svr.*1194.conf | aws s3 cp - ${S3_OPENVPN_LOCATION}dh.vpn.svr.xxx1194.conf.tar.gz
+tar -zcf - dh.vpn.server.*1194.conf | aws s3 cp - ${S3_OPENVPN_LOCATION}dh.vpn.server.xxx1194.conf.tar.gz
 cd ..
 
+#Upload easy-rsa pki keygen configs to S3
 cd easyrsa-configs/
-tar -zcf - vars.* | aws s3 cp - ${S3_EASYRSA_LOCATION}dh.cform.easyrsa.vars.tar.gz
+tar -zcf - vars.* | aws s3 cp - ${S3_EASYRSA_LOCATION}dh.easyrsa.openvpn.vars.tar.gz
 cd ..
 
 #Create cloudformation stack
