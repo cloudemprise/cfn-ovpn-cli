@@ -174,9 +174,6 @@ Resources:
         Ref: VPC
       Tags:
         - Key: Name
-          Value: Public Route Table
-      Tags:
-        - Key: Name
           Value: 
             !Sub ${AWS::StackName}-PubRoute
 #-------------------------------------------
