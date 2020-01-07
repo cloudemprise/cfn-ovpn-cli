@@ -1,4 +1,4 @@
-# https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-sg.yaml
+#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-set1.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   An OpenVPN implementation that comprises:
@@ -16,67 +16,70 @@ Description: >
 
 Metadata: {}
 
-Conditions:
-  HasNot: !Equals [ 'true', 'false']
-
 
 Parameters:
 #===========================================
+
+
+#--- Latest Amazon_Linux_2 AMI
+#-------------------------------------------
+  LatestAmi:
+    Description: The AMI to use for EC2 instances.
+    Type: AWS::EC2::Image::Id
+# SSM method below but variable type not versatile to scripts. 
+#  myAmi:
+#    Description: The AMI to use for EC2 instances.
+#    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+#    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SUBNET CIDR DEFINITIONS
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   VPCCIDR:
+    Description: CIDR Block for the VPC
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
     Default: 10.0.0.0/16
-    Description: CIDR Block for the VPC
     Type: String
 #--- AZ-A Public Subnet
 #-------------------------------------------
   PublicSubnetACIDR:
+    Description: CIDR Block for the public DMZ subnet A located in Availability Zone A.
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
     Default: 10.0.128.0/20
-    Description: CIDR Block for the public DMZ subnet A located in Availability Zone A.
     Type: String
 #--- AZ-B Public Subnet
 #-------------------------------------------
   PublicSubnetBCIDR:
+    Description: CIDR Block for the public DMZ subnet B located in Availability Zone B
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
     Default: 10.0.144.0/20
-    Description: CIDR Block for the public DMZ subnet B located in Availability Zone B
     Type: String
 #--- AZ-A Private Subnet
 #-------------------------------------------
   PrivateSubnetACIDR:
+    Description: CIDR block for private subnet A located in Availability Zone A.
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
     Default: 10.0.0.0/19
-    Description: CIDR block for private subnet A located in Availability Zone A.
     Type: String
 #--- AZ-B Private Subnet
 #-------------------------------------------
   PrivateSubnetBCIDR:
+    Description: CIDR block for private subnet B located in Availability Zone B.
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
     Default: 10.0.32.0/19
-    Description: CIDR block for private subnet B located in Availability Zone B.
     Type: String
 #-------------------------------------------
 
 
-
 Resources:
 #===========================================
-
-  NullResource:
-    Type: 'Custom::NullResource'
-    Condition: HasNot
-#-------------------------------------------
-
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NESTED STACKS
@@ -152,6 +155,8 @@ Resources:
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub.yaml
       Parameters:
+        PublicAmiId:
+          !Ref LatestAmi
         PublicSubnetIdA:
           !GetAtt VPCDef.Outputs.PublicSubnetIdA
         PublicSgResourceId:
@@ -164,6 +169,8 @@ Resources:
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-priv.yaml
       Parameters:
+        PrivateAmiId:
+          !Ref LatestAmi
         PrivateSubnetIdA:
           !GetAtt VPCDef.Outputs.PrivateSubnetIdA
         PrivateSgResourceId:
@@ -179,17 +186,31 @@ Resources:
 Outputs:
 #===========================================
 
-  ExportsStackName:
-    Value: !Ref 'AWS::StackName'
-    Export:
-      Name: !Sub 'ExportsStackName-${AWS::StackName}'
+#--- Instance IDs
+#-------------------------------------------
+  InstanceIdPublic:
+    Description:  Public Instance ID
+    Value:
+      !GetAtt InstancePubDef.Outputs.InstanceIdPublicNested
+#-------------------------------------------
+  InstanceIdPrivate:
+    Description: Private Instance ID
+    Value:
+      !GetAtt InstancePrivDef.Outputs.InstanceIdPrivateNested
+
+
+#  ExportsStackName:
+#    Value: !Ref 'AWS::StackName'
+#    Export:
+#      Name: !Sub 'ExportsStackName-${AWS::StackName}'
 
 #--- VPC CIDR Export
 #-------------------------------------------
-  VPCCIDR:
-    Description: VPC CIDR
-    Value:
-      Ref: VPCCIDR
-    Export:
-      Name:
-        Fn::Sub: ${AWS::StackName}-VPCCIDR
+#  VPCCIDR:
+#    Description: VPC CIDR
+#    Value:
+#      Ref: VPCCIDR
+#    Export:
+#      Name:
+#        Fn::Sub: ${AWS::StackName}-VPCCIDR
+
