@@ -17,12 +17,20 @@ Conditions: {}
 Parameters:
 #===========================================
 
+#--- AMI to use for EC2 instance
+#-------------------------------------------
+  PublicAmiId:
+    Description: Public AMI ID
+    Type: AWS::EC2::Image::Id
+#-------------------------------------------
+
 #--- AWS-Specific Parameter Type
 #-------------------------------------------
   PublicSubnetIdA:
     Description: Public Subnet ID AZ-A
     Type: AWS::EC2::Subnet::Id
 #-------------------------------------------
+
 #--- Public Security Group Resource ID
 #-------------------------------------------
   PublicSgResourceId:
@@ -65,7 +73,8 @@ Resources:
 #.............................
       DisableApiTermination: false
       IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
-      ImageId: "ami-0d4c3eabb9e72650a"
+      ImageId: !Ref PublicAmiId
+#      ImageId: "ami-0d4c3eabb9e72650a"
 #      InstanceType: "t2.micro"
       InstanceType: "t2.nano"
       KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
@@ -403,19 +412,15 @@ Resources:
 
 
 
-Outputs: {}
-#Outputs:
+#Outputs: {}
+Outputs:
 #===========================================
 
 
-#---Top Level VPCID Export
+#--- Public Instance ID
 #-------------------------------------------
-#  PubLaunchTmpltId:
-#    Description: ID of the launch template.
-#    Value:
-#      Ref: PublicLaunchTemplate
-#    Export:
-#      Name:
-#        Fn::Sub: ${AWS::StackName}-VPCID
-#---Public Subnet AZ-A Export
+  InstanceIdPublicNested:
+    Description: Public Instance ID
+    Value:
+      Ref: PublicEC2Instance
 #-------------------------------------------
