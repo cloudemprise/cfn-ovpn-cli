@@ -24,6 +24,12 @@ Conditions: {}
 Parameters:
 #===========================================
 
+#--- Stack Build Stage Indicator
+#-------------------------------------------
+  BuildStage: 
+    Description: Specify the Build Stage
+    Type: String
+
 #--- CIDR Strings
 #-------------------------------------------
   VPCCIDR:
@@ -31,22 +37,27 @@ Parameters:
     Type: String
 #-------------------------------------------
   PublicSubnetACIDR:
-    Description: Public Subnet CIDR Block AZ-A.
+    Description: Public Subnet CIDR Block AZ-A
     Type: String
 #-------------------------------------------
   PublicSubnetBCIDR:
-    Description: Public Subnet CIDR Block AZ-B.
+    Description: Public Subnet CIDR Block AZ-B
     Type: String
 #-------------------------------------------
   PrivateSubnetACIDR:
-    Description: Private Subnet CIDR Block AZ-A.
+    Description: Private Subnet CIDR Block AZ-A
     Type: String
 #-------------------------------------------
   PrivateSubnetBCIDR:
-    Description: Private Subnet CIDR Block AZ-B.
+    Description: Private Subnet CIDR Block AZ-B
     Type: String
 #-------------------------------------------
 
+
+Conditions:
+#===========================================
+  CreateResourcesStage1: 
+    !Equals [ !Ref BuildStage, Stage1]
 
 
 Resources:
@@ -225,6 +236,7 @@ Resources:
 #-------------------------------------------
   RouteTablePrivateARoute0:
     Type: 'AWS::EC2::Route'
+    Condition: CreateResourcesStage1
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId:
@@ -255,6 +267,7 @@ Resources:
 #-------------------------------------------
   RouteTablePrivateBRoute0:
     Type: 'AWS::EC2::Route'
+    Condition: CreateResourcesStage1
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId:
@@ -287,8 +300,15 @@ Resources:
 
 #--- NAT Gateway
 #-------------------------------------------
+  NatGw1ElasticIP:
+    Type: 'AWS::EC2::EIP'
+    Condition: CreateResourcesStage1
+    Properties:
+      Domain: vpc
+#-------------------------------------------
   NatGw1:
     Type: 'AWS::EC2::NatGateway'
+    Condition: CreateResourcesStage1
     Properties:
       SubnetId:
         Ref: PublicSubnetA
@@ -296,11 +316,6 @@ Resources:
         'Fn::GetAtt':
           - NatGw1ElasticIP
           - AllocationId
-#-------------------------------------------
-  NatGw1ElasticIP:
-    Type: 'AWS::EC2::EIP'
-    Properties:
-      Domain: vpc
 #-------------------------------------------
 
 

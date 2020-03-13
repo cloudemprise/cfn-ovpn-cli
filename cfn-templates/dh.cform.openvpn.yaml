@@ -20,6 +20,18 @@ Metadata: {}
 Parameters:
 #===========================================
 
+#--- Stack Build Stage Indicator
+#-------------------------------------------
+  BuildStage: 
+    Description: Openvpn infrastructure creation comprises various stages. 
+    ConstraintDescription: Specify which Stage to provision.
+    Default: Stage0
+    Type: String
+    AllowedValues: 
+      - Stage0
+      - Stage1
+      - Stage2
+      - Stage3
 
 #--- Latest Amazon_Linux_2 AMI
 #-------------------------------------------
@@ -78,8 +90,14 @@ Parameters:
 #-------------------------------------------
 
 
+Conditions:
+  CreateResourcesStage0: !Equals [ !Ref BuildStage, Stage0]
+  CreateResourcesStage1: !Equals [ !Ref BuildStage, Stage1]
+  CreateResourcesStage2: !Equals [ !Ref BuildStage, Stage2]
+  CreateResourcesStage3: !Equals [ !Ref BuildStage, Stage3]
+
+
 Resources:
-#===========================================
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NESTED STACKS
@@ -93,16 +111,18 @@ Resources:
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-vpc.yaml
       Parameters:
+        BuildStage:
+          !Ref BuildStage
         VPCCIDR:
-          Ref: VPCCIDR
+          !Ref VPCCIDR
         PublicSubnetACIDR:
-          Ref: PublicSubnetACIDR
+          !Ref PublicSubnetACIDR
         PublicSubnetBCIDR:
-          Ref: PublicSubnetBCIDR
+          !Ref PublicSubnetBCIDR
         PrivateSubnetACIDR:
-          Ref: PrivateSubnetACIDR
+          !Ref PrivateSubnetACIDR
         PrivateSubnetBCIDR:
-          Ref: PrivateSubnetBCIDR
+          !Ref PrivateSubnetBCIDR
       TimeoutInMinutes: 5
 #-------------------------------------------
 
@@ -149,11 +169,12 @@ Resources:
 
 #--- Private/Public EC2 Instances
 #-------------------------------------------
-  InstancePubDef:
+  InstancePubStage1Def:
     Type: AWS::CloudFormation::Stack
+    Condition: CreateResourcesStage1
     DependsOn: SgDefs
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-stage1.yaml
       Parameters:
         PublicAmiId:
           !Ref LatestAmi
@@ -161,11 +182,12 @@ Resources:
           !GetAtt VPCDef.Outputs.PublicSubnetIdA
         PublicSgResourceId:
           !GetAtt SgDefs.Outputs.PublicSgResourceId
-      TimeoutInMinutes: 5
+      TimeoutInMinutes: 10
 #-------------------------------------------
   InstancePrivDef:
     Type: AWS::CloudFormation::Stack
-    DependsOn: InstancePubDef
+    Condition: CreateResourcesStage1
+    DependsOn: InstancePubStage1Def
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-priv.yaml
       Parameters:
@@ -175,9 +197,23 @@ Resources:
           !GetAtt VPCDef.Outputs.PrivateSubnetIdA
         PrivateSgResourceId:
           !GetAtt SgDefs.Outputs.PrivateSgResourceId
-      TimeoutInMinutes: 5
+      TimeoutInMinutes: 10
 #-------------------------------------------
-
+  InstancePubStage2Def:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateResourcesStage2
+    DependsOn: SgDefs
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-stage2.yaml
+      Parameters:
+        PublicAmiId:
+          !Ref LatestAmi
+        PublicSubnetIdA:
+          !GetAtt VPCDef.Outputs.PublicSubnetIdA
+        PublicSgResourceId:
+          !GetAtt SgDefs.Outputs.PublicSgResourceId
+      TimeoutInMinutes: 10
+#-------------------------------------------
 
 
 #-------------------------------------------
@@ -188,16 +224,24 @@ Outputs:
 
 #--- Instance IDs
 #-------------------------------------------
-  InstanceIdPublic:
+  InstanceIdPubStage1:
     Description:  Public Instance ID
+    Condition: CreateResourcesStage1
     Value:
-      !GetAtt InstancePubDef.Outputs.InstanceIdPublicNested
+      !GetAtt InstancePubStage1Def.Outputs.InstanceIdPubStage1Nested
 #-------------------------------------------
   InstanceIdPrivate:
     Description: Private Instance ID
+    Condition: CreateResourcesStage1
     Value:
       !GetAtt InstancePrivDef.Outputs.InstanceIdPrivateNested
-
+#-------------------------------------------
+  InstanceIdPubStage2:
+    Description:  Public Instance ID
+    Condition: CreateResourcesStage2
+    Value:
+      !GetAtt InstancePubStage2Def.Outputs.InstanceIdPubStage2Nested
+#-------------------------------------------
 
 #  ExportsStackName:
 #    Value: !Ref 'AWS::StackName'
