@@ -1,4 +1,4 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-launch-pub-stage1.yaml
+#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-launch-pub-stage2.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Launch Template EC2 Server for OpenVPN Implementation.
@@ -66,7 +66,7 @@ Resources:
       Tags:
         -
           Key: "Name"
-          Value: "openvpn-pub-stage1"
+          Value: "openvpn-pub-stage2"
 #.............................
       AvailabilityZone:
         'Fn::Select':
@@ -121,303 +121,34 @@ Resources:
 #.............................
     Metadata:
       Comment: Metadata description here.
-#,,,,,,,,,,,,,,
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
       AWS::CloudFormation::Authentication: 
         rolebased: 
           type: "S3"
           buckets: 
             - "dh.scripts"
           roleName: "dh.InstProfile.Managed.SysAdmin"
-#,,,,,,,,,,,,,,
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
       AWS::CloudFormation::Init:
         configSets:
           Step1:
-#            - configMisc
-#            - configRepo
-            - configWebServer
-#            - configIPtables
-#            - configLogs
-#            - configHardenSsh
-#            - configOpenvpn
-#            - configEasyRSA
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-#        configTemplate:
-#          packages: {}
-#          groups: {}
-#          users: {}
-#          sources: {}
-#          files: {}
-#          commands: {}
-#          services: {}
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-        configMisc:
-          commands:
-            1a_dhcpv6:
-              command: "sed -i 's/DHCPV6C=yes/DHCPV6C=no/' /etc/sysconfig/network-scripts/ifcfg-eth0"
-            1b_dhcpv6:
-              command: "systemctl restart network.service"
-            2a_timePool:
-              command: "sed -i 's/^pool/#&/' /etc/chrony.conf"
-            2b_timePool:
-              command: "systemctl restart chronyd.service"
-            3a_persistLogs:
-              command: "sed -i 's/.*Storage.*/Storage=persistent/' /etc/systemd/journald.conf"
-            3a_persistLogs:
-              command: "systemctl restart systemd-journald"
+            - configOpenvpn
 
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,        
-        configRepo:
-          packages:
-            yum:
-              yum-cron: []
-          commands:
-            1a_epel:
-              command: "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
-            1b_epel:
-              command: 'sed -i "/\[epel\]/a priority=20" /etc/yum.repos.d/epel.repo'
-            2a_yumCron:
-              command: "sed -i 's/.*update_cmd.*/update_cmd = security/' /etc/yum/yum-cron.conf"
-            2b_yumCron:
-              command: "sed -i 's/.*apply_updates.*/apply_updates = yes/' /etc/yum/yum-cron.conf"
-            2c_yumCron:
-              command: "systemctl start yum-cron"
-            2d_yumCron:
-              command: "systemctl enable yum-cron"
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-# This is included just for a quick initial test
-        configWebServer:
-          packages:
-            yum:
-              httpd: []
-          files:
-            "/var/www/html/index.html":
-              content: !Sub |
-                <h1>Hello from ${AWS::StackId}<h1>
-              mode: '000644'
-              owner: root
-              group: root
-          services:
-            sysvinit:
-              httpd:
-                enabled: "true"
-                ensureRunning: "true"
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-        configIPtables:
-          packages:
-            yum:
-              iptables-services: []
-          sources:
-            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/iptables/dh.cform.openvpn-ec2-pub-iptables.sh.tar.gz"
-          files:
-            "/etc/sysctl.d/30-dh.iptables.conf":
-              content: |
-                net.ipv4.ip_forward = 1
-                net.ipv6.conf.default.disable_ipv6 = 1
-                net.ipv6.conf.all.disable_ipv6 = 1
-                kernel.randomize_va_space = 1
-                net.ipv4.conf.default.rp_filter = 1
-                net.ipv4.conf.all.rp_filter = 1
-                net.ipv4.tcp_syncookies = 1
-              mode: '000644'
-              owner: root
-              group: root
-          commands:
-            1_kernelParams:
-              command: "sysctl -p /etc/sysctl.d/30-dh.iptables.conf"
-            2_iptRules:
-              cwd: "/tmp/iptables-scripts"
-              command: "./dh.cform.openvpn-ec2-pub-iptables.sh"
-          services:
-            sysvinit:
-              firewalld:
-                ensureRunning: "false"
-                enables: "false"
-              iptables:
-                ensureRunning: "true"
-                enables: "true"
-#                files: "/tmp/iptables-scripts/dh.cform.openvpn-ec2-pub-iptables.sh"
-#                sources: "/tmp"
-#                packages: iptables-services
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-        configLogs:
-          files:
-#---------------------------
-            "/etc/rsyslog.d/30-iptables.conf":
-              content: |
-                :msg, startswith, "IPTlog" -/var/log/dh.vpn.server.iptables.log
-                & stop
-              mode: '000644'
-              owner: root
-              group: root
-#---------------------------
-            "/etc/logrotate.d/dh.vpnlogs":
-              content: |
-                /var/log/dh.vpn.server.*.log
-                {
-                 notifempty
-                 rotate 21
-                 maxsize 500k
-                 daily
-                 maxage 7
-                 copytruncate
-                 dateext
-                 dateformat .%Y%m%d-%H-%s
-                 compress
-                 nomail
-                 sharedscripts
-                 postrotate
-                   systemctl restart rsyslog.service
-                 endscript
-                }
-              mode: '000644'
-              owner: root
-              group: root
-#---------------------------
-            "/etc/cron.d/dh.vpn.logSchedule":
-              content: |
-                */30 * * * * root /sbin/logrotate /etc/logrotate.d/dh.vpnlogs
-              mode: '000644'
-              owner: root
-              group: root
-          services:
-            sysvinit:
-              rsyslog:
-                enables: "true"
-                ensureRunning: "true"
-                files:
-                  - "/etc/rsyslog.d/30-iptables.conf"
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-        configHardenSsh:
-          packages:
-            yum:
-              fail2ban: []
-          sources:
-            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/ssh/dh.cform.openvpn-ec2-harden-ssh.sh.tar.gz"
-          files:
-            "/etc/fail2ban/jail.local":
-              content: |
-                [sshd]
-                enabled = true
-                ignoreip = 127.0.0.1/8
-                bantime = 600
-                findtime = 600
-                maxretry = 3
-                banaction = iptables-multiport
-              mode: '000644'
-              owner: root
-              group: root
-          commands:
-            1a_f2ban:
-              command: "systemctl start fail2ban.service"
-            1b_f2ban:
-              command: "systemctl enable fail2ban.service"            
-            HardenSsh:
-              cwd: "/tmp/ssh-scripts"
-              command: "./dh.cform.openvpn-ec2-harden-ssh.sh"
-          services:
-            sysvinit:
-              sshd:
-                enables: "true"
-                ensureRunning: "true"
-                files:
-                  - "/etc/ssh/sshd_config"
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
         configOpenvpn:
-          packages:
-            yum:
-              openvpn: []
           sources:
-            /etc/openvpn/server: "https://s3.eu-central-1.amazonaws.com/dh.scripts/openvpn/server/dh.vpn.server.xxx1194.conf.tar.gz"
-          files:
-            "/usr/local/bin/vpn-server-status":
-              content: |
-                #!/bin/bash
-                systemctl status openvpn-server@dh.vpn.server.udp1194
-                systemctl status openvpn-server@dh.vpn.server.tcp1194
-                journalctl -u openvpn-server@dh.vpn.server.udp1194
-                journalctl -u openvpn-server@dh.vpn.server.tcp1194
-              mode: '000755'
-              owner: ec2-user
-              group: ec2-user
+            /etc/openvpn/server: "https://s3.eu-central-1.amazonaws.com/dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz"
           commands:
-            1a_gen-HMAC:
-              cwd: "/etc/openvpn/server"
-              command: "openvpn --genkey --secret HMAC-sig.key"
-            1b_gen-HMAC:
-              cwd: "/etc/openvpn/server"
-              command: "aws s3 cp HMAC-sig.key s3://dh.scripts/openvpn/client/"
-            2_enableLogTimestamps:
-              cwd: "/usr/lib/systemd/system"
-              command: "cp openvpn-server@.service openvpn-server@.service.bak;sed -i 's/ --suppress-timestamps//g' openvpn-server@.service"
-            3_addPATH:
-              command: |
-                printf '\nPATH="/usr/local/bin:$PATH"\n' >> /home/ec2-user/.bashrc
-          services:
-            sysvinit:
-              openvpn:
-                enables: "false"
-                ensureRunning: "false"
-                files:
-                  - "/etc/openvpn/server/dh.vpn.server.udp1194.conf"
-                  - "/etc/openvpn/server/dh.vpn.server.tcp1194.conf"
+            1a_udp1194:
+              command: "systemctl enable openvpn-server@dh.vpn.server.udp1194"
+            1b_udp1194:
+              command: "systemctl start openvpn-server@dh.vpn.server.udp1194"
+            2a_tcp1194:
+              command: "systemctl enable openvpn-server@dh.vpn.server.tcp1194"
+            2b_tcp1194:
+              command: "systemctl start openvpn-server@dh.vpn.server.tcp1194"
 
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-        configEasyRSA:
-          packages:
-            yum:
-              easy-rsa: []
-          sources:
-            /usr/local/easy-rsa: "https://s3.eu-central-1.amazonaws.com/dh.scripts/easyrsa/openvpn/gen-reqs/dh.easyrsa.openvpn.vars.tar.gz"
-          commands:
-            1a_initPKI:
-              command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
-            1b_initPKI:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa init-pki"
-            2a_genDH:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.gen-dh vars"
-            2b_genDH:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-dh"
-            2c_genDH:
-              cwd: "/usr/local/easy-rsa/pki"
-              command: "cp dh.pem /etc/openvpn/server/"
-            3a_genSVR:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.server vars"
-            3b_genSVR:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.server nopass"
-            3c_genSVR:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "cp dh.vpn.server.key /etc/openvpn/server/"
-            4a_genClnt1:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.pfSn-ravi.client vars"
-            4b_genClnt1:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.pfSn-ravi.client nopass"
-            4c_genClnt1:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.pfSn-ravi.client.key s3://dh.scripts/openvpn/client/"
-            5a_genClnt2:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.pfSn-virt.client vars"
-            5b_genClnt2:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.pfSn-virt.client nopass"
-            5c_genClnt2:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.pfSn-virt.client.key s3://dh.scripts/openvpn/client/"
-            6a_mvReqs:
-              cwd: "/usr/local/easy-rsa/pki/reqs"
-              command: "tar -zcf - *.req | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
