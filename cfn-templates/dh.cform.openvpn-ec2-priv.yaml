@@ -353,16 +353,23 @@ Resources:
               command: "./easyrsa build-ca nopass"
             2b_buildCA:
               cwd: "/usr/local/easy-rsa/pki"
-              command: "tar -zcf - ca.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/dh.easyrsa.ca.crt.tar.gz"
+              command: "cp ca.crt issued/"
+              #command: "tar -zcf - ca.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/dh.easyrsa.ca.crt.tar.gz"
             3_importReqs:
               cwd: "/usr/local/easy-rsa"
               command: "for REQUEST in /tmp/sign-reqs/*; do ./easyrsa import-req $REQUEST $(basename $REQUEST .req); done"
             4a_signReqs:
               cwd: "/usr/local/easy-rsa"
               command: "for REQUEST in /usr/local/easy-rsa/pki/reqs/*; do EntityName=$(basename $REQUEST .req); ./easyrsa sign-req ${EntityName##*.} $EntityName; done"
-            4b_signReqs:
+            4b_signReqs_1:
               cwd: "/usr/local/easy-rsa/pki/issued"
-              command: "tar -zcf - *.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.tar.gz"
+              command: "tar -czf - ca.crt *.server.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz"
+#              command: 'tar --transform "s/.*\///g" -zcf - ca.crt issued/*.server.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz'
+            4b_signReqs_2:
+              cwd: "/usr/local/easy-rsa/pki/issued"
+              command: "tar -czf - ca.crt *.client.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz"
+#              command: 'tar --transform "s/.*\///g" -zcf - ca.crt issued/*.client.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz'
+
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
