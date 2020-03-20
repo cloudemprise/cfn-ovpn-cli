@@ -33,11 +33,12 @@ Parameters:
       - Stage2
       - Stage3
 
-#--- Latest Amazon_Linux_2 AMI
+#--- Latest Amazon_Linux_2 AMI 
 #-------------------------------------------
-  LatestAmi:
+  CurrentAmi:
     Description: The AMI to use for EC2 instances.
     Type: AWS::EC2::Image::Id
+#   (Value retrived via shell scrip)
 # SSM method below but variable type not versatile to scripts. 
 #  myAmi:
 #    Description: The AMI to use for EC2 instances.
@@ -125,6 +126,8 @@ Resources:
           !Ref PrivateSubnetBCIDR
       TimeoutInMinutes: 5
 #-------------------------------------------
+#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
+
 
 #--- Public/Private NACLs
 #-------------------------------------------
@@ -148,6 +151,8 @@ Resources:
           !GetAtt VPCDef.Outputs.PrivateSubnetIdB
       TimeoutInMinutes: 5
 #-------------------------------------------
+#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
+
 
 #--- Public/Private Security Groups
 #-------------------------------------------
@@ -165,6 +170,7 @@ Resources:
 #          Ref: AWS::StackName
       TimeoutInMinutes: 5
 #-------------------------------------------
+#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
 #--- Private/Public EC2 Instances
@@ -177,7 +183,7 @@ Resources:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-stage1.yaml
       Parameters:
         PublicAmiId:
-          !Ref LatestAmi
+          !Ref CurrentAmi
         PublicSubnetIdA:
           !GetAtt VPCDef.Outputs.PublicSubnetIdA
         PublicSgResourceId:
@@ -192,7 +198,7 @@ Resources:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-priv.yaml
       Parameters:
         PrivateAmiId:
-          !Ref LatestAmi
+          !Ref CurrentAmi
         PrivateSubnetIdA:
           !GetAtt VPCDef.Outputs.PrivateSubnetIdA
         PrivateSgResourceId:
@@ -207,13 +213,31 @@ Resources:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-stage2.yaml
       Parameters:
         PublicAmiId:
-          !Ref LatestAmi
+          !Ref CurrentAmi
         PublicSubnetIdA:
           !GetAtt VPCDef.Outputs.PublicSubnetIdA
         PublicSgResourceId:
           !GetAtt SgDefs.Outputs.PublicSgResourceId
       TimeoutInMinutes: 10
 #-------------------------------------------
+#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
+
+
+#--- Public/Private NACLs
+#-------------------------------------------
+  LaunchTemplateDef:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateResourcesStage3
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-lt.yaml
+      Parameters:
+        PublicLtAmiId:
+          !Ref CurrentAmi
+        PublicSgResourceId:
+          !GetAtt SgDefs.Outputs.PublicSgResourceId
+      TimeoutInMinutes: 5
+#-------------------------------------------
+#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
 #-------------------------------------------

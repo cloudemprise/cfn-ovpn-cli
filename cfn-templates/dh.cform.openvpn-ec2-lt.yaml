@@ -1,0 +1,88 @@
+#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-lt.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Launch Template EC2 Server for OpenVPN Implementation.
+  A Nested Stack that comprises: 
+  Bla Bla.
+  Inputs include:
+  Bla Bla.
+  Outputs include:
+  Bla Bla.
+#-------------------------------------------
+
+
+Metadata: {}
+
+
+Parameters:
+#===========================================
+
+#--- AMI for EC2 instance
+#-------------------------------------------
+  PublicLtAmiId:
+    Description: Launc Template Public AMI ID 
+    Type: AWS::EC2::Image::Id
+#-------------------------------------------
+
+#--- Public Security Group Resource ID
+#-------------------------------------------
+  PublicSgResourceId:
+    Description: Public Security Group ID AZ-A
+    Type: AWS::EC2::SecurityGroup::Id
+#-------------------------------------------
+
+
+Conditions: {}
+
+
+Resources:
+#===========================================
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# LAUNCH TEMPLATE EC2 DEFINITION
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- Public EC2 Instance
+#-------------------------------------------
+  PublicEC2LaunchTemplate:
+    Type: "AWS::EC2::LaunchTemplate"
+#.............................
+    Properties:
+      LaunchTemplateName: "openvpn-launch-template"
+#.............................
+      LaunchTemplateData:
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        TagSpecifications:
+          -
+            ResourceType: "instance"
+            Tags:
+              -
+                Key: "Name"
+                Value: "openvpn-ASG"
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        SecurityGroupIds:
+          - !Ref PublicSgResourceId
+        KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+        ImageId: !Ref PublicLtAmiId
+        InstanceType: "t2.nano"
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+#-------------------------------------------
+
+
+
+#Outputs: {}
+Outputs:
+#===========================================
+
+
+#--- Public Instance ID
+#-------------------------------------------
+  LaunchTemplateId:
+    Description: Launch Template ID
+    Value:
+      Ref: PublicEC2LaunchTemplate
+#-------------------------------------------
