@@ -33,6 +33,8 @@ aws s3 cp cfn-templates/dh.cform.openvpn-sg.yaml $S3_TEMPLATE_LOCATION
 aws s3 cp cfn-templates/dh.cform.openvpn-ec2-priv.yaml $S3_TEMPLATE_LOCATION
 aws s3 cp cfn-templates/dh.cform.openvpn-ec2-pub-stage1.yaml $S3_TEMPLATE_LOCATION
 aws s3 cp cfn-templates/dh.cform.openvpn-ec2-pub-stage2.yaml $S3_TEMPLATE_LOCATION
+aws s3 cp cfn-templates/dh.cform.openvpn-ec2-lt.yaml $S3_TEMPLATE_LOCATION
+
 
 #------------
 #Compress & Upload iptables script to S3
@@ -56,7 +58,7 @@ echo "The lastest Amazon Linux 2 AMI : $AMI_CURRENT"
 
 #------------
 # Create Stage0 Stack
-STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=LatestAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage0 --template-url https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn.yaml --on-failure DO_NOTHING --output text)
+STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage0 --template-url https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn.yaml --on-failure DO_NOTHING --output text)
 echo "Cloudformation Stack ID : $STACK_ID"
 # Wait for Stage0 to complete
 if (aws cloudformation wait stack-create-complete --stack-name $STACK_ID)
@@ -67,7 +69,7 @@ fi
 #------------
 # Update Stack with Stage1 parameters
 BUILDSTAGE="Stage1"
-aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=LatestAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage1 --template-url https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn.yaml > /dev/null
+aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage1 --template-url https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn.yaml > /dev/null
 echo "Stage1 Stack Update has now been Initiated..."
 # Wait for Stage1 Update to complete
 if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
@@ -116,7 +118,7 @@ echo "Stage1 Instances have now terminated..."
 #------------
 # Update Stack with Stage2 parameters
 BUILDSTAGE="Stage2"
-aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=LatestAmi,ParameterValue=$AMI_IMAGE_PUB1 --tags Key=Name,Value=openvpn-stage2 --template-url https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn.yaml > /dev/null
+aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB1 --tags Key=Name,Value=openvpn-stage2 --template-url https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn.yaml > /dev/null
 echo "Stage2 Stack Update has now been Initiated..."
 # Wait for Stage2 Update to complete
 if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
@@ -145,7 +147,7 @@ echo "Public Stage2 AMI creation has now been initiated : $AMI_IMAGE_PUB2"
 aws ec2 wait image-available --image-ids $AMI_IMAGE_PUB2 &
 P1=$!
 wait $P1
-echo "Public Stage1 AMI is now available : $AMI_IMAGE_PUB2"
+echo "Public Stage2 AMI is now available : $AMI_IMAGE_PUB2"
 
 # Terminate Public Stage2 instance - no longer needed.
 aws ec2 terminate-instances --instance-ids $INSTANCE_ID_PUB2 > /dev/null
@@ -173,4 +175,14 @@ then echo "Deleting Public Stage1 AMI Snapshot : $SNAPSHOT_PUB1"
 else echo "Error: Failed to Delete Snapshot $AMI_IMAGE_PUB1"
 fi
 
-
+#------------
+# Create Launch Template for AutoScaling Group
+# Update Stack with Stage3 parameters
+BUILDSTAGE="Stage3"
+aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB2 --tags Key=Name,Value=openvpn-stage3 --template-url https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn.yaml > /dev/null
+echo "Stage3 Stack Update has now been Initiated..."
+# Wait for Stage3 Update to complete
+if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
+then echo "Stage3 Stack Update is now Complete : $STACK_ID"
+else echo "Error: Stack Wait Update Failed : $STACK_ID"
+fi
