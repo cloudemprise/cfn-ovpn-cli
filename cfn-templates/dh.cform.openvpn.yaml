@@ -224,7 +224,7 @@ Resources:
 #-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- Public/Private NACLs
+#--- AutoScaling & Launch Template
 #-------------------------------------------
   LaunchTemplateDef:
     Type: AWS::CloudFormation::Stack
@@ -236,6 +236,21 @@ Resources:
           !Ref CurrentAmi
         PublicSgResourceId:
           !GetAtt SgDefs.Outputs.PublicSgResourceId
+      TimeoutInMinutes: 5
+#-------------------------------------------
+  AutoScaleGroupDef:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateResourcesStage3
+    DependsOn: LaunchTemplateDef
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-asg.yaml
+      Parameters:
+        PublicSubnetIdA:
+          !GetAtt VPCDef.Outputs.PublicSubnetIdA
+        PublicSubnetIdB:
+          !GetAtt VPCDef.Outputs.PublicSubnetIdB
+        LaunchTemplateIdASG:
+          !GetAtt LaunchTemplateDef.Outputs.LaunchTemplateId
       TimeoutInMinutes: 5
 #-------------------------------------------
 #-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-

@@ -1,0 +1,109 @@
+#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-asg.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Auto Scale Group EC2 Server for OpenVPN Implementation.
+  A Nested Stack that comprises: 
+  Bla Bla.
+  Inputs include:
+  Bla Bla.
+  Outputs include:
+  Bla Bla.
+#-------------------------------------------
+
+
+Metadata: {}
+
+
+Parameters:
+#===========================================
+
+#--- Public Subnet IDs
+#-------------------------------------------
+  PublicSubnetIdA:
+    Description: Public Subnet ID AZ-A
+    Type: AWS::EC2::Subnet::Id
+#-------------------------------------------
+  PublicSubnetIdB:
+    Description: Public Subnet ID AZ-B
+    Type: AWS::EC2::Subnet::Id
+#-------------------------------------------
+  LaunchTemplateIdASG:
+    Description: Launch Template Id AutoScalingGroup
+    Type: String
+#-------------------------------------------
+#  LaunchTemplateVersion:
+#    Description: Launch Template Version Number
+#    Type: String
+#-------------------------------------------
+
+
+Conditions: {}
+
+
+Resources:
+#===========================================
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# AUTO SCALE GROUP EC2 DEFINITION
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- Auto Scale Group 
+#-------------------------------------------
+  PublicEC2AutoScaleGroup:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Description: "This is the launch template description"
+#.............................
+    Properties:
+      AutoScalingGroupName: "openvpn-autoscaling-group"
+#.............................
+      LaunchTemplate: 
+        LaunchTemplateId: !Ref LaunchTemplateIdASG
+        Version: 1
+#        Version: !Ref LaunchTemplateVersion
+#        LaunchTemplateName: "openvpn-launch-template"
+#.............................
+      Tags:
+        - 
+          Key: "Name"
+          Value: "OpenVPN-AutoScaling"
+          PropagateAtLaunch: true
+#.............................
+      VPCZoneIdentifier:
+        - !Ref PublicSubnetIdA
+        - !Ref PublicSubnetIdB
+#      AvailabilityZones:
+#        - !GetAtt PublicSubnetIdA.AvailabilityZone
+#        - !GetAtt PublicSubnetIdB.AvailabilityZone
+#.............................
+      Cooldown: 300
+      DesiredCapacity: 1
+      MinSize: 1
+      MaxSize: 1
+#.............................
+      HealthCheckType: "EC2"
+      HealthCheckGracePeriod: 300
+#.............................
+      TerminationPolicies: 
+        - "Default"
+      ServiceLinkedRoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+#-------------------------------------------
+
+
+
+Outputs: {}
+#Outputs:
+#===========================================
+
+
+#--- Public Instance ID
+#-------------------------------------------
+#  LaunchTemplateId:
+#    Description: Launch Template ID
+#    Value:
+#      Ref: PublicEC2LaunchTemplate
+#-------------------------------------------

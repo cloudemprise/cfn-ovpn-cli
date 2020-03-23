@@ -44,10 +44,11 @@ Resources:
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#--- Public EC2 Instance
+#--- Public EC2 Launch Template
 #-------------------------------------------
   PublicEC2LaunchTemplate:
     Type: "AWS::EC2::LaunchTemplate"
+    Description: "This is the launch template description"
 #.............................
     Properties:
       LaunchTemplateName: "openvpn-launch-template"
