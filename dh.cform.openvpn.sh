@@ -8,7 +8,7 @@ S3_EASYRSA_LOCATION="s3://dh.scripts/easyrsa/openvpn/gen-reqs/"
 
 BUILDSTAGE="Stage0"
 
-STACK_NAME="openvpn-set1-4"
+STACK_NAME="openvpn-set1-3"
 STACK_ID=""
 
 # Instance IDs of Stack1 Public/Private
@@ -34,6 +34,7 @@ aws s3 cp cfn-templates/dh.cform.openvpn-ec2-priv.yaml $S3_TEMPLATE_LOCATION
 aws s3 cp cfn-templates/dh.cform.openvpn-ec2-pub-stage1.yaml $S3_TEMPLATE_LOCATION
 aws s3 cp cfn-templates/dh.cform.openvpn-ec2-pub-stage2.yaml $S3_TEMPLATE_LOCATION
 aws s3 cp cfn-templates/dh.cform.openvpn-ec2-lt.yaml $S3_TEMPLATE_LOCATION
+aws s3 cp cfn-templates/dh.cform.openvpn-ec2-asg.yaml $S3_TEMPLATE_LOCATION
 
 
 #------------
