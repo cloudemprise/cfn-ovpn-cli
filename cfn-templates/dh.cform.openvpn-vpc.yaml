@@ -18,7 +18,6 @@ Description: >
 
 
 Metadata: {}
-Conditions: {}
 
 
 Parameters:
@@ -54,10 +53,10 @@ Parameters:
 #-------------------------------------------
 
 
+#Conditions: {}
 Conditions:
 #===========================================
-  CreateResourcesStage1: 
-    !Equals [ !Ref BuildStage, Stage1]
+  CreateResourcesStage1: !Equals [ !Ref BuildStage, Stage1]
 
 
 Resources:
