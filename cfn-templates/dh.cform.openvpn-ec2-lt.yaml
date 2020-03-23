@@ -53,7 +53,13 @@ Resources:
       LaunchTemplateName: "openvpn-launch-template"
 #.............................
       LaunchTemplateData:
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        ImageId: !Ref PublicLtAmiId
+        InstanceType: "t2.nano"
+        KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+        Monitoring:
+          Enabled: false
+        SecurityGroupIds:
+          - !Ref PublicSgResourceId
         TagSpecifications:
           -
             ResourceType: "instance"
@@ -61,12 +67,6 @@ Resources:
               -
                 Key: "Name"
                 Value: "openvpn-ASG"
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-        SecurityGroupIds:
-          - !Ref PublicSgResourceId
-        KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
-        ImageId: !Ref PublicLtAmiId
-        InstanceType: "t2.nano"
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 

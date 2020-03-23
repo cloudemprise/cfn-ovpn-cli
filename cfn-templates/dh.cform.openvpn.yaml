@@ -91,6 +91,7 @@ Parameters:
 #-------------------------------------------
 
 
+#Conditions: {}
 Conditions:
   CreateResourcesStage0: !Equals [ !Ref BuildStage, Stage0]
   CreateResourcesStage1: !Equals [ !Ref BuildStage, Stage1]
@@ -178,7 +179,7 @@ Resources:
   InstancePubStage1Def:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage1
-    DependsOn: SgDefs
+    DependsOn: VPCDef
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-stage1.yaml
       Parameters:
@@ -208,7 +209,7 @@ Resources:
   InstancePubStage2Def:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage2
-    DependsOn: SgDefs
+    DependsOn: VPCDef
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-stage2.yaml
       Parameters:

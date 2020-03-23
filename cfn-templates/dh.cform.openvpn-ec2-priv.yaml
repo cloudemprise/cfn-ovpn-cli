@@ -134,6 +134,7 @@ Resources:
           Step1:
             - configMisc
             - configRepo
+            - configYum
             - configIPtables
             - configLogs
             - configHardenSsh
@@ -178,16 +179,24 @@ Resources:
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,        
         configRepo:
           packages:
+            rpm:
+              epel: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
+          commands:
+            1a_epel:
+              command: "yum-config-manager --enable epel"
+            1b_epel:
+              command: 'sed -i "/\[epel\]/a priority=20" /etc/yum.repos.d/epel.repo'
+
+
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,        
+        configYum:
+          packages:
             yum:
               yum-cron: []
           commands:
-            1a_epel:
-              command: "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
-            1b_epel:
-              command: 'sed -i "/\[epel\]/a priority=20" /etc/yum.repos.d/epel.repo'
-            2a_yumCron:
+            1a_yumCron:
               command: "sed -i 's/.*update_cmd.*/update_cmd = security/' /etc/yum/yum-cron.conf"
-            2b_yumCron:
+            1b_yumCron:
               command: "sed -i 's/.*apply_updates.*/apply_updates = yes/' /etc/yum/yum-cron.conf"
           services:
             sysvinit:
@@ -195,7 +204,7 @@ Resources:
                 ensureRunning: "true"
                 enables: "true"
                 commands:
-                  - "2b_yumCron"
+                  - "1b_yumCron"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
