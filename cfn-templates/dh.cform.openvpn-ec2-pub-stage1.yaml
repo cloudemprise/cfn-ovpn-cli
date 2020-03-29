@@ -135,12 +135,13 @@ Resources:
             - configMisc
             - configRepo
             - configYum
-#            - configWebServer
+            - configHardenSsh
             - configIPtables
             - configLogs
-            - configHardenSsh
-            - configOpenvpn
+#            - configWebServer
             - configEasyRSA
+            - configOpenvpn
+
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 #        configTemplate:
 #          packages: {}
@@ -163,17 +164,17 @@ Resources:
             sysvinit:
               network:
                 ensureRunning: "true"
-                enables: "true"
+                enabled: "true"
                 commands:
                   - "1_dhcpv6"
               chronyd:
                 ensureRunning: "true"
-                enables: "true"
+                enabled: "true"
                 commands:
                   - "2_timePool"
               systemd-journald:
                 ensureRunning: "true"
-                enables: "true"
+                enabled: "true"
                 commands:
                   - "3_persistLogs"
 
@@ -204,31 +205,56 @@ Resources:
             sysvinit:
               yum-cron:
                 ensureRunning: "true"
-                enables: "true"
+                enabled: "true"
                 commands:
                   - "1b_yumCron"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-# This is included just for a quick initial test
-        configWebServer:
+        configHardenSsh:
           packages:
             yum:
-              httpd: []
+              fail2ban: []
+          sources:
+            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/ssh/dh.cform.openvpn-ec2-harden-ssh.sh.tar.gz"
           files:
-            "/var/www/html/index.html":
-              content: !Sub |
-                <h1>Hello from ${AWS::StackId}<h1>
+            "/etc/fail2ban/jail.local":
+              content: |
+                [sshd]
+                enabled = true
+                ignoreip = 127.0.0.1/8
+                bantime = 600
+                findtime = 600
+                maxretry = 3
+                #mode = aggressive
+                banaction = iptables-multiport
               mode: '000644'
               owner: root
               group: root
+          commands:
+            HardenF2B:
+              cwd: "/etc/fail2ban/jail.d"
+              command: "mv 00-firewalld.conf 00-firewalld.disable"
+            HardenSsh:
+              cwd: "/tmp/ssh-scripts"
+              command: "./dh.cform.openvpn-ec2-harden-ssh.sh"
           services:
             sysvinit:
-              httpd:
+              firewalld:
+                ensureRunning: "false"
+                enabled: "false"
+              fail2ban: 
                 enabled: "true"
                 ensureRunning: "true"
                 files:
-                  - "/var/www/html/index.html"
+                  - "/etc/fail2ban/jail.local"
+                commands: 
+                  - "HardenF2B"
+              sshd:
+                enabled: "true"
+                ensureRunning: "true"
+                commands:
+                  - "HardenSsh"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -259,12 +285,9 @@ Resources:
               command: "./dh.cform.openvpn-ec2-pub-iptables.sh"
           services:
             sysvinit:
-              firewalld:
-                ensureRunning: "false"
-                enables: "false"
               iptables:
                 ensureRunning: "true"
-                enables: "true"
+                enabled: "true"
                 commands:
                   - "2_iptRules"
 
@@ -314,47 +337,79 @@ Resources:
             sysvinit:
               rsyslog:
                 ensureRunning: "true"
-                enables: "true"
+                enabled: "true"
                 files:
                   - "/etc/rsyslog.d/30-iptables.conf"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-        configHardenSsh:
+# This is included just for a quick initial test
+        configWebServer:
           packages:
             yum:
-              fail2ban: []
-          sources:
-            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/ssh/dh.cform.openvpn-ec2-harden-ssh.sh.tar.gz"
+              httpd: []
           files:
-            "/etc/fail2ban/jail.local":
-              content: |
-                [sshd]
-                enabled = true
-                ignoreip = 127.0.0.1/8
-                bantime = 600
-                findtime = 600
-                maxretry = 3
-                banaction = iptables-multiport
+            "/var/www/html/index.html":
+              content: !Sub |
+                <h1>Hello from ${AWS::StackId}<h1>
               mode: '000644'
               owner: root
               group: root
-          commands:
-            HardenSsh:
-              cwd: "/tmp/ssh-scripts"
-              command: "./dh.cform.openvpn-ec2-harden-ssh.sh"
           services:
             sysvinit:
-              fail2ban: 
-                enables: "true"
+              httpd:
+                enabled: "true"
                 ensureRunning: "true"
                 files:
-                  - "/etc/fail2ban/jail.local"
-              sshd:
-                enables: "true"
-                ensureRunning: "true"
-                commands:
-                  - "HardenSsh"
+                  - "/var/www/html/index.html"
+
+
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        configEasyRSA:
+          packages:
+            yum:
+              easy-rsa: []
+          sources:
+            /usr/local/easy-rsa: "https://s3.eu-central-1.amazonaws.com/dh.scripts/easyrsa/openvpn/gen-reqs/dh.easyrsa.openvpn.vars.tar.gz"
+          commands:
+            1a_initPKI:
+              command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
+            1b_initPKI:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa init-pki"
+            2a_genDH:
+              cwd: "/usr/local/easy-rsa"
+              command: "mv vars.gen-dh vars"
+            2b_genDH:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa gen-dh"
+            3a_genSVR:
+              cwd: "/usr/local/easy-rsa"
+              command: "mv vars.dh.vpn.server vars"
+            3b_genSVR:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa gen-req dh.vpn.server nopass"
+            4a_genClnt1:
+              cwd: "/usr/local/easy-rsa"
+              command: "mv vars.dh.vpn.pfSn-ravi.client vars"
+            4b_genClnt1:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa gen-req dh.vpn.pfSn-ravi.client nopass"
+            4c_genClnt1:
+              cwd: "/usr/local/easy-rsa/pki/private"
+              command: "aws s3 cp dh.vpn.pfSn-ravi.client.key s3://dh.scripts/openvpn/client/"
+            5a_genClnt2:
+              cwd: "/usr/local/easy-rsa"
+              command: "mv vars.dh.vpn.pfSn-virt.client vars"
+            5b_genClnt2:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa gen-req dh.vpn.pfSn-virt.client nopass"
+            5c_genClnt2:
+              cwd: "/usr/local/easy-rsa/pki/private"
+              command: "aws s3 cp dh.vpn.pfSn-virt.client.key s3://dh.scripts/openvpn/client/"
+            6a_mvReqs:
+              cwd: "/usr/local/easy-rsa/pki/reqs"
+              command: "tar -zcf - *.req | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -382,74 +437,28 @@ Resources:
             1b_gen-HMAC:
               cwd: "/etc/openvpn/server"
               command: "aws s3 cp HMAC-sig.key s3://dh.scripts/openvpn/client/"
-            2_enableLogTimestamps:
+            2a_cpSvrDH:
+              cwd: "/usr/local/easy-rsa/pki"
+              command: "cp dh.pem /etc/openvpn/server/"
+            2b_cpSvrKey:
+              cwd: "/usr/local/easy-rsa/pki/private"
+              command: "cp dh.vpn.server.key /etc/openvpn/server/"
+            3_enableLogTimestamps:
               cwd: "/usr/lib/systemd/system"
               command: "cp openvpn-server@.service openvpn-server@.service.bak;sed -i 's/ --suppress-timestamps//g' openvpn-server@.service"
-            3_addPATH:
+            4_addPATH:
               command: |
                 printf '\nPATH="/usr/local/bin:$PATH"\n' >> /home/ec2-user/.bashrc
-          services:
-            sysvinit:
-              openvpn:
-                enables: "false"
-                ensureRunning: "false"
+#          services:
+#            sysvinit:
+#              openvpn:
+#                enabled: "false"
+#                ensureRunning: "false"
 #                files:
 #                  - "/etc/openvpn/server/dh.vpn.server.udp1194.conf"
 #                  - "/etc/openvpn/server/dh.vpn.server.tcp1194.conf"
 
 
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-        configEasyRSA:
-          packages:
-            yum:
-              easy-rsa: []
-          sources:
-            /usr/local/easy-rsa: "https://s3.eu-central-1.amazonaws.com/dh.scripts/easyrsa/openvpn/gen-reqs/dh.easyrsa.openvpn.vars.tar.gz"
-          commands:
-            1a_initPKI:
-              command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
-            1b_initPKI:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa init-pki"
-            2a_genDH:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.gen-dh vars"
-            2b_genDH:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-dh"
-            2c_genDH:
-              cwd: "/usr/local/easy-rsa/pki"
-              command: "cp dh.pem /etc/openvpn/server/"
-            3a_genSVR:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.server vars"
-            3b_genSVR:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.server nopass"
-            3c_genSVR:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "cp dh.vpn.server.key /etc/openvpn/server/"
-            4a_genClnt1:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.pfSn-ravi.client vars"
-            4b_genClnt1:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.pfSn-ravi.client nopass"
-            4c_genClnt1:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.pfSn-ravi.client.key s3://dh.scripts/openvpn/client/"
-            5a_genClnt2:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.pfSn-virt.client vars"
-            5b_genClnt2:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.pfSn-virt.client nopass"
-            5c_genClnt2:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.pfSn-virt.client.key s3://dh.scripts/openvpn/client/"
-            6a_mvReqs:
-              cwd: "/usr/local/easy-rsa/pki/reqs"
-              command: "tar -zcf - *.req | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
