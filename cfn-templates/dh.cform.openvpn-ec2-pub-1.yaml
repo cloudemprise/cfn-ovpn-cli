@@ -66,7 +66,7 @@ Resources:
       Tags:
         -
           Key: "Name"
-          Value: "openvpn-pub-stage1"
+          Value: "openvpn-public-1"
 #.............................
       AvailabilityZone:
         'Fn::Select':
@@ -138,7 +138,7 @@ Resources:
             - configHardenSsh
             - configIPtables
             - configLogs
-#            - configWebServer
+            - configWebServer
             - configEasyRSA
             - configOpenvpn
 
@@ -226,7 +226,7 @@ Resources:
                 bantime = 600
                 findtime = 600
                 maxretry = 3
-                #mode = aggressive
+                mode = aggressive
                 banaction = iptables-multiport
               mode: '000644'
               owner: root
@@ -473,7 +473,7 @@ Outputs:
 
 #--- Public Instance ID
 #-------------------------------------------
-  InstanceIdPubStage1Nested:
+  Pub1EC2InstanceId:
     Description: Public Instance ID
     Value:
       Ref: PublicEC2Instance

@@ -8,6 +8,7 @@
 END
 #!! COMMENT END
 
+
 S3_TEMPLATE_LOCATION="s3://dh.cform-templates/openvpn/"
 S3_IPTABLES_LOCATION="s3://dh.scripts/iptables/"
 S3_SSH_LOCATION="s3://dh.scripts/ssh/"
@@ -16,10 +17,9 @@ S3_EASYRSA_LOCATION="s3://dh.scripts/easyrsa/openvpn/gen-reqs/"
 
 BUILDSTAGE="Stage0"
 
-STACK_NAME="openvpn-set1-8"
+STACK_NAME="openvpn-set1-9"
 STACK_ID=""
 
-# Instance IDs of Stack1 Public/Private
 INSTANCE_ID_PUB1=""
 INSTANCE_ID_PUB2=""
 INSTANCE_ID_PRIV=""
@@ -32,19 +32,13 @@ AMI_IMAGE_PRIV=""
 AWS_ACC_ID=""
 SNAPSHOT_PUB1=""
 
+
 #------------
-#Upload latest Nested Templates to S3
-echo "Uploading Cloudformation Templates to S3"
-echo "Location: <$S3_TEMPLATE_LOCATION>"
-aws s3 cp cfn-templates/dh.cform.openvpn.yaml $S3_TEMPLATE_LOCATION
-aws s3 cp cfn-templates/dh.cform.openvpn-vpc.yaml $S3_TEMPLATE_LOCATION
-aws s3 cp cfn-templates/dh.cform.openvpn-nacl.yaml $S3_TEMPLATE_LOCATION
-aws s3 cp cfn-templates/dh.cform.openvpn-sg.yaml $S3_TEMPLATE_LOCATION
-aws s3 cp cfn-templates/dh.cform.openvpn-ec2-priv.yaml $S3_TEMPLATE_LOCATION
-aws s3 cp cfn-templates/dh.cform.openvpn-ec2-pub-stage1.yaml $S3_TEMPLATE_LOCATION
-aws s3 cp cfn-templates/dh.cform.openvpn-ec2-pub-stage2.yaml $S3_TEMPLATE_LOCATION
-aws s3 cp cfn-templates/dh.cform.openvpn-ec2-lt.yaml $S3_TEMPLATE_LOCATION
-aws s3 cp cfn-templates/dh.cform.openvpn-ec2-asg.yaml $S3_TEMPLATE_LOCATION
+#Upload Latest (Nested) Templates to S3
+echo "Uploading Cloudformation Templates to S3 location: $S3_TEMPLATE_LOCATION"
+cd cfn-templates
+for file in *; do [ -f $file ] && aws s3 cp $file $S3_TEMPLATE_LOCATION || echo "Failed to upload : $file"; done
+cd ..
 
 
 #------------
@@ -94,7 +88,7 @@ fi
 
 #------------
 # Grab the IDs of the ec2 instances for further processing
-INSTANCE_ID_PUB1=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPubStage1'].OutputValue")
+INSTANCE_ID_PUB1=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic1'].OutputValue")
 echo "Public $BUILDSTAGE Instance ID is : $INSTANCE_ID_PUB1"
 INSTANCE_ID_PRIV=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPrivate'].OutputValue")
 echo "Private Instance ID is : $INSTANCE_ID_PRIV"
@@ -112,9 +106,9 @@ echo "Private Instance State: Ok..."
 
 #------------
 # Create IMAGE AMIs
-AMI_IMAGE_PUB1=$(aws ec2 create-image --instance-id $INSTANCE_ID_PUB1 --name $(echo "openvpn-public-1-$INSTANCE_ID_PUB1") --description "Public OpenVPN AMI" --output text)
+AMI_IMAGE_PUB1=$(aws ec2 create-image --instance-id $INSTANCE_ID_PUB1 --name $(echo "openvpn-pub1-$INSTANCE_ID_PUB1") --description "openvpn-pub1-ami" --output text)
 echo "Public $BUILDSTAGE AMI creation has now been initiated : $AMI_IMAGE_PUB1"
-AMI_IMAGE_PRIV=$(aws ec2 create-image --instance-id $INSTANCE_ID_PRIV --name $(echo "openvpn-private-$INSTANCE_ID_PRIV") --description "Private OpenVPN AMI" --output text)
+AMI_IMAGE_PRIV=$(aws ec2 create-image --instance-id $INSTANCE_ID_PRIV --name $(echo "openvpn-priv-$INSTANCE_ID_PRIV") --description "openvpn-priv-ami" --output text)
 echo "Private AMI creation has now been initiated : $AMI_IMAGE_PRIV"
 
 # Wait for new AMIs to become available
@@ -144,7 +138,7 @@ fi
 
 #------------
 # Grab the IDs of the ec2 instances for further processing
-INSTANCE_ID_PUB2=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPubStage2'].OutputValue")
+INSTANCE_ID_PUB2=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic2'].OutputValue")
 echo "Public $BUILDSTAGE Instance ID is : $INSTANCE_ID_PUB2"
 
 #------------
@@ -157,7 +151,7 @@ echo "Public $BUILDSTAGE Instance State: Ok..."
 
 #------------
 # Create IMAGE AMIs
-AMI_IMAGE_PUB2=$(aws ec2 create-image --instance-id $INSTANCE_ID_PUB2 --name $(echo "openvpn-public-2-$INSTANCE_ID_PUB2") --description "Public 2 OpenVPN AMI" --output text)
+AMI_IMAGE_PUB2=$(aws ec2 create-image --instance-id $INSTANCE_ID_PUB2 --name $(echo "openvpn-pub2-$INSTANCE_ID_PUB2") --description "openvpn-pub2-ami" --output text)
 echo "Public $BUILDSTAGE AMI creation has now been initiated : $AMI_IMAGE_PUB2"
 # Wait for new AMIs to become available
 aws ec2 wait image-available --image-ids $AMI_IMAGE_PUB2 &
@@ -181,13 +175,13 @@ echo "Public $BUILDSTAGE Snapshot ID : $SNAPSHOT_PUB1"
 
 # Deregister Public Stage1 image
 if (aws ec2 deregister-image --image-id $AMI_IMAGE_PUB1)
-then echo "Deregistering Public $BUILDSTAGE AMI : $AMI_IMAGE_PUB1"
+then echo "Deregistering Public Stage1 AMI : $AMI_IMAGE_PUB1"
 else echo "Error: Failed to Deregister $AMI_IMAGE_PUB1"
 fi
 
 # Deleting Public Stage1 snapshot
 if (aws ec2 delete-snapshot --snapshot-id $SNAPSHOT_PUB1)
-then echo "Deleting Public $BUILDSTAGE AMI Snapshot : $SNAPSHOT_PUB1"
+then echo "Deleting Public Stage1 AMI Snapshot : $SNAPSHOT_PUB1"
 else echo "Error: Failed to Delete Snapshot $AMI_IMAGE_PUB1"
 fi
 

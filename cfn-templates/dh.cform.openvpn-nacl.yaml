@@ -27,10 +27,6 @@ Parameters:
     Description: VPC to create the NACL into.
     Type: AWS::EC2::VPC::Id
 #-------------------------------------------
-  VPCCIDR:
-    Description: Top Level VPC CIDR Block
-    Type: String
-#-------------------------------------------
   PublicSubnetIdA:
     Description: Public Subnet ID AZ-A
     Type: AWS::EC2::Subnet::Id
@@ -131,8 +127,7 @@ Resources:
       RuleNumber: 10
       Protocol: 6
       RuleAction: allow
-      CidrBlock:
-        Ref: VPCCIDR
+      CidrBlock: "10.0.0.0/16"
       PortRange:
         From: 80
         To: 80
@@ -146,8 +141,7 @@ Resources:
       RuleNumber: 11
       Protocol: 6
       RuleAction: allow
-      CidrBlock:
-        Ref: VPCCIDR
+      CidrBlock: "10.0.0.0/16"
       PortRange:
         From: 443
         To: 443
@@ -289,8 +283,7 @@ Resources:
       RuleNumber: 10
       Protocol: 6
       RuleAction: allow
-      CidrBlock:
-        Ref: VPCCIDR
+      CidrBlock: "10.0.0.0/16"
       PortRange:
         From: 22
         To: 22
@@ -450,8 +443,7 @@ Resources:
       RuleNumber: 10
       Protocol: 6
       RuleAction: allow
-      CidrBlock:
-        Ref: VPCCIDR
+      CidrBlock: "10.0.0.0/16"
       PortRange:
         From: 22
         To: 22
@@ -465,8 +457,7 @@ Resources:
       RuleNumber: 30
       Protocol: 1
       RuleAction: allow
-      CidrBlock:
-        Ref: VPCCIDR
+      CidrBlock: "10.0.0.0/16"
       Icmp:
         Type: -1
         Code: -1
@@ -506,8 +497,7 @@ Resources:
       RuleNumber: 20
       Protocol: 6
       RuleAction: allow
-      CidrBlock:
-        Ref: VPCCIDR
+      CidrBlock: "10.0.0.0/16"
       PortRange:
         From: 1024
         To: 65535
@@ -521,8 +511,7 @@ Resources:
       RuleNumber: 30
       Protocol: 1
       RuleAction: allow
-      CidrBlock:
-        Ref: VPCCIDR
+      CidrBlock: "10.0.0.0/16"
       Icmp:
         Type: -1
         Code: -1
