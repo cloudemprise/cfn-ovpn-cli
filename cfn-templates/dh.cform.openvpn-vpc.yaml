@@ -15,6 +15,14 @@ Description: >
   Private Subnet IDs
   Public Subnet IDs
 #-------------------------------------------
+#--- CIDR Strings
+#-------------------------------------------
+# Public Subnet A CIDR : 10.0.128.0/20
+# Public Subnet B CIDR : 10.0.144.0/20
+#-------------------------------------------
+# Public Subnet A CIDR : 10.0.0.0/19
+# Public Subnet B CIDR : 10.0.32.0/19
+#-------------------------------------------
 
 
 Metadata: {}
@@ -28,29 +36,6 @@ Parameters:
   BuildStage: 
     Description: Specify the Build Stage
     Type: String
-
-#--- CIDR Strings
-#-------------------------------------------
-  VPCCIDR:
-    Description: Top Level VPC CIDR Block
-    Type: String
-#-------------------------------------------
-  PublicSubnetACIDR:
-    Description: Public Subnet CIDR Block AZ-A
-    Type: String
-#-------------------------------------------
-  PublicSubnetBCIDR:
-    Description: Public Subnet CIDR Block AZ-B
-    Type: String
-#-------------------------------------------
-  PrivateSubnetACIDR:
-    Description: Private Subnet CIDR Block AZ-A
-    Type: String
-#-------------------------------------------
-  PrivateSubnetBCIDR:
-    Description: Private Subnet CIDR Block AZ-B
-    Type: String
-#-------------------------------------------
 
 
 #Conditions: {}
@@ -72,8 +57,7 @@ Resources:
   VPC:
     Type: 'AWS::EC2::VPC'
     Properties:
-      CidrBlock:
-        Ref: VPCCIDR
+      CidrBlock: "10.0.0.0/16"
       EnableDnsHostnames: true
       EnableDnsSupport: true
       Tags:
@@ -93,8 +77,7 @@ Resources:
   PublicSubnetA:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      CidrBlock:
-        Ref: PublicSubnetACIDR
+      CidrBlock: "10.0.128.0/20"
       MapPublicIpOnLaunch: true
       VpcId:
         Ref: VPC
@@ -113,8 +96,7 @@ Resources:
   PublicSubnetB:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      CidrBlock:
-        Ref: PublicSubnetBCIDR
+      CidrBlock: "10.0.144.0/20"
       MapPublicIpOnLaunch: true
       VpcId:
         Ref: VPC
@@ -133,8 +115,7 @@ Resources:
   PrivateSubnetA:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      CidrBlock:
-        Ref: PrivateSubnetACIDR
+      CidrBlock: "10.0.0.0/19"
       MapPublicIpOnLaunch: false
       VpcId:
         Ref: VPC
@@ -153,8 +134,7 @@ Resources:
   PrivateSubnetB:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      CidrBlock:
-        Ref: PrivateSubnetBCIDR
+      CidrBlock: "10.0.32.0/19"
       MapPublicIpOnLaunch: false
       VpcId:
         Ref: VPC

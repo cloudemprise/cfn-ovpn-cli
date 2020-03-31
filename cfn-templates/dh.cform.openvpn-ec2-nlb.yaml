@@ -1,7 +1,7 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-asg.yaml
+#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-nlb.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Auto Scale Group EC2 Server for OpenVPN Implementation.
+  Network Load Balancer for OpenVPN Implementation.
   A Nested Stack that comprises: 
   Bla Bla.
   Inputs include:
@@ -17,7 +17,12 @@ Metadata: {}
 Parameters:
 #===========================================
 
-#--- Public Subnet IDs
+#-------------------------------------------
+#--- AWS-Specific Parameter Type
+#-------------------------------------------
+  VPCID:
+    Description: VPC to associate with load balancer 
+    Type: AWS::EC2::VPC::Id
 #-------------------------------------------
   PublicSubnetIdA:
     Description: Public Subnet ID AZ-A
@@ -26,14 +31,6 @@ Parameters:
   PublicSubnetIdB:
     Description: Public Subnet ID AZ-B
     Type: AWS::EC2::Subnet::Id
-#-------------------------------------------
-  LaunchTemplateIdASG:
-    Description: Launch Template Id AutoScalingGroup
-    Type: String
-#-------------------------------------------
-#  LaunchTemplateVersion:
-#    Description: Launch Template Version Number
-#    Type: String
 #-------------------------------------------
   TargetGroupArnNLB:
     Description: Network Loadbalancer Target Group ARN
@@ -49,58 +46,60 @@ Resources:
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# AUTO SCALE GROUP EC2 DEFINITION
+# NETWORK LOAD BALANCER DEFINITIONS
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#--- Auto Scale Group 
+#--- Load Balancer Definition
 #-------------------------------------------
-  OpenvpnEC2AutoScaleGrp:
-    Type: "AWS::AutoScaling::AutoScalingGroup"
-    Description: "This is the launch template description"
+  OpenvpnLoadBalancer:
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
 #.............................
     Properties:
-      AutoScalingGroupName: "openvpn-autoscaling-group"
 #.............................
-      LaunchTemplate: 
-        LaunchTemplateId: !Ref LaunchTemplateIdASG
-        Version: 1
-#        Version: !Ref LaunchTemplateVersion
-#        LaunchTemplateName: "openvpn-launch-template"
+      Name: !Sub "ovpn-nlb-${AWS::Region}"
 #.............................
       Tags:
         - 
           Key: "Name"
-          Value: "openvpn-autoscale-grp"
-          PropagateAtLaunch: true
+          Value: "OpenvpnLoadBalancer"
 #.............................
-      VPCZoneIdentifier:
+      Type: "network"
+      Scheme: "internet-facing"
+      IpAddressType: "ipv4"
+#.............................
+      Subnets:
         - !Ref PublicSubnetIdA
         - !Ref PublicSubnetIdB
 #.............................
-      Cooldown: 180
-      DesiredCapacity: 1
-      MinSize: 1
-      MaxSize: 1
+      LoadBalancerAttributes: 
+        - 
+          Key: "access_logs.s3.enabled"
+          Value: "false"
+        - 
+          Key: "load_balancing.cross_zone.enabled"
+          Value: "true"
+        - 
+          Key: "deletion_protection.enabled"
+          Value: "false"
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+#--- Load Balancer Listener Definition
+#-------------------------------------------
+  OpenvpnLoadBalancerListener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
 #.............................
-      HealthCheckType: "ELB"
-      HealthCheckGracePeriod: 180
+    Properties:
 #.............................
-      TargetGroupARNs:
-        - !Ref TargetGroupArnNLB
+      Protocol: "TCP_UDP"
+      Port: 1194
+      LoadBalancerArn: !Ref OpenvpnLoadBalancer
 #.............................
-      MetricsCollection: 
-        - Granularity: "1Minute"
-          Metrics: 
-            - "GroupInServiceInstances"
-            - "GroupTotalInstances"
-#.............................
-#      TerminationPolicies: 
-#        - "Default"
-#      ServiceLinkedRoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"
-#.............................
-#      MaxInstanceLifetime: 604800
-#      NotificationConfigurations:
+      DefaultActions: 
+        - 
+          TargetGroupArn: !Ref TargetGroupArnNLB
+          Type: "forward"
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 

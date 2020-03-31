@@ -1,0 +1,98 @@
+#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-tg.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Target Group for OpenVPN Implementation.
+  A Nested Stack that comprises: 
+  Bla Bla.
+  Inputs include:
+  Bla Bla.
+  Outputs include:
+  Bla Bla.
+#-------------------------------------------
+
+
+Metadata: {}
+
+
+Parameters:
+#===========================================
+
+#-------------------------------------------
+#--- AWS-Specific Parameter Type
+#-------------------------------------------
+  VPCID:
+    Description: VPC to associate with load balancer 
+    Type: AWS::EC2::VPC::Id
+#-------------------------------------------
+
+
+Conditions: {}
+
+
+Resources:
+#===========================================
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# NETWORK LOAD BALANCER DEFINITIONS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- Target Group Definition
+#-------------------------------------------
+  OpenvpnTargetGroup:
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+#.............................
+    Properties:
+#.............................
+      Name: !Sub "ovpn-tgrp-${AWS::Region}"
+#.............................
+      Tags:
+        - 
+          Key: "Name"
+          Value: "OpenvpnTargetGroup"
+#.............................
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPort: "80"
+      HealthCheckProtocol: "TCP"
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+#.............................
+      VpcId: !Ref VPCID
+      TargetType: "instance"
+      Port: 1194
+      Protocol: "TCP_UDP"
+#.............................
+#      Targets:
+#        - 
+#          Id: !Ref PublicEC2InstanceId
+#          Port: 1194
+#.............................
+      TargetGroupAttributes: 
+      - 
+        Key: "proxy_protocol_v2.enabled"
+        Value: "false"
+      - 
+        Key: "deregistration_delay.timeout_seconds"
+        Value: "180"
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+#-------------------------------------------
+
+
+
+#Outputs: {}
+Outputs:
+#===========================================
+
+
+#--- EC2 Target Group ARN
+#-------------------------------------------
+  TargetGroupArnNLB:
+    Description: Network Loadbalancer Target Group ARN
+    Value:
+      Ref: OpenvpnTargetGroup
+#-------------------------------------------

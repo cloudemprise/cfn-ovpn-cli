@@ -51,44 +51,22 @@ Parameters:
 # SUBNET CIDR DEFINITIONS
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  VPCCIDR:
-    Description: CIDR Block for the VPC
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
-    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 10.0.0.0/16
-    Type: String
 #--- AZ-A Public Subnet
 #-------------------------------------------
-  PublicSubnetACIDR:
-    Description: CIDR Block for the public DMZ subnet A located in Availability Zone A.
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
-    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 10.0.128.0/20
-    Type: String
+# Public Subnet A CIDR : 10.0.128.0/20
+
 #--- AZ-B Public Subnet
 #-------------------------------------------
-  PublicSubnetBCIDR:
-    Description: CIDR Block for the public DMZ subnet B located in Availability Zone B
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
-    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 10.0.144.0/20
-    Type: String
+# Public Subnet B CIDR : 10.0.144.0/20
+
 #--- AZ-A Private Subnet
 #-------------------------------------------
-  PrivateSubnetACIDR:
-    Description: CIDR block for private subnet A located in Availability Zone A.
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
-    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 10.0.0.0/19
-    Type: String
+# Public Subnet A CIDR : 10.0.0.0/19
+
 #--- AZ-B Private Subnet
 #-------------------------------------------
-  PrivateSubnetBCIDR:
-    Description: CIDR block for private subnet B located in Availability Zone B.
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
-    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 10.0.32.0/19
-    Type: String
+# Public Subnet B CIDR : 10.0.32.0/19
+
 #-------------------------------------------
 
 
@@ -115,19 +93,10 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-vpc.yaml
+#,,,,,,,,,,,,,,,,
       Parameters:
         BuildStage:
           !Ref BuildStage
-        VPCCIDR:
-          !Ref VPCCIDR
-        PublicSubnetACIDR:
-          !Ref PublicSubnetACIDR
-        PublicSubnetBCIDR:
-          !Ref PublicSubnetBCIDR
-        PrivateSubnetACIDR:
-          !Ref PrivateSubnetACIDR
-        PrivateSubnetBCIDR:
-          !Ref PrivateSubnetBCIDR
       TimeoutInMinutes: 5
 #-------------------------------------------
 #-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
@@ -140,11 +109,10 @@ Resources:
     DependsOn: VPCDef
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-nacl.yaml
+#,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
-        VPCCIDR:
-          Ref: VPCCIDR          
         PublicSubnetIdA:
           !GetAtt VPCDef.Outputs.PublicSubnetIdA
         PublicSubnetIdB:
@@ -165,11 +133,10 @@ Resources:
     DependsOn: VPCDef
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-sg.yaml
+#,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
-        VPCCIDR:
-          Ref: VPCCIDR
 #        ApplicationName:
 #          Ref: AWS::StackName
       TimeoutInMinutes: 5
@@ -179,12 +146,13 @@ Resources:
 
 #--- Private/Public EC2 Instances
 #-------------------------------------------
-  InstancePubStage1Def:
+  InstancePub1Def:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage1
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-stage1.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-1.yaml
+#,,,,,,,,,,,,,,,,
       Parameters:
         PublicAmiId:
           !Ref CurrentAmi
@@ -197,9 +165,10 @@ Resources:
   InstancePrivDef:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage1
-    DependsOn: InstancePubStage1Def
+    DependsOn: InstancePub1Def
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-priv.yaml
+#,,,,,,,,,,,,,,,,
       Parameters:
         PrivateAmiId:
           !Ref CurrentAmi
@@ -209,12 +178,13 @@ Resources:
           !GetAtt SgDefs.Outputs.PrivateSgResourceId
       TimeoutInMinutes: 10
 #-------------------------------------------
-  InstancePubStage2Def:
+  InstancePub2Def:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage2
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-stage2.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-2.yaml
+#,,,,,,,,,,,,,,,,
       Parameters:
         PublicAmiId:
           !Ref CurrentAmi
@@ -227,13 +197,14 @@ Resources:
 #-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- AutoScaling & Launch Template
+#--- EC2 Launch Template
 #-------------------------------------------
   LaunchTemplateDef:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-lt.yaml
+#,,,,,,,,,,,,,,,,
       Parameters:
         PublicLtAmiId:
           !Ref CurrentAmi
@@ -241,12 +212,36 @@ Resources:
           !GetAtt SgDefs.Outputs.PublicSgResourceId
       TimeoutInMinutes: 5
 #-------------------------------------------
+#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
+
+
+#--- EC2 Target Group
+#-------------------------------------------
+  TargetGroupDef:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateResourcesStage3
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-tg.yaml
+#,,,,,,,,,,,,,,,,
+      Parameters:
+        VPCID:
+          !GetAtt VPCDef.Outputs.VPCID
+      TimeoutInMinutes: 5
+#-------------------------------------------
+#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
+
+
+#--- EC2 AutoScaling Group
+#-------------------------------------------
   AutoScaleGroupDef:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
-    DependsOn: LaunchTemplateDef
+    DependsOn: 
+      - LaunchTemplateDef
+      - TargetGroupDef
     Properties:
       TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-asg.yaml
+#,,,,,,,,,,,,,,,,
       Parameters:
         PublicSubnetIdA:
           !GetAtt VPCDef.Outputs.PublicSubnetIdA
@@ -254,6 +249,31 @@ Resources:
           !GetAtt VPCDef.Outputs.PublicSubnetIdB
         LaunchTemplateIdASG:
           !GetAtt LaunchTemplateDef.Outputs.LaunchTemplateId
+        TargetGroupArnNLB:
+          !GetAtt TargetGroupDef.Outputs.TargetGroupArnNLB
+      TimeoutInMinutes: 5
+#-------------------------------------------
+#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
+
+
+#--- EC2 Network Load Balancer 
+#-------------------------------------------
+  NetworkLoadBalancerDef:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateResourcesStage3
+    DependsOn: AutoScaleGroupDef
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-nlb.yaml
+      Parameters:
+#,,,,,,,,,,,,,,,,
+        VPCID:
+          !GetAtt VPCDef.Outputs.VPCID
+        PublicSubnetIdA:
+          !GetAtt VPCDef.Outputs.PublicSubnetIdA
+        PublicSubnetIdB:
+          !GetAtt VPCDef.Outputs.PublicSubnetIdB
+        TargetGroupArnNLB:
+          !GetAtt TargetGroupDef.Outputs.TargetGroupArnNLB
       TimeoutInMinutes: 5
 #-------------------------------------------
 #-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
@@ -261,43 +281,34 @@ Resources:
 
 #-------------------------------------------
 
+
 #Outputs: {}
 Outputs:
 #===========================================
 
 #--- Instance IDs
 #-------------------------------------------
-  InstanceIdPubStage1:
+  InstanceIdPublic1:
     Description:  Public Instance ID
     Condition: CreateResourcesStage1
     Value:
-      !GetAtt InstancePubStage1Def.Outputs.InstanceIdPubStage1Nested
+      !GetAtt InstancePub1Def.Outputs.Pub1EC2InstanceId
 #-------------------------------------------
   InstanceIdPrivate:
     Description: Private Instance ID
     Condition: CreateResourcesStage1
     Value:
-      !GetAtt InstancePrivDef.Outputs.InstanceIdPrivateNested
+      !GetAtt InstancePrivDef.Outputs.PrivEC2InstanceId
 #-------------------------------------------
-  InstanceIdPubStage2:
+  InstanceIdPublic2:
     Description:  Public Instance ID
     Condition: CreateResourcesStage2
     Value:
-      !GetAtt InstancePubStage2Def.Outputs.InstanceIdPubStage2Nested
+      !GetAtt InstancePub2Def.Outputs.Pub2EC2InstanceId
 #-------------------------------------------
 
 #  ExportsStackName:
 #    Value: !Ref 'AWS::StackName'
 #    Export:
 #      Name: !Sub 'ExportsStackName-${AWS::StackName}'
-
-#--- VPC CIDR Export
-#-------------------------------------------
-#  VPCCIDR:
-#    Description: VPC CIDR
-#    Value:
-#      Ref: VPCCIDR
-#    Export:
-#      Name:
-#        Fn::Sub: ${AWS::StackName}-VPCCIDR
 

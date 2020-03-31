@@ -25,10 +25,6 @@ Parameters:
     Description: VPC to create the SG into.
     Type: AWS::EC2::VPC::Id
 #-------------------------------------------
-  VPCCIDR:
-    Description: Top Level VPC CIDR Block
-    Type: String
-#-------------------------------------------
 
 
 Conditions: {}
@@ -76,8 +72,7 @@ Resources:
           IpProtocol: icmp
           FromPort: 8
           ToPort: -1
-          CidrIp: 
-            Ref: VPCCIDR
+          CidrIp: "10.0.0.0/16"
 ############################################
         - Description: httpd access (temporary)
           IpProtocol: tcp

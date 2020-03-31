@@ -67,7 +67,7 @@ Resources:
             Tags:
               -
                 Key: "Name"
-                Value: "openvpn-ASG"
+                Value: "openvpn-autoscaled-instance"
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
