@@ -14,7 +14,7 @@
         "s3:GetBucketLocation",
         "s3:ListBucket"
       ],
-      "Resource": "arn:aws:s3:::dh.cform-templates"
+      "Resource": "arn:aws:s3:::dh.cfn-templates"
     },
     {
       "Sid": "IAM User Policy on S3 Objects",
@@ -26,7 +26,7 @@
         ]
       },
       "Action": "s3:*",
-      "Resource": "arn:aws:s3:::dh.cform-templates/*"
+      "Resource": "arn:aws:s3:::dh.cfn-templates/*"
     }
   ]
 }

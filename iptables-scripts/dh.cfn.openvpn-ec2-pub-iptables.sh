@@ -73,9 +73,14 @@ iptables -A OUTPUT -s $PUB_CIDR -d $META_DNS -p udp --sport 1024:65535 --dport 5
 # accept forwarded dns requests from VPN hosts
 iptables -A FORWARD -s $VPN_CIDR -p udp --sport 1024:65535 --dport 53 -m conntrack --ctstate NEW -o $NIC -j ACCEPT
 iptables -A FORWARD -s $VPN_CIDR -p tcp --syn --sport 1024:65535 --dport 53 -m conntrack --ctstate NEW -o $NIC -j ACCEPT
+# allow http requests from any local sources (nlb)
+iptables -N IPTlogPASSinNLB
+iptables -A INPUT -s $PUB_CIDR -d $PUB_CIDR -p tcp --syn --sport 1024:65535 --dport http -m conntrack --ctstate NEW -i $NIC -j IPTlogPASSinNLB
+#iptables -A IPTlogPASSinNLB -j LOG --log-prefix "IPTlogPASSin__:_NLB____:"
+iptables -A IPTlogPASSinNLB -j ACCEPT
 # allow http requests from any source
 iptables -N IPTlogPASSinHTTPS
-iptables -A INPUT -d $PUB_CIDR -p tcp --syn --sport 1024:65535 --dport http -m conntrack --ctstate NEW -i $NIC -j IPTlogPASSinHTTPS
+iptables -A INPUT ! -s $PUB_CIDR -d $PUB_CIDR -p tcp --syn --sport 1024:65535 --dport http -m conntrack --ctstate NEW -i $NIC -j IPTlogPASSinHTTPS
 iptables -A IPTlogPASSinHTTPS -j LOG --log-prefix "IPTlogPASSin__:_HTTPS__:"
 iptables -A IPTlogPASSinHTTPS -j ACCEPT
 # allow output local http/s traffic

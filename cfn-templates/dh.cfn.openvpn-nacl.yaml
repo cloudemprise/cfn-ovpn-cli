@@ -1,4 +1,4 @@
-# https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-nacl.yaml
+# https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-nacl.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   NetSec Defense-In-Depth Restrictive NACL Definitions.

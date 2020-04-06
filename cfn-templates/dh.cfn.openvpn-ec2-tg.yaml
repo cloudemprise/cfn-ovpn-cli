@@ -1,4 +1,4 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-tg.yaml
+#https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-ec2-tg.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Target Group for OpenVPN Implementation.
@@ -76,7 +76,7 @@ Resources:
         Value: "false"
       - 
         Key: "deregistration_delay.timeout_seconds"
-        Value: "180"
+        Value: "240"
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
@@ -91,8 +91,11 @@ Outputs:
 
 #--- EC2 Target Group ARN
 #-------------------------------------------
-  TargetGroupArnNLB:
+  OpenvpnTargetGroupARN:
     Description: Network Loadbalancer Target Group ARN
-    Value:
-      Ref: OpenvpnTargetGroup
+    Value: !Ref OpenvpnTargetGroup
+#-------------------------------------------
+  OpenvpnTargetName:
+    Description: Network Loadbalancer Target Group Name
+    Value: !GetAtt OpenvpnTargetGroup.TargetGroupName
 #-------------------------------------------

@@ -1,4 +1,4 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-nlb.yaml
+#https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-ec2-nlb.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Network Load Balancer for OpenVPN Implementation.
@@ -107,15 +107,20 @@ Resources:
 
 
 
-Outputs: {}
-#Outputs:
+#Outputs: {}
+Outputs:
 #===========================================
 
 
-#--- Public Instance ID
+#--- EC2 Load Balancer ARN
 #-------------------------------------------
-#  LaunchTemplateId:
-#    Description: Launch Template ID
-#    Value:
-#      Ref: PublicEC2LaunchTemplate
+  OpenvpnLoadBalancerARN:
+    Description: Network Loadbalancer ARN
+    Value: !Ref OpenvpnLoadBalancer
+#-------------------------------------------
+#--- EC2 Load Balancer Name
+#-------------------------------------------
+  OpenvpnLoadBalancerName:
+    Description: Network Loadbalancer Name
+    Value: !GetAtt OpenvpnLoadBalancer.LoadBalancerName
 #-------------------------------------------
