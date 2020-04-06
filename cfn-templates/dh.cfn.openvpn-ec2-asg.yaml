@@ -1,4 +1,4 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-asg.yaml
+#https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-ec2-asg.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Auto Scale Group EC2 Server for OpenVPN Implementation.
@@ -37,6 +37,10 @@ Parameters:
 #-------------------------------------------
   TargetGroupArnNLB:
     Description: Network Loadbalancer Target Group ARN
+    Type: String
+#-------------------------------------------
+  OpenvpnSNSTopicARN:
+    Description: "Openvpn SNS Activity Topic ARN"
     Type: String
 #-------------------------------------------
 
@@ -78,7 +82,7 @@ Resources:
         - !Ref PublicSubnetIdA
         - !Ref PublicSubnetIdB
 #.............................
-      Cooldown: 180
+      Cooldown: 210
       DesiredCapacity: 1
       MinSize: 1
       MaxSize: 1
@@ -95,12 +99,20 @@ Resources:
             - "GroupInServiceInstances"
             - "GroupTotalInstances"
 #.............................
+      NotificationConfigurations:
+        - NotificationTypes:
+          - autoscaling:EC2_INSTANCE_LAUNCH
+          - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
+          - autoscaling:EC2_INSTANCE_TERMINATE
+          - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
+          - autoscaling:TEST_NOTIFICATION
+          TopicARN: !Ref OpenvpnSNSTopicARN
+#.............................
 #      TerminationPolicies: 
 #        - "Default"
 #      ServiceLinkedRoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"
 #.............................
 #      MaxInstanceLifetime: 604800
-#      NotificationConfigurations:
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
@@ -115,8 +127,7 @@ Outputs: {}
 
 #--- Public Instance ID
 #-------------------------------------------
-#  LaunchTemplateId:
-#    Description: Launch Template ID
-#    Value:
-#      Ref: PublicEC2LaunchTemplate
+#  OpenvpnAutoScaleGroupName:
+#    Description: AutoScaling Group Name
+#    Value: !GetAtt OpenvpnEC2AutoScaleGrp.TargetGroupName
 #-------------------------------------------

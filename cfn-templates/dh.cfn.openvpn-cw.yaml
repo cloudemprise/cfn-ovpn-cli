@@ -1,0 +1,128 @@
+#https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-alarms.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Cloudwatch Notices for OpenVPN Implementation.
+  A Nested Stack that comprises: 
+  Bla Bla.
+  Inputs include:
+  Bla Bla.
+  Outputs include:
+  Bla Bla.
+#-------------------------------------------
+
+
+Metadata: {}
+
+
+#Parameters: {}
+Parameters:
+#===========================================
+
+#--- SNS Topic ARN
+#-------------------------------------------
+  OpenvpnSNSTopicARN:
+    Description: "Openvpn SNS Activity Topic ARN"
+    Type: String
+#-------------------------------------------
+#  OpenvpnAutoScaleGroupName:
+#    Description: AutoScaling Group Name
+#    Type: String
+#-------------------------------------------
+
+
+Conditions: {}
+
+
+Resources:
+#===========================================
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# CLOUDWATCH NOTIFICATIONS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- CloudWatch Alarm Out of Service Definition
+#-------------------------------------------
+  OpenvpnOutOfServiceAlarm:
+    Type: "AWS::CloudWatch::Alarm"
+#.............................
+    Properties:
+#.............................
+      AlarmName: !Sub "openvpn-OutOfService-${AWS::Region}"
+      AlarmDescription: "Openvpn Cloudwatch Alarm: Out of Service"
+#.............................
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref OpenvpnSNSTopicARN
+#.............................
+      Namespace: "AWS/AutoScaling"
+      MetricName: "GroupInServiceInstances"
+      Statistic: "Maximum"
+#.............................
+      TreatMissingData: "missing"
+      ComparisonOperator: "LessThanThreshold"
+#      DatapointsToAlarm: 5
+      EvaluationPeriods: 5
+      Threshold: 1
+      Period: 60
+#.............................
+      Dimensions: 
+      - 
+        Name: "AutoScalingGroupName"
+        Value: "openvpn-autoscaling-group"
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+#--- CloudWatch Alarm In Service Definition
+#-------------------------------------------
+  OpenvpnInServiceAlarm:
+    Type: "AWS::CloudWatch::Alarm"
+#.............................
+    Properties:
+#.............................
+      AlarmName: !Sub "openvpn-InService-${AWS::Region}"
+      AlarmDescription: "Openvpn Cloudwatch Alarm: In Service"
+#.............................
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref OpenvpnSNSTopicARN
+#.............................
+      Namespace: "AWS/AutoScaling"
+      MetricName: "GroupInServiceInstances"
+      Statistic: "Minimum"
+#.............................
+      TreatMissingData: "missing"
+      ComparisonOperator: "GreaterThanThreshold"
+#      DatapointsToAlarm: 3
+      EvaluationPeriods: 3
+      Threshold: 0
+      Period: 60
+#.............................
+      Dimensions: 
+      - 
+        Name: "AutoScalingGroupName"
+        Value: "openvpn-autoscaling-group"
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+#-------------------------------------------
+
+Outputs: {}
+#Outputs:
+#===========================================
+
+
+#--- Cloudwatch Dimension values
+#-------------------------------------------
+#  LoadBalanerValue:
+#    Description: Launch Template ID
+#    Value: !Select [5, !Split [":", !Ref OpenvpnLoadBalancerARN]]
+#    Value: !Select [3, !Split ["/", !Select [5, !Split [":", !Ref OpenvpnLoadBalancerARN]]]]
+#    Value: !Select [3, !Split ["/", !Ref OpenvpnLoadBalancerARN]]
+#    Value: !Join ["/", ["net", !Ref OpenvpnLoadBalancerName, !Select [3, !Split ["/", !Ref OpenvpnLoadBalancerARN]]]]
+#-------------------------------------------
+#  TargetGroupValue:
+#    Description: Launch Template ID
+#    Value: !Select [5, !Split [":", !Ref OpenvpnTargetGroupARN]]
+#-------------------------------------------

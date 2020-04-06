@@ -1,0 +1,84 @@
+#https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-alarms.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Simple Notification Service for OpenVPN Implementation.
+  A Nested Stack that comprises: 
+  Bla Bla.
+  Inputs include:
+  Bla Bla.
+  Outputs include:
+  Bla Bla.
+#-------------------------------------------
+
+
+Metadata: {}
+
+
+#Parameters: {}
+Parameters:
+#===========================================
+
+#-------------------------------------------
+  OpenvpnSubsEmailSNS:
+    Description: Openvpn SNS Email Endpoint
+    Type: String
+#-------------------------------------------
+
+
+Conditions: {}
+
+
+Resources:
+#===========================================
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SNS NOTIFICATIONS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#--- SNS Topic Definition
+#-------------------------------------------
+  OpenvpnTopicSNS:
+    Type: "AWS::SNS::Topic"
+#.............................
+    Properties:
+      DisplayName: "OpenvpnNotice"
+      TopicName: !Sub "ovpn-activity-notice-${AWS::Region}"
+#.............................
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "openvpn-activity-sns"
+#.............................
+#      KmsMasterKeyId: "alias/aws/sns"
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+#--- SNS Subscription Definition
+#-------------------------------------------
+  OpenvpnSubscriptionSNS:
+    Type: "AWS::SNS::Subscription"
+#.............................
+    Properties:
+      TopicArn: !Ref OpenvpnTopicSNS
+      Endpoint: !Ref OpenvpnSubsEmailSNS
+      Protocol: "email"
+      Region: !Ref AWS::Region
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+#-------------------------------------------
+
+
+#Outputs: {}
+Outputs:
+#===========================================
+
+
+#--- SNS Topic ARN
+#-------------------------------------------
+  OpenvpnSNSTopicARN:
+    Description: "Openvpn SNS Activity Topic ARN"
+    Value: !Ref OpenvpnTopicSNS
+#-------------------------------------------

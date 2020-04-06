@@ -1,4 +1,4 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-set1.yaml
+#https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-set1.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   An OpenVPN implementation that comprises:
@@ -46,6 +46,13 @@ Parameters:
 #    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
 #    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
 
+#-------------------------------------------
+  OpenvpnSubsEmailSNS:
+    Description: Openvpn SNS Email Endpoint
+    Type: String
+    Default: "dh.info@posteo.net"
+#-------------------------------------------
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SUBNET CIDR DEFINITIONS
@@ -92,7 +99,7 @@ Resources:
   VPCDef:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-vpc.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-vpc.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         BuildStage:
@@ -108,7 +115,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-nacl.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-nacl.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -132,7 +139,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-sg.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-sg.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -151,7 +158,7 @@ Resources:
     Condition: CreateResourcesStage1
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-1.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-ec2-pub-1.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicAmiId:
@@ -167,7 +174,7 @@ Resources:
     Condition: CreateResourcesStage1
     DependsOn: InstancePub1Def
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-priv.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-ec2-priv.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PrivateAmiId:
@@ -183,7 +190,7 @@ Resources:
     Condition: CreateResourcesStage2
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-pub-2.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-ec2-pub-2.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicAmiId:
@@ -203,7 +210,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-lt.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-ec2-lt.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicLtAmiId:
@@ -221,11 +228,27 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-tg.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-ec2-tg.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
+      TimeoutInMinutes: 5
+#-------------------------------------------
+#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
+
+
+#--- SNS Topic
+#-------------------------------------------
+  OpenvpnSNSTopicDef:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateResourcesStage3
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-sns.yaml
+#,,,,,,,,,,,,,,,,
+      Parameters:
+        OpenvpnSubsEmailSNS:
+          !Ref OpenvpnSubsEmailSNS
       TimeoutInMinutes: 5
 #-------------------------------------------
 #-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
@@ -239,8 +262,9 @@ Resources:
     DependsOn: 
       - LaunchTemplateDef
       - TargetGroupDef
+      - OpenvpnSNSTopicDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-asg.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-ec2-asg.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicSubnetIdA:
@@ -250,7 +274,9 @@ Resources:
         LaunchTemplateIdASG:
           !GetAtt LaunchTemplateDef.Outputs.LaunchTemplateId
         TargetGroupArnNLB:
-          !GetAtt TargetGroupDef.Outputs.TargetGroupArnNLB
+          !GetAtt TargetGroupDef.Outputs.OpenvpnTargetGroupARN
+        OpenvpnSNSTopicARN:
+          !GetAtt OpenvpnSNSTopicDef.Outputs.OpenvpnSNSTopicARN
       TimeoutInMinutes: 5
 #-------------------------------------------
 #-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
@@ -263,7 +289,7 @@ Resources:
     Condition: CreateResourcesStage3
     DependsOn: AutoScaleGroupDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cform-templates/openvpn/dh.cform.openvpn-ec2-nlb.yaml
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-ec2-nlb.yaml
       Parameters:
 #,,,,,,,,,,,,,,,,
         VPCID:
@@ -273,7 +299,27 @@ Resources:
         PublicSubnetIdB:
           !GetAtt VPCDef.Outputs.PublicSubnetIdB
         TargetGroupArnNLB:
-          !GetAtt TargetGroupDef.Outputs.TargetGroupArnNLB
+          !GetAtt TargetGroupDef.Outputs.OpenvpnTargetGroupARN
+      TimeoutInMinutes: 5
+#-------------------------------------------
+#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
+
+
+#--- CloudWatch Alarm 
+#-------------------------------------------
+  OpenvpnCloudWatchAlarmDef:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateResourcesStage3
+    DependsOn: 
+      - NetworkLoadBalancerDef
+      - TargetGroupDef
+      - OpenvpnSNSTopicDef
+    Properties:
+      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn-cw.yaml
+      Parameters:
+#,,,,,,,,,,,,,,,,
+        OpenvpnSNSTopicARN:
+          !GetAtt OpenvpnSNSTopicDef.Outputs.OpenvpnSNSTopicARN
       TimeoutInMinutes: 5
 #-------------------------------------------
 #-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
