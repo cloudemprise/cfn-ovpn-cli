@@ -355,13 +355,15 @@ Resources:
               mode: '000644'
               owner: root
               group: root
-          services:
-            sysvinit:
-              httpd:
-                enabled: "true"
-                ensureRunning: "true"
-                files:
-                  - "/var/www/html/index.html"
+# Service enabled within Autoscaling Launch Template 
+# UserData to facilitate validation.
+#          services:
+#            sysvinit:
+#              httpd:
+#                enabled: "true"
+#                ensureRunning: "true"
+#                files:
+#                  - "/var/www/html/index.html"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,

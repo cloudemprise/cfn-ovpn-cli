@@ -47,11 +47,6 @@ Resources:
 #.............................
       Name: !Sub "ovpn-tgrp-${AWS::Region}"
 #.............................
-      Tags:
-        - 
-          Key: "Name"
-          Value: "OpenvpnTargetGroup"
-#.............................
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
       HealthCheckPort: "80"
@@ -77,6 +72,11 @@ Resources:
       - 
         Key: "deregistration_delay.timeout_seconds"
         Value: "240"
+#.............................
+      Tags:
+        - 
+          Key: "Name"
+          Value: "OpenvpnTargetGroup"
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 

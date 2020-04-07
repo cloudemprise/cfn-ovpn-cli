@@ -17,7 +17,7 @@ S3_EASYRSA_LOCATION="s3://dh.scripts/easyrsa/openvpn/gen-reqs/"
 
 BUILDSTAGE="Stage0"
 
-STACK_NAME="openvpn-set1-4"
+STACK_NAME="openvpn-set1-3"
 STACK_ID=""
 
 INSTANCE_ID_PUB1=""
@@ -124,6 +124,22 @@ echo "Private AMI is now available : $AMI_IMAGE_PRIV"
 aws ec2 terminate-instances --instance-ids $INSTANCE_ID_PUB1 $INSTANCE_ID_PRIV > /dev/null
 echo "$BUILDSTAGE Instances have now terminated..."
 
+
+#!! COMMENT BEGIN
+: <<'END'
+#!! COMMENT BEGIN
+
+
+# Comment:
+# -------
+# The functionality of the following commented-out code has been 
+# replaced by making use of the UserData Metadata Service faciltity
+# of the Autoscaling Launch Template, i.e. downloading the Openvpn 
+# Server Certificates and also issues the necessary systemd commands 
+# to enable/start the offered VPN services.
+# -------
+
+
 #------------
 # Update Stack with Stage2 parameters
 BUILDSTAGE="Stage2"
@@ -185,12 +201,19 @@ then echo "Deleting Public Stage1 AMI Snapshot : $SNAPSHOT_PUB1"
 else echo "Error: Failed to Delete Snapshot $AMI_IMAGE_PUB1"
 fi
 
+
+#!! COMMENT END
+END
+#!! COMMENT END
+
+
 #------------
 # Create Launch Template for AutoScaling Group
 # Update Stack with Stage3 parameters
 BUILDSTAGE="Stage3"
 echo "$BUILDSTAGE"
-aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB2 --tags Key=Name,Value=openvpn-stage3 --template-url https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
+#aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB2 --tags Key=Name,Value=openvpn-stage3 --template-url https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
+aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB1 --tags Key=Name,Value=openvpn-stage3 --template-url https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
 echo "$BUILDSTAGE Stack has now been Initiated..."
 # Wait for Stage3 Update to complete
 if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
@@ -198,10 +221,14 @@ then echo "$BUILDSTAGE Stack Update is now Complete : $STACK_ID"
 else echo "Error: Stack Wait Update Failed : $STACK_ID"
 fi
 
-# Copy client configuration files locally
+# Copy client configuration files locally & timestamp
 cd openvpn-configs
 if (aws s3 sync s3://dh.scripts/openvpn/client/ . --exclude "*" --include "*.tar.gz")
-then echo "OpenVPN client files successfully copied locally: "
-else echo "OpenVPN client files failed to copy locally"
+then 
+  echo "OpenVPN client files successfully copied locally"
+  for file in $(ls *.tar.gz); do [ -f $file ] && mv $file "${file%%.*}_$(date +%F_%H%M).tar.gz" || echo "Failed to timestamp : $file"; done
+else 
+  echo "OpenVPN client files failed to copy locally"
 fi
 cd ..
+
