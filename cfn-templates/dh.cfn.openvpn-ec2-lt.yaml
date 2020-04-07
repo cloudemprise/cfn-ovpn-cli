@@ -48,7 +48,7 @@ Resources:
 #-------------------------------------------
   PublicEC2LaunchTemplate:
     Type: "AWS::EC2::LaunchTemplate"
-    Description: "This is the launch template description"
+    Description: "Openvpn Launch Template for AutoScaling"
 #.............................
     Properties:
       LaunchTemplateName: "openvpn-launch-template"
@@ -61,6 +61,26 @@ Resources:
           Enabled: false
         SecurityGroupIds:
           - !Ref PublicSgResourceId
+#.............................
+        IamInstanceProfile: 
+          Name: "dh.InstProfile.Managed.SysAdmin"
+#            Arn: "arn:aws:iam::255822906044:instance-profile/dh.InstProfile.Managed.SysAdmin"
+#.............................
+        UserData:
+          Fn::Base64: |
+            #!/bin/bash -xe
+            # Download Server Certs & start Openvpn dual-protocol service
+            cd /etc/openvpn/server
+            aws s3 sync s3://dh.scripts/easyrsa/openvpn/issued-certs/ . --exclude "*" --include "*.server.tar.gz"
+            tar -xzf *.server.tar.gz
+            systemctl enable openvpn-server@dh.vpn.server.udp1194
+            systemctl enable openvpn-server@dh.vpn.server.tcp1194
+            systemctl start openvpn-server@dh.vpn.server.udp1194
+            systemctl start openvpn-server@dh.vpn.server.tcp1194
+            # Health Checks facilitated by httpd Port 80
+            systemctl enable httpd
+            systemctl start httpd
+#.............................
         TagSpecifications:
           -
             ResourceType: "instance"
