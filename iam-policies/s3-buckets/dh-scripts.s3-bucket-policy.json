@@ -1,0 +1,25 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Instance-role/UserId/Root access to S3 Bucket only",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::dh-scripts",
+        "arn:aws:s3:::dh-scripts/*"
+      ],
+      "Condition": {
+        "StringNotLike": {
+          "aws:userId": [
+            "AROAYNCYQ2G2OY6DTR2QH:*",
+            "AIDAYNCYQ2G2F7S3TAFB7",
+            "AIDAYNCYQ2G2GG6A5MATD",
+            "577858752948"
+          ]
+        }
+      }
+    }
+  ]
+}

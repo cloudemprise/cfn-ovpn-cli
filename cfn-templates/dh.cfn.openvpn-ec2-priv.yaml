@@ -1,4 +1,4 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-ec2-priv.yaml
+#https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-priv.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Launch Template EC2 Server for OpenVPN Implementation.
@@ -75,12 +75,14 @@ Resources:
               Ref: 'AWS::Region'
 #.............................
       DisableApiTermination: false
-      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
+#      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
+      IamInstanceProfile: "dh.instprofile.managed.sysadmin"
       ImageId: !Ref PrivateAmiId
 #      ImageId: "ami-0d4c3eabb9e72650a"
       InstanceType: "t2.nano"
 #      InstanceType: "t2.micro"
-      KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+#      KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+      KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
       Monitoring: false
 #      SubnetId:
 #        Ref: PrivateSubnetIdA
@@ -126,8 +128,9 @@ Resources:
         rolebased: 
           type: "S3"
           buckets: 
-            - "dh.scripts"
-          roleName: "dh.InstProfile.Managed.SysAdmin"
+            - "dh-scripts"
+#          roleName: "dh.InstProfile.Managed.SysAdmin"
+          roleName: "dh.instprofile.managed.sysadmin"
 #,,,,,,,,,,,,,,
       AWS::CloudFormation::Init:
         configSets:
@@ -215,7 +218,7 @@ Resources:
             yum:
               fail2ban: []
           sources:
-            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/ssh/dh.cform.openvpn-ec2-harden-ssh.sh.tar.gz"
+            /tmp: "https://dh-scripts.s3.eu-central-1.amazonaws.com/ssh/dh.cfn.openvpn-ec2-harden-ssh.sh.tar.gz"
           files:
             "/etc/fail2ban/jail.local":
               content: |
@@ -236,7 +239,7 @@ Resources:
               command: "mv 00-firewalld.conf 00-firewalld.disable"
             HardenSsh:
               cwd: "/tmp/ssh-scripts"
-              command: "./dh.cform.openvpn-ec2-harden-ssh.sh"
+              command: "./dh.cfn.openvpn-ec2-harden-ssh.sh"
           services:
             sysvinit:
               firewalld:
@@ -262,7 +265,7 @@ Resources:
             yum:
               iptables-services: []
           sources:
-            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/iptables/dh.cform.openvpn-ec2-priv-iptables.sh.tar.gz"
+            /tmp: "https://dh-scripts.s3.eu-central-1.amazonaws.com/iptables/dh.cfn.openvpn-ec2-priv-iptables.sh.tar.gz"
           files:
             "/etc/sysctl.d/30-dh.iptables.conf":
               content: |
@@ -281,7 +284,7 @@ Resources:
               command: "sysctl -p /etc/sysctl.d/30-dh.iptables.conf"
             2_iptRules:
               cwd: "/tmp/iptables-scripts"
-              command: "./dh.cform.openvpn-ec2-priv-iptables.sh"
+              command: "./dh.cfn.openvpn-ec2-priv-iptables.sh"
           services:
             sysvinit:
               iptables:
@@ -358,7 +361,7 @@ Resources:
               owner: root
               group: root
           sources:
-            /tmp/sign-reqs: "https://s3.eu-central-1.amazonaws.com/dh.scripts/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
+            /tmp/sign-reqs: "https://dh-scripts.s3.eu-central-1.amazonaws.com/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
           commands:
             1a_initPKI:
               command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
@@ -371,7 +374,7 @@ Resources:
             2b_buildCA:
               cwd: "/usr/local/easy-rsa/pki"
               command: "cp ca.crt issued/"
-              #command: "tar -zcf - ca.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/dh.easyrsa.ca.crt.tar.gz"
+              #command: "tar -zcf - ca.crt | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/dh.easyrsa.ca.crt.tar.gz"
             3_importReqs:
               cwd: "/usr/local/easy-rsa"
               command: "for REQUEST in /tmp/sign-reqs/*; do ./easyrsa import-req $REQUEST $(basename $REQUEST .req); done"
@@ -380,12 +383,12 @@ Resources:
               command: "for REQUEST in /usr/local/easy-rsa/pki/reqs/*; do EntityName=$(basename $REQUEST .req); ./easyrsa sign-req ${EntityName##*.} $EntityName; done"
             4b_signReqs_1:
               cwd: "/usr/local/easy-rsa/pki/issued"
-              command: "tar -czf - ca.crt *.server.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz"
-#              command: 'tar --transform "s/.*\///g" -zcf - ca.crt issued/*.server.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz'
+              command: "tar -czf - ca.crt *.server.crt | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz"
+#              command: 'tar --transform "s/.*\///g" -zcf - ca.crt issued/*.server.crt | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz'
             4b_signReqs_2:
               cwd: "/usr/local/easy-rsa/pki/issued"
-              command: "tar -czf - ca.crt *.client.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz"
-#              command: 'tar --transform "s/.*\///g" -zcf - ca.crt issued/*.client.crt | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz'
+              command: "tar -czf - ca.crt *.client.crt | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz"
+#              command: 'tar --transform "s/.*\///g" -zcf - ca.crt issued/*.client.crt | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz'
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -402,10 +405,10 @@ Resources:
               command: "cp /usr/local/easy-rsa/pki/issued/*.client.crt ."
             4_cmd:
               cwd: "/tmp/openvpn-client-files"
-              command: 'aws s3 sync s3://dh.scripts/openvpn/client/ . --exclude "*" --include "*.key"'
+              command: 'aws s3 sync s3://dh-scripts/openvpn/client/ . --exclude "*" --include "*.key"'
             5_cmd:
               cwd: "/tmp/openvpn-client-files"
-              command: "tar -czf - * | aws s3 cp - s3://dh.scripts/openvpn/client/openvpn-client-files.tar.gz"
+              command: "tar -czf - * | aws s3 cp - s3://dh-scripts/openvpn/client/openvpn-client-files.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
