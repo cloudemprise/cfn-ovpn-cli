@@ -17,7 +17,7 @@ S3_EASYRSA_LOCATION="s3://dh-scripts/easyrsa/openvpn/gen-reqs/"
 
 BUILDSTAGE="Stage0"
 
-STACK_NAME="openvpn-set1-1"
+STACK_NAME="openvpn-set1-3"
 STACK_ID=""
 
 INSTANCE_ID_PUB1=""
