@@ -9,15 +9,15 @@ END
 #!! COMMENT END
 
 
-S3_TEMPLATE_LOCATION="s3://dh.cfn-templates/openvpn/"
-S3_IPTABLES_LOCATION="s3://dh.scripts/iptables/"
-S3_SSH_LOCATION="s3://dh.scripts/ssh/"
-S3_OPENVPN_LOCATION="s3://dh.scripts/openvpn/"
-S3_EASYRSA_LOCATION="s3://dh.scripts/easyrsa/openvpn/gen-reqs/"
+S3_TEMPLATE_LOCATION="s3://dh-cfn-templates/openvpn/"
+S3_IPTABLES_LOCATION="s3://dh-scripts/iptables/"
+S3_SSH_LOCATION="s3://dh-scripts/ssh/"
+S3_OPENVPN_LOCATION="s3://dh-scripts/openvpn/"
+S3_EASYRSA_LOCATION="s3://dh-scripts/easyrsa/openvpn/gen-reqs/"
 
 BUILDSTAGE="Stage0"
 
-STACK_NAME="openvpn-set1-3"
+STACK_NAME="openvpn-set1-1"
 STACK_ID=""
 
 INSTANCE_ID_PUB1=""
@@ -31,6 +31,19 @@ AMI_IMAGE_PRIV=""
 
 AWS_ACC_ID=""
 SNAPSHOT_PUB1=""
+
+EC2_ROLE_NAME="dh.instprofile.managed.sysadmin"
+EC2_ROLE_ID=""
+
+#------------
+# Get Account ID
+AWS_ACC_ID=$(aws sts get-caller-identity --query Account --output text)
+echo "Account ID : $AWS_ACC_ID"
+
+#------------
+# Get aws:userid of EC2-Role
+EC2_ROLE_ID=$(aws iam get-role --role-name $EC2_ROLE_NAME --query "Role.RoleId" --output text)
+echo "EC2-Role userid : $EC2_ROLE_ID"
 
 
 #------------
@@ -64,7 +77,7 @@ echo "The lastest Amazon Linux 2 AMI : $AMI_CURRENT"
 #------------
 # Create Stage0 Stack
 echo "$BUILDSTAGE"
-STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage0 --template-url https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn.yaml --on-failure DO_NOTHING --output text)
+STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage0 --template-url https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn.yaml --on-failure DO_NOTHING --output text)
 echo "$BUILDSTAGE Stack has now been Initiated..."
 echo "Cloudformation Stack ID : $STACK_ID"
 # Wait for Stage0 to complete
@@ -78,7 +91,7 @@ fi
 # Update Stack with Stage1 parameters
 BUILDSTAGE="Stage1"
 echo "$BUILDSTAGE"
-aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage1 --template-url https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
+aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage1 --template-url https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
 echo "$BUILDSTAGE Stack has now been Initiated..."
 # Wait for Stage1 Update to complete
 if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
@@ -144,7 +157,7 @@ echo "$BUILDSTAGE Instances have now terminated..."
 # Update Stack with Stage2 parameters
 BUILDSTAGE="Stage2"
 echo "$BUILDSTAGE"
-aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB1 --tags Key=Name,Value=openvpn-stage2 --template-url https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
+aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB1 --tags Key=Name,Value=openvpn-stage2 --template-url https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
 echo "$BUILDSTAGE Stack has now been Initiated..."
 # Wait for Stage2 Update to complete
 if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
@@ -212,8 +225,8 @@ END
 # Update Stack with Stage3 parameters
 BUILDSTAGE="Stage3"
 echo "$BUILDSTAGE"
-#aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB2 --tags Key=Name,Value=openvpn-stage3 --template-url https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
-aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB1 --tags Key=Name,Value=openvpn-stage3 --template-url https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
+#aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB2 --tags Key=Name,Value=openvpn-stage3 --template-url https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
+aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB1 --tags Key=Name,Value=openvpn-stage3 --template-url https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn.yaml > /dev/null
 echo "$BUILDSTAGE Stack has now been Initiated..."
 # Wait for Stage3 Update to complete
 if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
@@ -223,7 +236,7 @@ fi
 
 # Copy client configuration files locally & timestamp
 cd openvpn-configs
-if (aws s3 sync s3://dh.scripts/openvpn/client/ . --exclude "*" --include "*.tar.gz")
+if (aws s3 sync s3://dh-scripts/openvpn/client/ . --exclude "*" --include "*.tar.gz")
 then 
   echo "OpenVPN client files successfully copied locally"
   for file in $(ls *.tar.gz); do [ -f $file ] && mv $file "${file%%.*}_$(date +%F_%H%M).tar.gz" || echo "Failed to timestamp : $file"; done

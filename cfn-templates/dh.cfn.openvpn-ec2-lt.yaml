@@ -1,4 +1,4 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-ec2-lt.yaml
+#https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-lt.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Launch Template EC2 Server for OpenVPN Implementation.
@@ -56,14 +56,16 @@ Resources:
       LaunchTemplateData:
         ImageId: !Ref PublicLtAmiId
         InstanceType: "t2.nano"
-        KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+#        KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+        KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
         Monitoring:
           Enabled: false
         SecurityGroupIds:
           - !Ref PublicSgResourceId
 #.............................
         IamInstanceProfile: 
-          Name: "dh.InstProfile.Managed.SysAdmin"
+#          Name: "dh.InstProfile.Managed.SysAdmin"
+          Name: "dh.instprofile.managed.sysadmin"
 #            Arn: "arn:aws:iam::255822906044:instance-profile/dh.InstProfile.Managed.SysAdmin"
 #.............................
         UserData:
@@ -71,7 +73,7 @@ Resources:
             #!/bin/bash -xe
             # Download Server Certs & start Openvpn dual-protocol service
             cd /etc/openvpn/server
-            aws s3 sync s3://dh.scripts/easyrsa/openvpn/issued-certs/ . --exclude "*" --include "*.server.tar.gz"
+            aws s3 sync s3://dh-scripts/easyrsa/openvpn/issued-certs/ . --exclude "*" --include "*.server.tar.gz"
             tar -xzf *.server.tar.gz
             systemctl enable openvpn-server@dh.vpn.server.udp1194
             systemctl enable openvpn-server@dh.vpn.server.tcp1194

@@ -6,27 +6,27 @@
       "Effect": "Allow",
       "Principal": {
         "AWS": [
-          "arn:aws:iam::255822906044:user/user.admin.console",
-          "arn:aws:iam::255822906044:user/user.pwr.dev"
+          "arn:aws:iam::577858752948:user/user.admin.console",
+          "arn:aws:iam::577858752948:user/user.pwr.dev"
         ]
       },
       "Action": [
         "s3:GetBucketLocation",
         "s3:ListBucket"
       ],
-      "Resource": "arn:aws:s3:::dh.cfn-templates"
+      "Resource": "arn:aws:s3:::dh-cfn-templates"
     },
     {
       "Sid": "IAM User Policy on S3 Objects",
       "Effect": "Allow",
       "Principal": {
         "AWS": [
-          "arn:aws:iam::255822906044:user/user.admin.console",
-          "arn:aws:iam::255822906044:user/user.pwr.dev"
+          "arn:aws:iam::577858752948:user/user.admin.console",
+          "arn:aws:iam::577858752948:user/user.pwr.dev"
         ]
       },
       "Action": "s3:*",
-      "Resource": "arn:aws:s3:::dh.cfn-templates/*"
+      "Resource": "arn:aws:s3:::dh-cfn-templates/*"
     }
   ]
 }

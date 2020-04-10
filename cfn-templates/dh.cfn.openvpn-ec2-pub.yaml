@@ -1,4 +1,4 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-launch-pub-stage1.yaml
+#https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-launch-pub-stage1.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Launch Template EC2 Server for OpenVPN Implementation.
@@ -75,12 +75,14 @@ Resources:
               Ref: 'AWS::Region'
 #.............................
       DisableApiTermination: false
-      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
+#      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
+      IamInstanceProfile: "dh.instprofile.managed.sysadmin"
       ImageId: !Ref PublicAmiId
 #      ImageId: "ami-0d4c3eabb9e72650a"
       InstanceType: "t2.nano"
 #      InstanceType: "t2.micro"
-      KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+#      KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
+      KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
       Monitoring: false
 #      SubnetId:
 #        Ref: PublicSubnetIdA
@@ -126,8 +128,10 @@ Resources:
         rolebased: 
           type: "S3"
           buckets: 
-            - "dh.scripts"
-          roleName: "dh.InstProfile.Managed.SysAdmin"
+            - "dh-scripts"
+#          roleName: "dh.InstProfile.Managed.SysAdmin"
+          roleName: "dh.instprofile.managed.sysadmin"
+
 #,,,,,,,,,,,,,,
       AWS::CloudFormation::Init:
         configSets:
@@ -216,7 +220,7 @@ Resources:
             yum:
               fail2ban: []
           sources:
-            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/ssh/dh.cform.openvpn-ec2-harden-ssh.sh.tar.gz"
+            /tmp: "https://dh-scripts.s3.eu-central-1.amazonaws.com/ssh/dh.cfn.openvpn-ec2-harden-ssh.sh.tar.gz"
           files:
             "/etc/fail2ban/jail.local":
               content: |
@@ -237,7 +241,7 @@ Resources:
               command: "mv 00-firewalld.conf 00-firewalld.disable"
             HardenSsh:
               cwd: "/tmp/ssh-scripts"
-              command: "./dh.cform.openvpn-ec2-harden-ssh.sh"
+              command: "./dh.cfn.openvpn-ec2-harden-ssh.sh"
           services:
             sysvinit:
               firewalld:
@@ -263,7 +267,7 @@ Resources:
             yum:
               iptables-services: []
           sources:
-            /tmp: "https://s3.eu-central-1.amazonaws.com/dh.scripts/iptables/dh.cform.openvpn-ec2-pub-iptables.sh.tar.gz"
+            /tmp: "https://dh-scripts.s3.eu-central-1.amazonaws.com/iptables/dh.cfn.openvpn-ec2-pub-iptables.sh.tar.gz"
           files:
             "/etc/sysctl.d/30-dh.iptables.conf":
               content: |
@@ -282,7 +286,7 @@ Resources:
               command: "sysctl -p /etc/sysctl.d/30-dh.iptables.conf"
             2_iptRules:
               cwd: "/tmp/iptables-scripts"
-              command: "./dh.cform.openvpn-ec2-pub-iptables.sh"
+              command: "./dh.cfn.openvpn-ec2-pub-iptables.sh"
           services:
             sysvinit:
               iptables:
@@ -372,7 +376,7 @@ Resources:
             yum:
               easy-rsa: []
           sources:
-            /usr/local/easy-rsa: "https://s3.eu-central-1.amazonaws.com/dh.scripts/easyrsa/openvpn/gen-reqs/dh.easyrsa.openvpn.vars.tar.gz"
+            /usr/local/easy-rsa: "https://dh-scripts.s3.eu-central-1.amazonaws.com/easyrsa/openvpn/gen-reqs/dh.easyrsa.openvpn.vars.tar.gz"
           commands:
             1a_initPKI:
               command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
@@ -399,7 +403,7 @@ Resources:
               command: "./easyrsa gen-req dh.vpn.pfSn-ravi.client nopass"
             4c_genClnt1:
               cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.pfSn-ravi.client.key s3://dh.scripts/openvpn/client/"
+              command: "aws s3 cp dh.vpn.pfSn-ravi.client.key s3://dh-scripts/openvpn/client/"
             5a_genClnt2:
               cwd: "/usr/local/easy-rsa"
               command: "mv vars.dh.vpn.pfSn-virt.client vars"
@@ -408,10 +412,10 @@ Resources:
               command: "./easyrsa gen-req dh.vpn.pfSn-virt.client nopass"
             5c_genClnt2:
               cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.pfSn-virt.client.key s3://dh.scripts/openvpn/client/"
+              command: "aws s3 cp dh.vpn.pfSn-virt.client.key s3://dh-scripts/openvpn/client/"
             6a_mvReqs:
               cwd: "/usr/local/easy-rsa/pki/reqs"
-              command: "tar -zcf - *.req | aws s3 cp - s3://dh.scripts/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
+              command: "tar -zcf - *.req | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -420,7 +424,7 @@ Resources:
             yum:
               openvpn: []
           sources:
-            /etc/openvpn/server: "https://s3.eu-central-1.amazonaws.com/dh.scripts/openvpn/server/dh.vpn.server.xxx1194.conf.tar.gz"
+            /etc/openvpn/server: "https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/server/dh.vpn.server.xxx1194.conf.tar.gz"
           files:
             "/usr/local/bin/vpn-server-status":
               content: |
@@ -438,7 +442,7 @@ Resources:
               command: "openvpn --genkey --secret HMAC-sig.key"
             1b_gen-HMAC:
               cwd: "/etc/openvpn/server"
-              command: "aws s3 cp HMAC-sig.key s3://dh.scripts/openvpn/client/"
+              command: "aws s3 cp HMAC-sig.key s3://dh-scripts/openvpn/client/"
             2a_cpSvrDH:
               cwd: "/usr/local/easy-rsa/pki"
               command: "cp dh.pem /etc/openvpn/server/"
