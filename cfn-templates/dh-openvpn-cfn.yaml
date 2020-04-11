@@ -98,7 +98,7 @@ Resources:
   VPCDef:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.vpc.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.vpc.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         BuildStage:
@@ -114,7 +114,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.vpc-nacl.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.vpc-nacl.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -138,7 +138,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.vpc-sg.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.vpc-sg.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -157,7 +157,7 @@ Resources:
     Condition: CreateResourcesStage1
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-pub.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-pub.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicAmiId:
@@ -173,7 +173,7 @@ Resources:
     Condition: CreateResourcesStage1
     DependsOn: InstancePub1Def
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-priv.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-priv.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PrivateAmiId:
@@ -193,7 +193,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-lt.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-lt.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicLtAmiId:
@@ -211,7 +211,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-tg.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-tg.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -227,7 +227,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.sns.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.sns.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         OpenvpnSubsEmailSNS:
@@ -247,7 +247,7 @@ Resources:
       - TargetGroupDef
       - OpenvpnSNSTopicDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-asg.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-asg.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicSubnetIdA:
@@ -272,7 +272,7 @@ Resources:
     Condition: CreateResourcesStage3
     DependsOn: AutoScaleGroupDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-nlb.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-nlb.yaml
       Parameters:
 #,,,,,,,,,,,,,,,,
         VPCID:
@@ -298,7 +298,7 @@ Resources:
       - TargetGroupDef
       - OpenvpnSNSTopicDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.cw.yaml
+      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.cw.yaml
       Parameters:
 #,,,,,,,,,,,,,,,,
         OpenvpnSNSTopicARN:
