@@ -239,7 +239,7 @@ Resources:
               cwd: "/etc/fail2ban/jail.d"
               command: "mv 00-firewalld.conf 00-firewalld.disable"
             HardenSsh:
-              cwd: "/tmp/scripts-ssh"
+              cwd: "/tmp/ssh"
               command: "./dh.cfn.openvpn-ec2-harden-ssh.sh"
           services:
             sysvinit:
@@ -284,7 +284,7 @@ Resources:
             1_kernelParams:
               command: "sysctl -p /etc/sysctl.d/30-dh.iptables.conf"
             2_iptRules:
-              cwd: "/tmp/scripts-iptables"
+              cwd: "/tmp/iptables"
               command: "./dh.cfn.openvpn-ec2-pub-iptables.sh"
           services:
             sysvinit:

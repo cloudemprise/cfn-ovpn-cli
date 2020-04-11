@@ -19,7 +19,7 @@ S3_EASYRSA_LOCATION="s3://$PROJECT_NAME/easyrsa/openvpn/gen-reqs/"
 
 BUILDSTAGE="Stage0"
 
-STACK_NAME="openvpn-set1-4"
+STACK_NAME="openvpn-set1-6"
 STACK_ID=""
 
 INSTANCE_ID_PUB1=""
@@ -58,16 +58,16 @@ cd ..
 
 #------------
 #Compress & Upload iptables script to S3
-tar -zcf - scripts-iptables/dh.cfn.openvpn-ec2-pub-iptables.sh | aws s3 cp - ${S3_IPTABLES_LOCATION}dh.cfn.openvpn-ec2-pub-iptables.sh.tar.gz
-tar -zcf - scripts-iptables/dh.cfn.openvpn-ec2-priv-iptables.sh | aws s3 cp - ${S3_IPTABLES_LOCATION}dh.cfn.openvpn-ec2-priv-iptables.sh.tar.gz
+tar -zcf - iptables/dh.cfn.openvpn-ec2-pub-iptables.sh | aws s3 cp - ${S3_IPTABLES_LOCATION}dh.cfn.openvpn-ec2-pub-iptables.sh.tar.gz
+tar -zcf - iptables/dh.cfn.openvpn-ec2-priv-iptables.sh | aws s3 cp - ${S3_IPTABLES_LOCATION}dh.cfn.openvpn-ec2-priv-iptables.sh.tar.gz
 #Compress & Upload sshd hardening script to S3
-tar -zcf - scripts-ssh/dh.cfn.openvpn-ec2-harden-ssh.sh | aws s3 cp - ${S3_SSH_LOCATION}dh.cfn.openvpn-ec2-harden-ssh.sh.tar.gz
+tar -zcf - ssh/dh.cfn.openvpn-ec2-harden-ssh.sh | aws s3 cp - ${S3_SSH_LOCATION}dh.cfn.openvpn-ec2-harden-ssh.sh.tar.gz
 #Compress & Upload openvpn server configs to S3
-cd configs-openvpn
+cd openvpn
 tar -zcf - dh.vpn.server.*1194.conf | aws s3 cp - ${S3_OPENVPN_LOCATION}server/dh.vpn.server.xxx1194.conf.tar.gz
 cd ..
 #Upload easy-rsa pki keygen configs to S3
-cd configs-easyrsa/
+cd easyrsa/
 tar -zcf - vars.* | aws s3 cp - ${S3_EASYRSA_LOCATION}dh.easyrsa.openvpn.vars.tar.gz
 cd ..
 
@@ -159,7 +159,7 @@ else echo "Error: Stack Wait Update Failed : $STACK_ID"
 fi
 
 # Copy client configuration files locally & timestamp
-cd configs-openvpn
+cd openvpn
 if (aws s3 sync s3://dh-scripts/openvpn/client/ . --exclude "*" --include "*.tar.gz")
 then 
   echo "OpenVPN client files successfully copied locally"
