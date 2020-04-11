@@ -1,4 +1,4 @@
-#https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-launch-pub-stage1.yaml
+#https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-priv.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Launch Template EC2 Server for OpenVPN Implementation.
@@ -19,22 +19,22 @@ Parameters:
 
 #--- AMI for EC2 instance
 #-------------------------------------------
-  PublicAmiId:
-    Description: Public AMI ID
+  PrivateAmiId:
+    Description: Private AMI ID
     Type: AWS::EC2::Image::Id
 #-------------------------------------------
 
 #--- Public Subnet ID
 #-------------------------------------------
-  PublicSubnetIdA:
-    Description: Public Subnet ID AZ-A
+  PrivateSubnetIdA:
+    Description: Private Subnet ID AZ-A
     Type: AWS::EC2::Subnet::Id
 #-------------------------------------------
 
 #--- Public Security Group Resource ID
 #-------------------------------------------
-  PublicSgResourceId:
-    Description: Public Security Group ID AZ-A
+  PrivateSgResourceId:
+    Description: Private Security Group ID AZ-A
     Type: AWS::EC2::SecurityGroup::Id
 #-------------------------------------------
 
@@ -47,13 +47,13 @@ Resources:
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PUBLIC EC2 DEFINITION
+# PRIVATE EC2 DEFINITION
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#--- Public EC2 Instance
+#--- Private EC2 Instance
 #-------------------------------------------
-  PublicEC2Instance:
+  PrivateEC2Instance:
     Type: AWS::EC2::Instance
 #.............................
     CreationPolicy:
@@ -66,7 +66,7 @@ Resources:
       Tags:
         -
           Key: "Name"
-          Value: "openvpn-public-1"
+          Value: "openvpn-private"
 #.............................
       AvailabilityZone:
         'Fn::Select':
@@ -77,7 +77,7 @@ Resources:
       DisableApiTermination: false
 #      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
       IamInstanceProfile: "dh.instprofile.managed.sysadmin"
-      ImageId: !Ref PublicAmiId
+      ImageId: !Ref PrivateAmiId
 #      ImageId: "ami-0d4c3eabb9e72650a"
       InstanceType: "t2.nano"
 #      InstanceType: "t2.micro"
@@ -85,9 +85,9 @@ Resources:
       KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
       Monitoring: false
 #      SubnetId:
-#        Ref: PublicSubnetIdA
+#        Ref: PrivateSubnetIdA
 #      SecurityGroupIds:
-#        - !Ref PublicSgResourceId
+#        - !Ref PrivateSgResourceId
 #.............................
       BlockDeviceMappings: 
       - 
@@ -100,13 +100,13 @@ Resources:
 #.............................
       NetworkInterfaces: 
       - 
-        Description: "Primary Public NIC"
+        Description: "Primary Private NIC"
         DeleteOnTermination: true
         DeviceIndex: 0
-        PrivateIpAddress: 10.0.128.10
-        SubnetId: !Ref PublicSubnetIdA
+        PrivateIpAddress: 10.0.0.10
+        SubnetId: !Ref PrivateSubnetIdA
         GroupSet: 
-          - !Ref PublicSgResourceId
+          - !Ref PrivateSgResourceId
 #.............................
       UserData:
         Fn::Base64:
@@ -115,11 +115,11 @@ Resources:
             # Update Packages, inc. aws-cfn-bootstrap
             yum update -y
             # Start cfn-init
-            /opt/aws/bin/cfn-init -v --configsets Step1 --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
+            /opt/aws/bin/cfn-init -v --configsets Step1 --stack ${AWS::StackId} --resource PrivateEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
             # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
             #/opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
             # All done so signal success
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PrivateEC2Instance --region ${AWS::Region}
 #.............................
     Metadata:
       Comment: Metadata description here.
@@ -131,7 +131,6 @@ Resources:
             - "dh-scripts"
 #          roleName: "dh.InstProfile.Managed.SysAdmin"
           roleName: "dh.instprofile.managed.sysadmin"
-
 #,,,,,,,,,,,,,,
       AWS::CloudFormation::Init:
         configSets:
@@ -142,7 +141,6 @@ Resources:
             - configHardenSsh
             - configIPtables
             - configLogs
-            - configWebServer
             - configEasyRSA
             - configOpenvpn
 
@@ -236,11 +234,11 @@ Resources:
               owner: root
               group: root
           commands:
-            HardenF2B:
+            fail2ban:
               cwd: "/etc/fail2ban/jail.d"
               command: "mv 00-firewalld.conf 00-firewalld.disable"
             HardenSsh:
-              cwd: "/tmp/ssh-scripts"
+              cwd: "/tmp/scripts-ssh"
               command: "./dh.cfn.openvpn-ec2-harden-ssh.sh"
           services:
             sysvinit:
@@ -253,7 +251,7 @@ Resources:
                 files:
                   - "/etc/fail2ban/jail.local"
                 commands: 
-                  - "HardenF2B"
+                  - "fail2ban"
               sshd:
                 enabled: "true"
                 ensureRunning: "true"
@@ -267,11 +265,11 @@ Resources:
             yum:
               iptables-services: []
           sources:
-            /tmp: "https://dh-scripts.s3.eu-central-1.amazonaws.com/iptables/dh.cfn.openvpn-ec2-pub-iptables.sh.tar.gz"
+            /tmp: "https://dh-scripts.s3.eu-central-1.amazonaws.com/iptables/dh.cfn.openvpn-ec2-priv-iptables.sh.tar.gz"
           files:
             "/etc/sysctl.d/30-dh.iptables.conf":
               content: |
-                net.ipv4.ip_forward = 1
+                #net.ipv4.ip_forward = 1
                 net.ipv6.conf.default.disable_ipv6 = 1
                 net.ipv6.conf.all.disable_ipv6 = 1
                 kernel.randomize_va_space = 1
@@ -285,8 +283,8 @@ Resources:
             1_kernelParams:
               command: "sysctl -p /etc/sysctl.d/30-dh.iptables.conf"
             2_iptRules:
-              cwd: "/tmp/iptables-scripts"
-              command: "./dh.cfn.openvpn-ec2-pub-iptables.sh"
+              cwd: "/tmp/scripts-iptables"
+              command: "./dh.cfn.openvpn-ec2-priv-iptables.sh"
           services:
             sysvinit:
               iptables:
@@ -347,122 +345,70 @@ Resources:
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-# This is included just for a quick initial test
-        configWebServer:
-          packages:
-            yum:
-              httpd: []
-          files:
-            "/var/www/html/index.html":
-              content: !Sub |
-                <h1>Hello from ${AWS::StackId}<h1>
-              mode: '000644'
-              owner: root
-              group: root
-# Service enabled within Autoscaling Launch Template 
-# UserData to facilitate validation.
-#          services:
-#            sysvinit:
-#              httpd:
-#                enabled: "true"
-#                ensureRunning: "true"
-#                files:
-#                  - "/var/www/html/index.html"
-
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
         configEasyRSA:
           packages:
             yum:
               easy-rsa: []
+          files:
+            "/usr/local/easy-rsa/vars":
+              content: |
+                set_var EASYRSA_REQ_CN "dh.vpn.cert-auth"
+                set_var EASYRSA_BATCH "yes"
+                set_var EASYRSA_ALGO ec
+                set_var EASYRSA_CURVE secp384r1
+                set_var EASYRSA_KEY_SIZE 4096
+              mode: '000644'
+              owner: root
+              group: root
           sources:
-            /usr/local/easy-rsa: "https://dh-scripts.s3.eu-central-1.amazonaws.com/easyrsa/openvpn/gen-reqs/dh.easyrsa.openvpn.vars.tar.gz"
+            /tmp/sign-reqs: "https://dh-scripts.s3.eu-central-1.amazonaws.com/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
           commands:
             1a_initPKI:
               command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
             1b_initPKI:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa init-pki"
-            2a_genDH:
+            2a_buildCA:
               cwd: "/usr/local/easy-rsa"
-              command: "mv vars.gen-dh vars"
-            2b_genDH:
+              command: "./easyrsa build-ca nopass"
+            2b_buildCA:
+              cwd: "/usr/local/easy-rsa/pki"
+              command: "cp ca.crt issued/"
+              #command: "tar -zcf - ca.crt | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/dh.easyrsa.ca.crt.tar.gz"
+            3_importReqs:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-dh"
-            3a_genSVR:
+              command: "for REQUEST in /tmp/sign-reqs/*; do ./easyrsa import-req $REQUEST $(basename $REQUEST .req); done"
+            4a_signReqs:
               cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.server vars"
-            3b_genSVR:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.server nopass"
-            4a_genClnt1:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.pfSn-ravi.client vars"
-            4b_genClnt1:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.pfSn-ravi.client nopass"
-            4c_genClnt1:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.pfSn-ravi.client.key s3://dh-scripts/openvpn/client/"
-            5a_genClnt2:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars.dh.vpn.pfSn-virt.client vars"
-            5b_genClnt2:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh.vpn.pfSn-virt.client nopass"
-            5c_genClnt2:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.pfSn-virt.client.key s3://dh-scripts/openvpn/client/"
-            6a_mvReqs:
-              cwd: "/usr/local/easy-rsa/pki/reqs"
-              command: "tar -zcf - *.req | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
+              command: "for REQUEST in /usr/local/easy-rsa/pki/reqs/*; do EntityName=$(basename $REQUEST .req); ./easyrsa sign-req ${EntityName##*.} $EntityName; done"
+            4b_signReqs_1:
+              cwd: "/usr/local/easy-rsa/pki/issued"
+              command: "tar -czf - ca.crt *.server.crt | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz"
+#              command: 'tar --transform "s/.*\///g" -zcf - ca.crt issued/*.server.crt | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz'
+            4b_signReqs_2:
+              cwd: "/usr/local/easy-rsa/pki/issued"
+              command: "tar -czf - ca.crt *.client.crt | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz"
+#              command: 'tar --transform "s/.*\///g" -zcf - ca.crt issued/*.client.crt | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz'
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
         configOpenvpn:
-          packages:
-            yum:
-              openvpn: []
-          sources:
-            /etc/openvpn/server: "https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/server/dh.vpn.server.xxx1194.conf.tar.gz"
-          files:
-            "/usr/local/bin/vpn-server-status":
-              content: |
-                #!/bin/bash
-                systemctl status openvpn-server@dh.vpn.server.udp1194
-                systemctl status openvpn-server@dh.vpn.server.tcp1194
-                journalctl -u openvpn-server@dh.vpn.server.udp1194
-                journalctl -u openvpn-server@dh.vpn.server.tcp1194
-              mode: '000755'
-              owner: ec2-user
-              group: ec2-user
           commands:
-            1a_gen-HMAC:
-              cwd: "/etc/openvpn/server"
-              command: "openvpn --genkey --secret HMAC-sig.key"
-            1b_gen-HMAC:
-              cwd: "/etc/openvpn/server"
-              command: "aws s3 cp HMAC-sig.key s3://dh-scripts/openvpn/client/"
-            2a_cpSvrDH:
-              cwd: "/usr/local/easy-rsa/pki"
-              command: "cp dh.pem /etc/openvpn/server/"
-            2b_cpSvrKey:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "cp dh.vpn.server.key /etc/openvpn/server/"
-            3_enableLogTimestamps:
-              cwd: "/usr/lib/systemd/system"
-              command: "cp openvpn-server@.service openvpn-server@.service.bak;sed -i 's/ --suppress-timestamps//g' openvpn-server@.service"
-            4_addPATH:
-              command: |
-                printf '\nPATH="/usr/local/bin:$PATH"\n' >> /home/ec2-user/.bashrc
-#          services:
-#            sysvinit:
-#              openvpn:
-#                enabled: "false"
-#                ensureRunning: "false"
-#                files:
-#                  - "/etc/openvpn/server/dh.vpn.server.udp1194.conf"
-#                  - "/etc/openvpn/server/dh.vpn.server.tcp1194.conf"
+            1_cmd: 
+              cwd: "/tmp"
+              command: "mkdir openvpn-client-files"
+            2_cmd:
+              cwd: "/tmp/openvpn-client-files"
+              command: "cp /usr/local/easy-rsa/pki/ca.crt ."
+            3_cmd:
+              cwd: "/tmp/openvpn-client-files"
+              command: "cp /usr/local/easy-rsa/pki/issued/*.client.crt ."
+            4_cmd:
+              cwd: "/tmp/openvpn-client-files"
+              command: 'aws s3 sync s3://dh-scripts/openvpn/client/ . --exclude "*" --include "*.key"'
+            5_cmd:
+              cwd: "/tmp/openvpn-client-files"
+              command: "tar -czf - * | aws s3 cp - s3://dh-scripts/openvpn/client/openvpn-client-files.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -477,10 +423,10 @@ Outputs:
 #===========================================
 
 
-#--- Public Instance ID
+#--- Private Instance ID
 #-------------------------------------------
-  Pub1EC2InstanceId:
-    Description: Public Instance ID
+  PrivEC2InstanceId:
+    Description: Stack1 Private Instance ID
     Value:
-      Ref: PublicEC2Instance
+      Ref: PrivateEC2Instance
 #-------------------------------------------
