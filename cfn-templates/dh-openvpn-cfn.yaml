@@ -1,4 +1,3 @@
-#https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-set1.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   An OpenVPN implementation that comprises:
@@ -99,7 +98,7 @@ Resources:
   VPCDef:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-vpc.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.vpc.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         BuildStage:
@@ -115,7 +114,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-nacl.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.vpc-nacl.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -139,7 +138,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-sg.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.vpc-sg.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -158,7 +157,7 @@ Resources:
     Condition: CreateResourcesStage1
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-pub-1.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-pub.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicAmiId:
@@ -174,7 +173,7 @@ Resources:
     Condition: CreateResourcesStage1
     DependsOn: InstancePub1Def
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-priv.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-priv.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PrivateAmiId:
@@ -183,22 +182,6 @@ Resources:
           !GetAtt VPCDef.Outputs.PrivateSubnetIdA
         PrivateSgResourceId:
           !GetAtt SgDefs.Outputs.PrivateSgResourceId
-      TimeoutInMinutes: 10
-#-------------------------------------------
-  InstancePub2Def:
-    Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage2
-    DependsOn: VPCDef
-    Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-pub-2.yaml
-#,,,,,,,,,,,,,,,,
-      Parameters:
-        PublicAmiId:
-          !Ref CurrentAmi
-        PublicSubnetIdA:
-          !GetAtt VPCDef.Outputs.PublicSubnetIdA
-        PublicSgResourceId:
-          !GetAtt SgDefs.Outputs.PublicSgResourceId
       TimeoutInMinutes: 10
 #-------------------------------------------
 #-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
@@ -210,7 +193,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-lt.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-lt.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicLtAmiId:
@@ -228,7 +211,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-tg.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-tg.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -244,7 +227,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-sns.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.sns.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         OpenvpnSubsEmailSNS:
@@ -264,7 +247,7 @@ Resources:
       - TargetGroupDef
       - OpenvpnSNSTopicDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-asg.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-asg.yaml
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicSubnetIdA:
@@ -289,7 +272,7 @@ Resources:
     Condition: CreateResourcesStage3
     DependsOn: AutoScaleGroupDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-nlb.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.ec2-nlb.yaml
       Parameters:
 #,,,,,,,,,,,,,,,,
         VPCID:
@@ -315,7 +298,7 @@ Resources:
       - TargetGroupDef
       - OpenvpnSNSTopicDef
     Properties:
-      TemplateURL: https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-cw.yaml
+      TemplateURL: https://dh-cfn-templates.s3.eu-central-1.amazonaws.com/openvpn/dh-openvpn-cfn.cw.yaml
       Parameters:
 #,,,,,,,,,,,,,,,,
         OpenvpnSNSTopicARN:
@@ -346,13 +329,6 @@ Outputs:
     Value:
       !GetAtt InstancePrivDef.Outputs.PrivEC2InstanceId
 #-------------------------------------------
-  InstanceIdPublic2:
-    Description:  Public Instance ID
-    Condition: CreateResourcesStage2
-    Value:
-      !GetAtt InstancePub2Def.Outputs.Pub2EC2InstanceId
-#-------------------------------------------
-
 #  ExportsStackName:
 #    Value: !Ref 'AWS::StackName'
 #    Export:
