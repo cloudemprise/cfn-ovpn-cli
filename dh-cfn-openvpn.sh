@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e 
 
 #!! COMMENT BEGIN
 : <<'END'
@@ -9,30 +10,36 @@ END
 #!! COMMENT END
 
 
-#S3_TEMPLATE_LOCATION="s3://dh-cfn-templates/openvpn/"
+# Name given to entire Project
+# must be compatible with s3bucket name restrictions
 PROJECT_NAME="dh-scripts"
-S3_TEMPLATE_LOCATION="s3://$PROJECT_NAME/cfn-templates/"
-S3_IPTABLES_LOCATION="s3://$PROJECT_NAME/iptables/"
-S3_SSH_LOCATION="s3://$PROJECT_NAME/ssh/"
-S3_OPENVPN_LOCATION="s3://$PROJECT_NAME/openvpn/"
-S3_EASYRSA_LOCATION="s3://$PROJECT_NAME/easyrsa/openvpn/gen-reqs/"
+[[ ! $PROJECT_NAME =~ (^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$) ]] && { echo "Invalid Project Name "; exit 1; } || { echo "Project Name: $PROJECT_NAME"; }
 
-BUILDSTAGE="Stage0"
 
-STACK_NAME="openvpn-set1-6"
+
+# S3 project directory structure
+S3_LOCATION_TEMPLATES="s3://$PROJECT_NAME/cfn-templates/"
+S3_LOCATION_IPTABLES="s3://$PROJECT_NAME/iptables/"
+S3_LOCATION_SSH="s3://$PROJECT_NAME/ssh/"
+S3_LOCATION_OPENVPN="s3://$PROJECT_NAME/openvpn/"
+#S3_LOCATION_EASYRSA="s3://$PROJECT_NAME/easy-rsa/openvpn/gen-reqs/"
+S3_LOCATION_EASYRSA="s3://$PROJECT_NAME/easy-rsa/"
+
+
+BUILD_COUNTER="Stage0"
+
+# Name given to Cloudformation Stack
+STACK_NAME="openvpn-set1-7"
 STACK_ID=""
 
-INSTANCE_ID_PUB1=""
-INSTANCE_ID_PUB2=""
+INSTANCE_ID_PUB=""
 INSTANCE_ID_PRIV=""
 
 AMI_CURRENT=""
-AMI_IMAGE_PUB1=""
-AMI_IMAGE_PUB2=""
+AMI_IMAGE_PUB=""
 AMI_IMAGE_PRIV=""
 
 AWS_ACC_ID=""
-SNAPSHOT_PUB1=""
 
 EC2_ROLE_NAME="dh.instprofile.managed.sysadmin"
 EC2_ROLE_ID=""
@@ -50,27 +57,24 @@ echo "EC2-Role userid : $EC2_ROLE_ID"
 
 #------------
 #Upload Latest (Nested) Templates to S3
-echo "Uploading Cloudformation Templates to S3 location: $S3_TEMPLATE_LOCATION"
+echo "Uploading Cloudformation Templates to S3 location: $S3_LOCATION_TEMPLATES"
 cd cfn-templates
-for file in $(ls *.yaml); do [ -f $file ] && aws s3 cp $file $S3_TEMPLATE_LOCATION || echo "Failed to upload : $file"; done
+for file in $(ls *.yaml); do [ -f $file ] && aws s3 cp $file $S3_LOCATION_TEMPLATES || echo "Failed to upload : $file"; done
 cd ..
 
 
+set -x
 #------------
 #Compress & Upload iptables script to S3
-tar -zcf - iptables/dh.cfn.openvpn-ec2-pub-iptables.sh | aws s3 cp - ${S3_IPTABLES_LOCATION}dh.cfn.openvpn-ec2-pub-iptables.sh.tar.gz
-tar -zcf - iptables/dh.cfn.openvpn-ec2-priv-iptables.sh | aws s3 cp - ${S3_IPTABLES_LOCATION}dh.cfn.openvpn-ec2-priv-iptables.sh.tar.gz
+tar -zcf - iptables/dh.cfn.openvpn-ec2-pub-iptables.sh | aws s3 cp - ${S3_LOCATION_IPTABLES}dh.cfn.openvpn-ec2-pub-iptables.sh.tar.gz
+tar -zcf - iptables/dh.cfn.openvpn-ec2-priv-iptables.sh | aws s3 cp - ${S3_LOCATION_IPTABLES}dh.cfn.openvpn-ec2-priv-iptables.sh.tar.gz
 #Compress & Upload sshd hardening script to S3
-tar -zcf - ssh/dh.cfn.openvpn-ec2-harden-ssh.sh | aws s3 cp - ${S3_SSH_LOCATION}dh.cfn.openvpn-ec2-harden-ssh.sh.tar.gz
+tar -zcf - ssh/dh.cfn.openvpn-ec2-harden-ssh.sh | aws s3 cp - ${S3_LOCATION_SSH}dh.cfn.openvpn-ec2-harden-ssh.sh.tar.gz
 #Compress & Upload openvpn server configs to S3
-cd openvpn
-tar -zcf - dh.vpn.server.*1194.conf | aws s3 cp - ${S3_OPENVPN_LOCATION}server/dh.vpn.server.xxx1194.conf.tar.gz
-cd ..
+tar -zcf - openvpn/dh.vpn.server.*1194.conf | aws s3 cp - ${S3_LOCATION_OPENVPN}server/dh.vpn.server.xxx1194.conf.tar.gz
 #Upload easy-rsa pki keygen configs to S3
-cd easyrsa/
-tar -zcf - vars.* | aws s3 cp - ${S3_EASYRSA_LOCATION}dh.easyrsa.openvpn.vars.tar.gz
-cd ..
-
+tar -zcf - easy-rsa/vars.* | aws s3 cp - ${S3_LOCATION_EASYRSA}gen-reqs/dh.easyrsa.openvpn.vars.tar.gz
+unset -x
 
 
 #------------
@@ -80,81 +84,85 @@ echo "The lastest Amazon Linux 2 AMI : $AMI_CURRENT"
 
 #------------
 # Create Stage0 Stack
-echo "$BUILDSTAGE"
-STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage0 --template-url https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml --on-failure DO_NOTHING --output text)
-echo "$BUILDSTAGE Stack has now been Initiated..."
+echo "$BUILD_COUNTER"
+STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage0 --template-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml" --on-failure DO_NOTHING --output text)
+echo "$BUILD_COUNTER Stack has now been Initiated..."
 echo "Cloudformation Stack ID : $STACK_ID"
 # Wait for Stage0 to complete
 if (aws cloudformation wait stack-create-complete --stack-name $STACK_ID)
-then echo "$BUILDSTAGE Stack Update is now Complete : $STACK_ID"
+then echo "$BUILD_COUNTER Stack Update is now Complete : $STACK_ID"
 else echo "Error: Stack Wait Update Failed : $STACK_ID"
 fi
 
 
+
+
+
 #------------
 # Update Stack with Stage1 parameters
-BUILDSTAGE="Stage1"
-echo "$BUILDSTAGE"
-aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage1 --template-url https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml > /dev/null
-echo "$BUILDSTAGE Stack has now been Initiated..."
+BUILD_COUNTER="Stage1"
+echo "$BUILD_COUNTER"
+aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage1 --use-previous-template > /dev/null
+echo "$BUILD_COUNTER Stack has now been Initiated..."
 # Wait for Stage1 Update to complete
 if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
-then echo "$BUILDSTAGE Stack Update is now Complete : $STACK_ID"
+then echo "$BUILD_COUNTER Stack Update is now Complete : $STACK_ID"
 else echo "Error: Stack Wait Update Failed : $STACK_ID"
 fi
 
 #------------
 # Grab the IDs of the ec2 instances for further processing
-INSTANCE_ID_PUB1=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic1'].OutputValue")
-echo "Public $BUILDSTAGE Instance ID is : $INSTANCE_ID_PUB1"
+INSTANCE_ID_PUB=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic1'].OutputValue")
+echo "Public $BUILD_COUNTER Instance ID is : $INSTANCE_ID_PUB"
 INSTANCE_ID_PRIV=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPrivate'].OutputValue")
 echo "Private Instance ID is : $INSTANCE_ID_PRIV"
 
 #------------
 # Validity Check Here.
 # Wait for instance status ok
-aws ec2 wait instance-status-ok --instance-ids $INSTANCE_ID_PUB1 &
+aws ec2 wait instance-status-ok --instance-ids $INSTANCE_ID_PUB &
 P1=$!
 aws ec2 wait instance-status-ok --instance-ids $INSTANCE_ID_PRIV &
 P2=$!
 wait $P1 $P2
-echo "Public $BUILDSTAGE Instance State: Ok..."
+echo "Public $BUILD_COUNTER Instance State: Ok..."
 echo "Private Instance State: Ok..."
+
+
+
 
 #------------
 # Create IMAGE AMIs
-AMI_IMAGE_PUB1=$(aws ec2 create-image --instance-id $INSTANCE_ID_PUB1 --name $(echo "openvpn-pub1-$INSTANCE_ID_PUB1") --description "openvpn-pub1-ami" --output text)
-echo "Public $BUILDSTAGE AMI creation has now been initiated : $AMI_IMAGE_PUB1"
+AMI_IMAGE_PUB=$(aws ec2 create-image --instance-id $INSTANCE_ID_PUB --name $(echo "openvpn-pub1-$INSTANCE_ID_PUB") --description "openvpn-pub1-ami" --output text)
+echo "Public $BUILD_COUNTER AMI creation has now been initiated : $AMI_IMAGE_PUB"
 AMI_IMAGE_PRIV=$(aws ec2 create-image --instance-id $INSTANCE_ID_PRIV --name $(echo "openvpn-priv-$INSTANCE_ID_PRIV") --description "openvpn-priv-ami" --output text)
 echo "Private AMI creation has now been initiated : $AMI_IMAGE_PRIV"
 
 # Wait for new AMIs to become available
-aws ec2 wait image-available --image-ids $AMI_IMAGE_PUB1 &
+aws ec2 wait image-available --image-ids $AMI_IMAGE_PUB &
 P1=$!
 aws ec2 wait image-available --image-ids $AMI_IMAGE_PRIV &
 P2=$!
 wait $P1 $P2
-echo "Public $BUILDSTAGE AMI is now available : $AMI_IMAGE_PUB1 "
+echo "Public $BUILD_COUNTER AMI is now available : $AMI_IMAGE_PUB "
 echo "Private AMI is now available : $AMI_IMAGE_PRIV"
 
 # Terminate the instances - no longer needed.
-aws ec2 terminate-instances --instance-ids $INSTANCE_ID_PUB1 $INSTANCE_ID_PRIV > /dev/null
-echo "$BUILDSTAGE Instances have now terminated..."
-
-
+aws ec2 terminate-instances --instance-ids $INSTANCE_ID_PUB $INSTANCE_ID_PRIV > /dev/null
+echo "$BUILD_COUNTER Instances have now terminated..."
 
 
 
 #------------
 # Create Launch Template for AutoScaling Group
 # Update Stack with Stage3 parameters
-BUILDSTAGE="Stage3"
-echo "$BUILDSTAGE"
-aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=BuildStage,ParameterValue=$BUILDSTAGE  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB1 --tags Key=Name,Value=openvpn-stage3 --template-url https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml > /dev/null
-echo "$BUILDSTAGE Stack has now been Initiated..."
+BUILD_COUNTER="Stage3"
+echo "$BUILD_COUNTER"
+aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB --tags Key=Name,Value=openvpn-stage3 --use-previous-template > /dev/null
+echo "$BUILD_COUNTER Stack has now been Initiated..."
 # Wait for Stage3 Update to complete
 if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
-then echo "$BUILDSTAGE Stack Update is now Complete : $STACK_ID"
+then echo "$BUILD_COUNTER Stack Update is now Complete : $STACK_ID"
 else echo "Error: Stack Wait Update Failed : $STACK_ID"
 fi
 

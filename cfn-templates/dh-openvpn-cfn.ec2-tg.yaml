@@ -1,4 +1,3 @@
-#https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-ec2-tg.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Target Group for OpenVPN Implementation.
