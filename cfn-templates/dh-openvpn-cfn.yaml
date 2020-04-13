@@ -20,36 +20,50 @@ Metadata: {}
 Parameters:
 #===========================================
 
-#--- Stack Build Stage Indicator
+#--- The Project Name
+#-------------------------------------------
+  ProjectName:
+    Description: Name of this Openvpn project.
+    ConstraintDescription: Specify name of the project.
+    Type: String
+    Default: "dh-openvpn"
+    MinLength: 3
+    MaxLength: 63
+    AllowedPattern: (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
+
+#--- Script Build Stage Counter
 #-------------------------------------------
   BuildStage: 
-    Description: Openvpn infrastructure creation comprises various stages. 
-    ConstraintDescription: Specify which Stage to provision.
-    Default: Stage0
+    Description: Shell script Stage counter.
+    ConstraintDescription: Must be > 0 & < 3.
     Type: String
+    Default: Stage0
     AllowedValues: 
       - Stage0
       - Stage1
       - Stage2
       - Stage3
 
-#--- Latest Amazon_Linux_2 AMI 
+#--- Latest Amazon_Linux_2 AMI
 #-------------------------------------------
+#   (Value retrived via shell scrip)
   CurrentAmi:
     Description: The AMI to use for EC2 instances.
     Type: AWS::EC2::Image::Id
-#   (Value retrived via shell scrip)
 # SSM method below but variable type not versatile to scripts. 
 #  myAmi:
 #    Description: The AMI to use for EC2 instances.
 #    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
 #    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
 
+#--- SNS Email Notifications
 #-------------------------------------------
   OpenvpnSubsEmailSNS:
-    Description: Openvpn SNS Email Endpoint
+    Description: Openvpn SNS Email Endpoint.
+    ConstraintDescription: Must be a valid email address.
     Type: String
     Default: "dh.info@posteo.net"
+    AllowedPattern: ^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$
 #-------------------------------------------
 
 
@@ -98,7 +112,16 @@ Resources:
   VPCDef:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.vpc.yaml
+#,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.vpc.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         BuildStage:
@@ -114,7 +137,16 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.vpc-nacl.yaml
+#,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.vpc-nacl.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -138,7 +170,16 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.vpc-sg.yaml
+#,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.vpc-sg.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -152,14 +193,25 @@ Resources:
 
 #--- Private/Public EC2 Instances
 #-------------------------------------------
-  InstancePub1Def:
+  InstancePubDef:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage1
     DependsOn: VPCDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-pub.yaml
+#,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.ec2-pub.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         PublicAmiId:
           !Ref CurrentAmi
         PublicSubnetIdA:
@@ -171,11 +223,22 @@ Resources:
   InstancePrivDef:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage1
-    DependsOn: InstancePub1Def
+    DependsOn: InstancePubDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-priv.yaml
+#,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.ec2-priv.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         PrivateAmiId:
           !Ref CurrentAmi
         PrivateSubnetIdA:
@@ -193,7 +256,16 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-lt.yaml
+#,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.ec2-lt.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicLtAmiId:
@@ -211,7 +283,16 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-tg.yaml
+#,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.ec2-tg.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -227,7 +308,16 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage3
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.sns.yaml
+#,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.sns.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         OpenvpnSubsEmailSNS:
@@ -247,7 +337,16 @@ Resources:
       - TargetGroupDef
       - OpenvpnSNSTopicDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-asg.yaml
+#,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.ec2-asg.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicSubnetIdA:
@@ -272,9 +371,18 @@ Resources:
     Condition: CreateResourcesStage3
     DependsOn: AutoScaleGroupDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.ec2-nlb.yaml
-      Parameters:
 #,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.ec2-nlb.yaml"
+#,,,,,,,,,,,,,,,,
+      Parameters:
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
         PublicSubnetIdA:
@@ -298,9 +406,18 @@ Resources:
       - TargetGroupDef
       - OpenvpnSNSTopicDef
     Properties:
-      TemplateURL: https://dh-scripts.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.cw.yaml
-      Parameters:
 #,,,,,,,,,,,,,,,,
+      TemplateURL:
+        !Join
+          - ""
+          - - "https://"
+            - !Ref ProjectName
+            - ".s3."
+            - !Ref "AWS::Region"
+            - ".amazonaws.com/"
+            - "cfn-templates/dh-openvpn-cfn.cw.yaml"
+#,,,,,,,,,,,,,,,,
+      Parameters:
         OpenvpnSNSTopicARN:
           !GetAtt OpenvpnSNSTopicDef.Outputs.OpenvpnSNSTopicARN
       TimeoutInMinutes: 5
@@ -321,7 +438,7 @@ Outputs:
     Description:  Public Instance ID
     Condition: CreateResourcesStage1
     Value:
-      !GetAtt InstancePub1Def.Outputs.Pub1EC2InstanceId
+      !GetAtt InstancePubDef.Outputs.Pub1EC2InstanceId
 #-------------------------------------------
   InstanceIdPrivate:
     Description: Private Instance ID

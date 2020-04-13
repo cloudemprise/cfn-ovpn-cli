@@ -1,4 +1,3 @@
-# https://s3.eu-central-1.amazonaws.com/dh.cfn-templates/openvpn/dh.cform.openvpn-sg.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   NetSec Defense-In-Depth Restrictive Security Group Definitions.

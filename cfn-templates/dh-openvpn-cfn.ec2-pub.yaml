@@ -16,6 +16,18 @@ Metadata: {}
 Parameters:
 #===========================================
 
+#--- The Project Name
+#-------------------------------------------
+  ProjectName:
+    Description: Name of this Openvpn project.
+    ConstraintDescription: Specify name of the project.
+    Type: String
+    Default: "dh-openvpn"
+    MinLength: 3
+    MaxLength: 63
+    AllowedPattern: (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
+#    AllowedPattern: ^([0-9a-z.-])$
+
 #--- AMI for EC2 instance
 #-------------------------------------------
   PublicAmiId:
@@ -127,7 +139,8 @@ Resources:
         rolebased: 
           type: "S3"
           buckets: 
-            - "dh-scripts"
+            - !Ref ProjectName
+#            - "dh-scripts"
 #          roleName: "dh.InstProfile.Managed.SysAdmin"
           roleName: "dh.instprofile.managed.sysadmin"
 
@@ -219,7 +232,15 @@ Resources:
             yum:
               fail2ban: []
           sources:
-            /tmp: "https://dh-scripts.s3.eu-central-1.amazonaws.com/ssh/dh.cfn.openvpn-ec2-harden-ssh.sh.tar.gz"
+            /tmp: 
+              !Join
+                - ""
+                - - "https://"
+                  - !Ref ProjectName
+                  - ".s3."
+                  - !Ref "AWS::Region"
+                  - ".amazonaws.com/"
+                  - "ssh/dh.cfn.openvpn-ec2-harden-ssh.sh.tar.gz"
           files:
             "/etc/fail2ban/jail.local":
               content: |
@@ -266,7 +287,15 @@ Resources:
             yum:
               iptables-services: []
           sources:
-            /tmp: "https://dh-scripts.s3.eu-central-1.amazonaws.com/iptables/dh.cfn.openvpn-ec2-pub-iptables.sh.tar.gz"
+            /tmp:
+              !Join
+                - ""
+                - - "https://"
+                  - !Ref ProjectName
+                  - ".s3."
+                  - !Ref "AWS::Region"
+                  - ".amazonaws.com/"
+                  - "iptables/dh.cfn.openvpn-ec2-pub-iptables.sh.tar.gz"
           files:
             "/etc/sysctl.d/30-dh.iptables.conf":
               content: |
@@ -375,7 +404,15 @@ Resources:
             yum:
               easy-rsa: []
           sources:
-            /usr/local/easy-rsa: "https://dh-scripts.s3.eu-central-1.amazonaws.com/easyrsa/openvpn/gen-reqs/dh.easyrsa.openvpn.vars.tar.gz"
+            /usr/local:
+              !Join
+                - ""
+                - - "https://"
+                  - !Ref ProjectName
+                  - ".s3."
+                  - !Ref "AWS::Region"
+                  - ".amazonaws.com/"
+                  - "easy-rsa/gen-reqs/dh.easyrsa.openvpn.vars.tar.gz"
           commands:
             1a_initPKI:
               command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
@@ -414,7 +451,7 @@ Resources:
               command: "aws s3 cp dh.vpn.pfSn-virt.client.key s3://dh-scripts/openvpn/client/"
             6a_mvReqs:
               cwd: "/usr/local/easy-rsa/pki/reqs"
-              command: "tar -zcf - *.req | aws s3 cp - s3://dh-scripts/easyrsa/openvpn/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
+              command: "tar -zcf - *.req | aws s3 cp - s3://dh-scripts/easy-rsa/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -423,7 +460,15 @@ Resources:
             yum:
               openvpn: []
           sources:
-            /etc/openvpn/server: "https://dh-scripts.s3.eu-central-1.amazonaws.com/openvpn/server/dh.vpn.server.xxx1194.conf.tar.gz"
+            /etc/openvpn/server:
+              !Join
+                - ""
+                - - "https://"
+                  - !Ref ProjectName
+                  - ".s3."
+                  - !Ref "AWS::Region"
+                  - ".amazonaws.com/"
+                  - "openvpn/server/dh.vpn.server.xxx1194.conf.tar.gz"
           files:
             "/usr/local/bin/vpn-server-status":
               content: |

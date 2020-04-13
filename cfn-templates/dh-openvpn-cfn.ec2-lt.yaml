@@ -1,4 +1,3 @@
-#https://s3.eu-central-1.amazonaws.com/dh-cfn-templates/openvpn/dh.cfn.openvpn-ec2-lt.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Launch Template EC2 Server for OpenVPN Implementation.
@@ -73,7 +72,7 @@ Resources:
             #!/bin/bash -xe
             # Download Server Certs & start Openvpn dual-protocol service
             cd /etc/openvpn/server
-            aws s3 sync s3://dh-scripts/easyrsa/openvpn/issued-certs/ . --exclude "*" --include "*.server.tar.gz"
+            aws s3 sync s3://dh-scripts/easy-rsa/issued-certs/ . --exclude "*" --include "*.server.tar.gz"
             tar -xzf *.server.tar.gz
             systemctl enable openvpn-server@dh.vpn.server.udp1194
             systemctl enable openvpn-server@dh.vpn.server.tcp1194
