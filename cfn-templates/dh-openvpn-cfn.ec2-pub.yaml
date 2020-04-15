@@ -26,7 +26,6 @@ Parameters:
     MinLength: 3
     MaxLength: 63
     AllowedPattern: (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
-#    AllowedPattern: ^([0-9a-z.-])$
 
 #--- AMI for EC2 instance
 #-------------------------------------------
@@ -77,7 +76,7 @@ Resources:
       Tags:
         -
           Key: "Name"
-          Value: "openvpn-public-1"
+          Value: "openvpn-public"
 #.............................
       AvailabilityZone:
         'Fn::Select':
@@ -86,13 +85,9 @@ Resources:
               Ref: 'AWS::Region'
 #.............................
       DisableApiTermination: false
-#      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
       IamInstanceProfile: "dh.instprofile.managed.sysadmin"
       ImageId: !Ref PublicAmiId
-#      ImageId: "ami-0d4c3eabb9e72650a"
       InstanceType: "t2.nano"
-#      InstanceType: "t2.micro"
-#      KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
       KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
       Monitoring: false
 #      SubnetId:
@@ -140,8 +135,6 @@ Resources:
           type: "S3"
           buckets: 
             - !Ref ProjectName
-#            - "dh-scripts"
-#          roleName: "dh.InstProfile.Managed.SysAdmin"
           roleName: "dh.instprofile.managed.sysadmin"
 
 #,,,,,,,,,,,,,,
@@ -168,6 +161,8 @@ Resources:
 #          commands: {}
 #          services: {}
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
         configMisc:
           commands:
             1_dhcpv6:
@@ -375,7 +370,7 @@ Resources:
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-# This is included just for a quick initial test
+# For use: Network LoadBalancer HealthChecks
         configWebServer:
           packages:
             yum:
@@ -439,7 +434,8 @@ Resources:
               command: "./easyrsa gen-req dh.vpn.pfSn-ravi.client nopass"
             4c_genClnt1:
               cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.pfSn-ravi.client.key s3://dh-scripts/openvpn/client/"
+              command: 
+                !Sub "aws s3 cp dh.vpn.pfSn-ravi.client.key s3://${ProjectName}/openvpn/client/"
             5a_genClnt2:
               cwd: "/usr/local/easy-rsa"
               command: "mv vars.dh.vpn.pfSn-virt.client vars"
@@ -448,10 +444,12 @@ Resources:
               command: "./easyrsa gen-req dh.vpn.pfSn-virt.client nopass"
             5c_genClnt2:
               cwd: "/usr/local/easy-rsa/pki/private"
-              command: "aws s3 cp dh.vpn.pfSn-virt.client.key s3://dh-scripts/openvpn/client/"
+              command: 
+                !Sub "aws s3 cp dh.vpn.pfSn-virt.client.key s3://${ProjectName}/openvpn/client/"
             6a_mvReqs:
               cwd: "/usr/local/easy-rsa/pki/reqs"
-              command: "tar -zcf - *.req | aws s3 cp - s3://dh-scripts/easy-rsa/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
+              command: 
+                !Sub "tar -zcf - *.req | aws s3 cp - s3://${ProjectName}/easy-rsa/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -460,7 +458,7 @@ Resources:
             yum:
               openvpn: []
           sources:
-            /etc/openvpn/server:
+            /etc:
               !Join
                 - ""
                 - - "https://"
@@ -486,7 +484,8 @@ Resources:
               command: "openvpn --genkey --secret HMAC-sig.key"
             1b_gen-HMAC:
               cwd: "/etc/openvpn/server"
-              command: "aws s3 cp HMAC-sig.key s3://dh-scripts/openvpn/client/"
+              command: 
+                !Sub "aws s3 cp HMAC-sig.key s3://${ProjectName}/openvpn/client/"
             2a_cpSvrDH:
               cwd: "/usr/local/easy-rsa/pki"
               command: "cp dh.pem /etc/openvpn/server/"

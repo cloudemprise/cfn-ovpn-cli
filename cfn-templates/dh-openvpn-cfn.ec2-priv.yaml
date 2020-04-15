@@ -26,7 +26,6 @@ Parameters:
     MinLength: 3
     MaxLength: 63
     AllowedPattern: (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
-#    AllowedPattern: ^([0-9a-z.-])$
 
 #--- AMI for EC2 instance
 #-------------------------------------------
@@ -86,13 +85,9 @@ Resources:
               Ref: 'AWS::Region'
 #.............................
       DisableApiTermination: false
-#      IamInstanceProfile: "dh.InstProfile.Managed.SysAdmin"
       IamInstanceProfile: "dh.instprofile.managed.sysadmin"
       ImageId: !Ref PrivateAmiId
-#      ImageId: "ami-0d4c3eabb9e72650a"
       InstanceType: "t2.nano"
-#      InstanceType: "t2.micro"
-#      KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
       KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
       Monitoring: false
 #      SubnetId:
@@ -139,8 +134,7 @@ Resources:
         rolebased: 
           type: "S3"
           buckets: 
-            - "dh-scripts"
-#          roleName: "dh.InstProfile.Managed.SysAdmin"
+            - !Ref ProjectName
           roleName: "dh.instprofile.managed.sysadmin"
 #,,,,,,,,,,,,,,
       AWS::CloudFormation::Init:
@@ -165,6 +159,8 @@ Resources:
 #          commands: {}
 #          services: {}
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
         configMisc:
           commands:
             1_dhcpv6:
@@ -409,7 +405,6 @@ Resources:
             2b_buildCA:
               cwd: "/usr/local/easy-rsa/pki"
               command: "cp ca.crt issued/"
-              #command: "tar -zcf - ca.crt | aws s3 cp - s3://dh-scripts/easy-rsa/dh.easyrsa.ca.crt.tar.gz"
             3_importReqs:
               cwd: "/usr/local/easy-rsa"
               command: "for REQUEST in /tmp/sign-reqs/*; do ./easyrsa import-req $REQUEST $(basename $REQUEST .req); done"
@@ -418,12 +413,12 @@ Resources:
               command: "for REQUEST in /usr/local/easy-rsa/pki/reqs/*; do EntityName=$(basename $REQUEST .req); ./easyrsa sign-req ${EntityName##*.} $EntityName; done"
             4b_signReqs_1:
               cwd: "/usr/local/easy-rsa/pki/issued"
-              command: "tar -czf - ca.crt *.server.crt | aws s3 cp - s3://dh-scripts/easy-rsa/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz"
-#              command: 'tar --transform "s/.*\///g" -zcf - ca.crt issued/*.server.crt | aws s3 cp - s3://dh-scripts/easy-rsa/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz'
+              command: 
+                !Sub "tar -czf - ca.crt *.server.crt | aws s3 cp - s3://${ProjectName}/easy-rsa/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz"
             4b_signReqs_2:
               cwd: "/usr/local/easy-rsa/pki/issued"
-              command: "tar -czf - ca.crt *.client.crt | aws s3 cp - s3://dh-scripts/easy-rsa/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz"
-#              command: 'tar --transform "s/.*\///g" -zcf - ca.crt issued/*.client.crt | aws s3 cp - s3://dh-scripts/easy-rsa/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz'
+              command: 
+                !Sub "tar -czf - ca.crt *.client.crt | aws s3 cp - s3://${ProjectName}/easy-rsa/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -440,10 +435,12 @@ Resources:
               command: "cp /usr/local/easy-rsa/pki/issued/*.client.crt ."
             4_cmd:
               cwd: "/tmp/openvpn-client-files"
-              command: 'aws s3 sync s3://dh-scripts/openvpn/client/ . --exclude "*" --include "*.key"'
+              command: 
+                !Sub 'aws s3 sync s3://${ProjectName}/openvpn/client/ . --exclude "*" --include "*.key"'
             5_cmd:
               cwd: "/tmp/openvpn-client-files"
-              command: "tar -czf - * | aws s3 cp - s3://dh-scripts/openvpn/client/openvpn-client-files.tar.gz"
+              command: 
+                !Sub "tar -czf - * | aws s3 cp - s3://${ProjectName}/openvpn/client/openvpn-client-files.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
