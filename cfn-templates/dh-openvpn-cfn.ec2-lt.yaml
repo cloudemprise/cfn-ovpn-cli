@@ -16,6 +16,17 @@ Metadata: {}
 Parameters:
 #===========================================
 
+#--- The Project Name
+#-------------------------------------------
+  ProjectName:
+    Description: Name of this Openvpn project.
+    ConstraintDescription: Specify name of the project.
+    Type: String
+    Default: "dh-openvpn"
+    MinLength: 3
+    MaxLength: 63
+    AllowedPattern: (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
+
 #--- AMI for EC2 instance
 #-------------------------------------------
   PublicLtAmiId:
@@ -55,7 +66,6 @@ Resources:
       LaunchTemplateData:
         ImageId: !Ref PublicLtAmiId
         InstanceType: "t2.nano"
-#        KeyName: !Sub "dh.SSH.Default_${AWS::Region}"
         KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
         Monitoring:
           Enabled: false
@@ -63,24 +73,23 @@ Resources:
           - !Ref PublicSgResourceId
 #.............................
         IamInstanceProfile: 
-#          Name: "dh.InstProfile.Managed.SysAdmin"
           Name: "dh.instprofile.managed.sysadmin"
-#            Arn: "arn:aws:iam::255822906044:instance-profile/dh.InstProfile.Managed.SysAdmin"
 #.............................
         UserData:
-          Fn::Base64: |
-            #!/bin/bash -xe
-            # Download Server Certs & start Openvpn dual-protocol service
-            cd /etc/openvpn/server
-            aws s3 sync s3://dh-scripts/easy-rsa/issued-certs/ . --exclude "*" --include "*.server.tar.gz"
-            tar -xzf *.server.tar.gz
-            systemctl enable openvpn-server@dh.vpn.server.udp1194
-            systemctl enable openvpn-server@dh.vpn.server.tcp1194
-            systemctl start openvpn-server@dh.vpn.server.udp1194
-            systemctl start openvpn-server@dh.vpn.server.tcp1194
-            # Health Checks facilitated by httpd Port 80
-            systemctl enable httpd
-            systemctl start httpd
+          Fn::Base64: 
+            !Sub |
+              #!/bin/bash -xe
+              # Download Server Certs & start Openvpn dual-protocol service
+              aws s3 sync s3://${ProjectName}/easy-rsa/issued-certs/ /tmp --exclude "*" --include "*.server.tar.gz"
+              tar -xzf /tmp/*.server.tar.gz -C /etc/openvpn/server/
+              rm /tmp/*.server.tar.gz
+              systemctl enable openvpn-server@dh.vpn.server.udp1194
+              systemctl enable openvpn-server@dh.vpn.server.tcp1194
+              systemctl start openvpn-server@dh.vpn.server.udp1194
+              systemctl start openvpn-server@dh.vpn.server.tcp1194
+              # Health Checks facilitated by httpd Port 80
+              systemctl enable httpd
+              systemctl start httpd
 #.............................
         TagSpecifications:
           -
@@ -88,7 +97,7 @@ Resources:
             Tags:
               -
                 Key: "Name"
-                Value: "openvpn-autoscaled-instance"
+                Value: "openvpn-autoscaled"
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 

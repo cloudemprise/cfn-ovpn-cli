@@ -268,6 +268,8 @@ Resources:
             - "cfn-templates/dh-openvpn-cfn.ec2-lt.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         PublicLtAmiId:
           !Ref CurrentAmi
         PublicSgResourceId:
