@@ -13,10 +13,23 @@ END
 #-----------------------------
 # Name Given to Entire Project
 # must be compatible with s3bucket name restrictions
-PROJECT_NAME="dh-openvpn"
+PROJECT_NAME="dh-openvpn-test1"
 [[ ! $PROJECT_NAME =~ (^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$) ]] \
     && { echo "Invalid Project Name "; exit 1; } \
     || { echo "Project Name: $PROJECT_NAME"; }
+#.............................
+
+
+#-----------------------------
+# Get Route 53 Domain hosted zone ID
+AWS_DOMAIN_NAME="cloudemprise.net"
+HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name $AWS_DOMAIN_NAME \
+    --query "HostedZones[].Id" --output text | awk -F "/" '{print $3}')
+[[ -z $HOSTED_ZONE_ID ]] \
+    && { echo "Invalid Hosted Zone "; exit 1; } \
+    || { echo "Hosted Zone ID: $HOSTED_ZONE_ID"; }
+#.............................
+
 
 #-----------------------------
 # Get Region
@@ -136,7 +149,16 @@ echo "The lastest Amazon Linux 2 AMI : $AMI_CURRENT"
 #-----------------------------
 # Create Stage0 Stack
 echo "$BUILD_COUNTER"
-STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage0 --template-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml" --on-failure DO_NOTHING --output text)
+#STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage0 --template-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml" --on-failure DO_NOTHING --output text)
+STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters \
+    ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME \
+    ParameterKey=DomainName,ParameterValue=$AWS_DOMAIN_NAME \
+    ParameterKey=DomainHostedZoneId,ParameterValue=$HOSTED_ZONE_ID \
+    ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER \
+    ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT \
+    --tags Key=Name,Value=openvpn-stage0 \
+    --template-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml" \
+    --on-failure DO_NOTHING --output text)
 echo "$BUILD_COUNTER Stack has now been Initiated..."
 echo "Cloudformation Stack ID : $STACK_ID"
 # Wait for Stage0 to complete
@@ -153,7 +175,15 @@ fi
 # Update Stack with Stage1 parameters
 BUILD_COUNTER="Stage1"
 echo "$BUILD_COUNTER"
-aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage1 --use-previous-template > /dev/null
+#aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage1 --use-previous-template > /dev/null
+aws cloudformation update-stack --stack-name $STACK_ID --parameters \
+    ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME \
+    ParameterKey=DomainName,ParameterValue=$AWS_DOMAIN_NAME \
+    ParameterKey=DomainHostedZoneId,ParameterValue=$HOSTED_ZONE_ID \
+    ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  \
+    ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT \
+    --tags Key=Name,Value=openvpn-stage1 --use-previous-template > /dev/null
+
 echo "$BUILD_COUNTER Stack has now been Initiated..."
 # Wait for Stage1 Update to complete
 if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
@@ -208,8 +238,16 @@ echo "$BUILD_COUNTER Instances have now terminated..."
 # Update Stack with Stage3 parameters
 BUILD_COUNTER="Stage3"
 echo "$BUILD_COUNTER"
-#aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage1 --use-previous-template > /dev/null
-aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB --tags Key=Name,Value=openvpn-stage3 --use-previous-template > /dev/null
+#aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB --tags Key=Name,Value=openvpn-stage3 --use-previous-template > /dev/null
+aws cloudformation update-stack --stack-name $STACK_ID --parameters \
+    ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME \
+    ParameterKey=DomainName,ParameterValue=$AWS_DOMAIN_NAME \
+    ParameterKey=DomainHostedZoneId,ParameterValue=$HOSTED_ZONE_ID \
+    ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER \
+    ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB \
+    --tags Key=Name,Value=openvpn-stage3 --use-previous-template > /dev/null
+
+
 echo "$BUILD_COUNTER Stack has now been Initiated..."
 # Wait for Stage3 Update to complete
 if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)

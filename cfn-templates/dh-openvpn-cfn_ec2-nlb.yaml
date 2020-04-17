@@ -117,9 +117,25 @@ Outputs:
     Description: Network Loadbalancer ARN
     Value: !Ref OpenvpnLoadBalancer
 #-------------------------------------------
+
+#--- EC2 Load Balancer DNS
+#-------------------------------------------
+  OpenvpnLoadBalancerDNS:
+    Description: Network Loadbalancer DNS
+    Value: !GetAtt OpenvpnLoadBalancer.DNSName
+#-------------------------------------------
+
+#--- EC2 Load Balancer Hosted Zone ID
+#-------------------------------------------
+  OpenvpnLoadBalancerZoneId:
+    Description: Network Loadbalancer Hosted Zone ID
+    Value: !GetAtt OpenvpnLoadBalancer.CanonicalHostedZoneID
+#-------------------------------------------
+
 #--- EC2 Load Balancer Name
 #-------------------------------------------
-  OpenvpnLoadBalancerName:
-    Description: Network Loadbalancer Name
-    Value: !GetAtt OpenvpnLoadBalancer.LoadBalancerName
+#  OpenvpnLoadBalancerName:
+#    Description: Network Loadbalancer Name
+#    Value: !GetAtt OpenvpnLoadBalancer.LoadBalancerName
 #-------------------------------------------
+
