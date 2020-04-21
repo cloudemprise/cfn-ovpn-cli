@@ -1,0 +1,13 @@
+{
+  "Statement" : [
+    {
+      "Effect" : "Allow",
+      "Action" : "Update:*",
+      "Principal": "*",
+      "NotResource" : [ 
+        "LogicalResourceId/NaclDefs",
+        "LogicalResourceId/SgDefs"
+      ]
+    }
+  ]
+}

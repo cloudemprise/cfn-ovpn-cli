@@ -69,7 +69,7 @@ Resources:
     CreationPolicy:
       ResourceSignal:    
         Count: 1
-        Timeout: "PT5M"
+        Timeout: "PT10M"
 #.............................
     Properties:
 #.............................
@@ -120,6 +120,8 @@ Resources:
             #!/bin/bash -xe
             # Update Packages, inc. aws-cfn-bootstrap
             yum update -y
+            # Fix openssl error (easy-rsa) : random seed file 
+            export RANDFILE=/tmp/.rnd 
             # Start cfn-init
             /opt/aws/bin/cfn-init -v --configsets Step1 --stack ${AWS::StackId} --resource PrivateEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
             # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
@@ -233,7 +235,7 @@ Resources:
                   - ".s3."
                   - !Ref "AWS::Region"
                   - ".amazonaws.com/"
-                  - "ssh/dh.cfn.openvpn-ec2-harden-ssh.sh.tar.gz"
+                  - "ssh/dh-openvpn-ec2-harden-ssh.sh.tar.gz"
           files:
             "/etc/fail2ban/jail.local":
               content: |
@@ -254,7 +256,7 @@ Resources:
               command: "mv 00-firewalld.conf 00-firewalld.disable"
             HardenSsh:
               cwd: "/tmp/ssh"
-              command: "./dh.cfn.openvpn-ec2-harden-ssh.sh"
+              command: "./dh-openvpn-ec2-harden-ssh.sh"
           services:
             sysvinit:
               firewalld:
@@ -288,9 +290,9 @@ Resources:
                   - ".s3."
                   - !Ref "AWS::Region"
                   - ".amazonaws.com/"
-                  - "iptables/dh.cfn.openvpn-ec2-priv-iptables.sh.tar.gz"
+                  - "iptables/dh-openvpn-ec2-priv-iptables.sh.tar.gz"
           files:
-            "/etc/sysctl.d/30-dh.iptables.conf":
+            "/etc/sysctl.d/30-dh-openvpn-iptables.conf":
               content: |
                 #net.ipv4.ip_forward = 1
                 net.ipv6.conf.default.disable_ipv6 = 1
@@ -304,10 +306,10 @@ Resources:
               group: root
           commands:
             1_kernelParams:
-              command: "sysctl -p /etc/sysctl.d/30-dh.iptables.conf"
+              command: "sysctl -p /etc/sysctl.d/30-dh-openvpn-iptables.conf"
             2_iptRules:
               cwd: "/tmp/iptables"
-              command: "./dh.cfn.openvpn-ec2-priv-iptables.sh"
+              command: "./dh-openvpn-ec2-priv-iptables.sh"
           services:
             sysvinit:
               iptables:
@@ -323,15 +325,15 @@ Resources:
 #---------------------------
             "/etc/rsyslog.d/30-iptables.conf":
               content: |
-                :msg, startswith, "IPTlog" -/var/log/dh.vpn.server.iptables.log
+                :msg, startswith, "IPTlog" -/var/log/dh-openvpn-server-iptables.log
                 & stop
               mode: '000644'
               owner: root
               group: root
 #---------------------------
-            "/etc/logrotate.d/dh.vpnlogs":
+            "/etc/logrotate.d/dh-openvpn-logs":
               content: |
-                /var/log/dh.vpn.server.*.log
+                /var/log/dh-openvpn-server-*.log
                 {
                  notifempty
                  rotate 21
@@ -352,9 +354,9 @@ Resources:
               owner: root
               group: root
 #---------------------------
-            "/etc/cron.d/dh.vpn.logSchedule":
+            "/etc/cron.d/dh-openvpn-logs-schedule":
               content: |
-                */30 * * * * root /sbin/logrotate /etc/logrotate.d/dh.vpnlogs
+                */30 * * * * root /sbin/logrotate /etc/logrotate.d/dh-openvpn-logs
               mode: '000644'
               owner: root
               group: root
@@ -375,7 +377,7 @@ Resources:
           files:
             "/usr/local/easy-rsa/vars":
               content: |
-                set_var EASYRSA_REQ_CN "dh.vpn.cert-auth"
+                set_var EASYRSA_REQ_CN "dh-openvpn-server-cert-auth"
                 set_var EASYRSA_BATCH "yes"
                 set_var EASYRSA_ALGO ec
                 set_var EASYRSA_CURVE secp384r1
@@ -392,7 +394,7 @@ Resources:
                   - ".s3."
                   - !Ref "AWS::Region"
                   - ".amazonaws.com/"
-                  - "easy-rsa/sign-reqs/dh.easyrsa.openvpn.sign-reqs.tar.gz"
+                  - "easy-rsa/sign-reqs/dh-openvpn-easyrsa-sign-reqs.tar.gz"
           commands:
             1a_initPKI:
               command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
@@ -410,15 +412,15 @@ Resources:
               command: "for REQUEST in /tmp/sign-reqs/*; do ./easyrsa import-req $REQUEST $(basename $REQUEST .req); done"
             4a_signReqs:
               cwd: "/usr/local/easy-rsa"
-              command: "for REQUEST in /usr/local/easy-rsa/pki/reqs/*; do EntityName=$(basename $REQUEST .req); ./easyrsa sign-req ${EntityName##*.} $EntityName; done"
+              command: "for REQUEST in /usr/local/easy-rsa/pki/reqs/*; do EntityName=$(basename $REQUEST .req); ./easyrsa sign-req ${EntityName##*-} $EntityName; done"
             4b_signReqs_1:
               cwd: "/usr/local/easy-rsa/pki/issued"
               command: 
-                !Sub "tar -czf - ca.crt *.server.crt | aws s3 cp - s3://${ProjectName}/easy-rsa/issued-certs/dh.easyrsa.openvpn.issued-certs.server.tar.gz"
+                !Sub "tar -czf - ca.crt *server.crt | aws s3 cp - s3://${ProjectName}/easy-rsa/issued-certs/dh-openvpn-easyrsa-issued-certs-server.tar.gz"
             4b_signReqs_2:
               cwd: "/usr/local/easy-rsa/pki/issued"
               command: 
-                !Sub "tar -czf - ca.crt *.client.crt | aws s3 cp - s3://${ProjectName}/easy-rsa/issued-certs/dh.easyrsa.openvpn.issued-certs.client.tar.gz"
+                !Sub "tar -czf - ca.crt *client.crt | aws s3 cp - s3://${ProjectName}/easy-rsa/issued-certs/dh-openvpn-easyrsa-issued-certs-client.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -432,7 +434,7 @@ Resources:
               command: "cp /usr/local/easy-rsa/pki/ca.crt ."
             3_cmd:
               cwd: "/tmp/openvpn-client-files"
-              command: "cp /usr/local/easy-rsa/pki/issued/*.client.crt ."
+              command: "cp /usr/local/easy-rsa/pki/issued/*client.crt ."
             4_cmd:
               cwd: "/tmp/openvpn-client-files"
               command: 

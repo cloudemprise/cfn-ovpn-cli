@@ -1,0 +1,6 @@
+set_var EASYRSA_REQ_CN "dh-openvpn-server"
+set_var EASYRSA_BATCH "yes"
+set_var EASYRSA_ALGO ec
+set_var EASYRSA_CURVE secp384r1
+#set_var EASYRSA_KEY_SIZE 4096
+set_var EASYRSA_KEY_SIZE 1024
