@@ -9,11 +9,17 @@
 END
 #!! COMMENT END
 
+#-----------------------------
+# Record Script Execution Time
+TIME_START=$(date +%s)
+TIME_STAMP=$(date "+%Y-%m-%d %Hh%Mm%Ss")
+echo "Time Stamp: $TIME_STAMP"
+
 
 #-----------------------------
 # Name Given to Entire Project
 # must be compatible with s3bucket name restrictions
-PROJECT_NAME="dh-openvpn-test1"
+PROJECT_NAME="dh-openvpn-test7"
 [[ ! $PROJECT_NAME =~ (^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$) ]] \
     && { echo "Invalid Project Name "; exit 1; } \
     || { echo "Project Name: $PROJECT_NAME"; }
@@ -61,13 +67,13 @@ echo "Instance Profile userid : $EC2_ROLE_ID"
 
 #-----------------------------
 # Create Project S3 Bucket Policy from Template
-if [ -f iam-policies/s3-buckets/template-bucket-policy.json ]
+if [ -f policies/s3-buckets/template_s3-bucket-policy.json ]
 then 
-  cp iam-policies/s3-buckets/template-bucket-policy.json iam-policies/s3-buckets/$PROJECT_NAME-bucket-policy.json
-  sed -i "s/ProjectName/$PROJECT_NAME/" iam-policies/s3-buckets/$PROJECT_NAME-bucket-policy.json
-  sed -i "s/RootAccount/$AWS_ACC_ID/" iam-policies/s3-buckets/$PROJECT_NAME-bucket-policy.json
-  sed -i "s/ScriptCallerUserId/$AWS_CLI_ID/" iam-policies/s3-buckets/$PROJECT_NAME-bucket-policy.json
-  sed -i "s/Ec2RoleUserId/$EC2_ROLE_ID/" iam-policies/s3-buckets/$PROJECT_NAME-bucket-policy.json
+  cp policies/s3-buckets/template_s3-bucket-policy.json policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json
+  sed -i "s/ProjectName/$PROJECT_NAME/" policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json
+  sed -i "s/RootAccount/$AWS_ACC_ID/" policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json
+  sed -i "s/ScriptCallerUserId/$AWS_CLI_ID/" policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json
+  sed -i "s/Ec2RoleUserId/$EC2_ROLE_ID/" policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json
 else
   echo "Template Bucket Policy Not Found"
   exit 1
@@ -84,7 +90,7 @@ then
       --server-side-encryption-configuration \
       '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
   aws s3api put-bucket-policy --bucket $PROJECT_NAME \
-      --policy "file://iam-policies/s3-buckets/$PROJECT_NAME-bucket-policy.json"
+      --policy "file://policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json"
 else
   echo "Failed to create s3 project bucket"
   exit 1
@@ -94,11 +100,12 @@ set +x
 
 
 # S3 Project Directory Structure
-S3_LOCATION_TEMPLATES="s3://$PROJECT_NAME/cfn-templates/"
-S3_LOCATION_IPTABLES="s3://$PROJECT_NAME/iptables/"
-S3_LOCATION_SSH="s3://$PROJECT_NAME/ssh/"
-S3_LOCATION_OPENVPN="s3://$PROJECT_NAME/openvpn/"
+#S3_LOCATION_TEMPLATES="s3://$PROJECT_NAME/cfn-templates/"
+#S3_LOCATION_POLICIES="s3://$PROJECT_NAME/policies/"
 S3_LOCATION_EASYRSA="s3://$PROJECT_NAME/easy-rsa/"
+S3_LOCATION_IPTABLES="s3://$PROJECT_NAME/iptables/"
+S3_LOCATION_OPENVPN="s3://$PROJECT_NAME/openvpn/"
+S3_LOCATION_SSH="s3://$PROJECT_NAME/ssh/"
 
 
 # Cloudformation Stack Conditional Build Counter
@@ -116,12 +123,21 @@ AMI_IMAGE_PUB=""
 AMI_IMAGE_PRIV=""
 
 
+
+#----------------------------------------------
+# Upload Latest Stack Policy to S3
+echo "Uploading Policy Documents to S3 Bucket :  s3://$PROJECT_NAME"
+for file in $(ls policies/*/*.json); do [ -f $file ] && aws s3 cp $file s3://$PROJECT_NAME/$file || echo "Failed to upload : $file"; done
+
+
 #----------------------------------------------
 # Upload Latest (Nested) Templates to S3
-echo "Uploading Cloudformation Templates to S3 location: $S3_LOCATION_TEMPLATES"
-cd cfn-templates
-for file in $(ls *.yaml); do [ -f $file ] && aws s3 cp $file $S3_LOCATION_TEMPLATES || echo "Failed to upload : $file"; done
-cd ..
+echo "Uploading Cloudformation Templates to S3 location: s3://$PROJECT_NAME/cfn-templates"
+for file in $(ls cfn-templates/*.yaml); do [ -f $file ] && aws s3 cp $file s3://$PROJECT_NAME/$file || echo "Failed to upload : $file"; done
+
+
+
+
 
 
 #-----------------------------
@@ -129,14 +145,14 @@ cd ..
 set -x
 #-----------------------------
 #Compress & Upload iptables script to S3
-tar -zcf - iptables/dh.cfn.openvpn-ec2-pub-iptables.sh | aws s3 cp - ${S3_LOCATION_IPTABLES}dh.cfn.openvpn-ec2-pub-iptables.sh.tar.gz
-tar -zcf - iptables/dh.cfn.openvpn-ec2-priv-iptables.sh | aws s3 cp - ${S3_LOCATION_IPTABLES}dh.cfn.openvpn-ec2-priv-iptables.sh.tar.gz
+tar -zcf - iptables/dh-openvpn-ec2-pub-iptables.sh | aws s3 cp - ${S3_LOCATION_IPTABLES}dh-openvpn-ec2-pub-iptables.sh.tar.gz
+tar -zcf - iptables/dh-openvpn-ec2-priv-iptables.sh | aws s3 cp - ${S3_LOCATION_IPTABLES}dh-openvpn-ec2-priv-iptables.sh.tar.gz
 #Compress & Upload sshd hardening script to S3
-tar -zcf - ssh/dh.cfn.openvpn-ec2-harden-ssh.sh | aws s3 cp - ${S3_LOCATION_SSH}dh.cfn.openvpn-ec2-harden-ssh.sh.tar.gz
+tar -zcf - ssh/dh-openvpn-ec2-harden-ssh.sh | aws s3 cp - ${S3_LOCATION_SSH}dh-openvpn-ec2-harden-ssh.sh.tar.gz
 #Compress & Upload openvpn server configs to S3
-tar -zcf - openvpn/server/dh.vpn.server.*1194.conf | aws s3 cp - ${S3_LOCATION_OPENVPN}server/dh.vpn.server.xxx1194.conf.tar.gz
+tar -zcf - openvpn/server/dh-openvpn-server*.conf | aws s3 cp - ${S3_LOCATION_OPENVPN}server/dh-openvpn-server-1194.conf.tar.gz
 #Upload easy-rsa pki keygen configs to S3
-tar -zcf - easy-rsa/vars.* | aws s3 cp - ${S3_LOCATION_EASYRSA}gen-reqs/dh.easyrsa.openvpn.vars.tar.gz
+tar -zcf - easy-rsa/vars* | aws s3 cp - ${S3_LOCATION_EASYRSA}gen-reqs/dh-openvpn-easyrsa-vars.tar.gz
 set +x
 #.............................
 
@@ -145,6 +161,9 @@ set +x
 # Grab the latest Amazon_Linux_2 AMI
 AMI_CURRENT=$(aws ssm get-parameters --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --query 'Parameters[0].[Value]' --output text)
 echo "The lastest Amazon Linux 2 AMI : $AMI_CURRENT"
+
+
+
 
 #-----------------------------
 # Create Stage0 Stack
@@ -157,6 +176,7 @@ STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters
     ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER \
     ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT \
     --tags Key=Name,Value=openvpn-stage0 \
+    --stack-policy-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/policies/cfn-stacks/template_cfn-stack-policy.json" \
     --template-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml" \
     --on-failure DO_NOTHING --output text)
 echo "$BUILD_COUNTER Stack has now been Initiated..."
@@ -166,8 +186,6 @@ if (aws cloudformation wait stack-create-complete --stack-name $STACK_ID)
 then echo "$BUILD_COUNTER Stack Update is now Complete : $STACK_ID"
 else echo "Error: Stack Wait Update Failed : $STACK_ID"
 fi
-
-
 
 
 
@@ -208,6 +226,14 @@ P2=$!
 wait $P1 $P2
 echo "Public $BUILD_COUNTER Instance State: Ok..."
 echo "Private Instance State: Ok..."
+
+
+
+
+
+
+
+
 
 
 
@@ -265,4 +291,14 @@ else
   echo "OpenVPN client files failed to copy locally"
 fi
 cd ..
+
+
+
+#-----------------------------
+# Calculate Script Total Execution Time
+TIME_END=$(date +%s)
+TIME_DIFF=$(($TIME_END - $TIME_START))
+echo "Execution Time: $(( ${TIME_DIFF} / 3600 ))h $(( (${TIME_DIFF} / 60) % 60 ))m $(( ${TIME_DIFF} % 60 ))s"
+
+
 

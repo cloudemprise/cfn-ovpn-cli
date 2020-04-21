@@ -80,13 +80,13 @@ Resources:
             !Sub |
               #!/bin/bash -xe
               # Download Server Certs & start Openvpn dual-protocol service
-              aws s3 sync s3://${ProjectName}/easy-rsa/issued-certs/ /tmp --exclude "*" --include "*.server.tar.gz"
-              tar -xzf /tmp/*.server.tar.gz -C /etc/openvpn/server/
-              rm /tmp/*.server.tar.gz
-              systemctl enable openvpn-server@dh.vpn.server.udp1194
-              systemctl enable openvpn-server@dh.vpn.server.tcp1194
-              systemctl start openvpn-server@dh.vpn.server.udp1194
-              systemctl start openvpn-server@dh.vpn.server.tcp1194
+              aws s3 sync s3://${ProjectName}/easy-rsa/issued-certs/ /tmp --exclude "*" --include "*server.tar.gz"
+              tar -xzf /tmp/*server.tar.gz -C /etc/openvpn/server/
+              rm /tmp/*server.tar.gz
+              systemctl enable openvpn-server@dh-openvpn-server-udp1194
+              systemctl enable openvpn-server@dh-openvpn-server-tcp1194
+              systemctl start openvpn-server@dh-openvpn-server-udp1194
+              systemctl start openvpn-server@dh-openvpn-server-tcp1194
               # Health Checks facilitated by httpd Port 80
               systemctl enable httpd
               systemctl start httpd

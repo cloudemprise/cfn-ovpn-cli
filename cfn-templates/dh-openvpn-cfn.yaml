@@ -137,7 +137,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.vpc.yaml"
+            - "cfn-templates/dh-openvpn-cfn_vpc.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         BuildStage:
@@ -162,7 +162,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.vpc-nacl.yaml"
+            - "cfn-templates/dh-openvpn-cfn_vpc-nacl.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -195,7 +195,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.vpc-sg.yaml"
+            - "cfn-templates/dh-openvpn-cfn_vpc-sg.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -223,7 +223,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.ec2-pub.yaml"
+            - "cfn-templates/dh-openvpn-cfn_ec2-pub.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         ProjectName:
@@ -250,7 +250,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.ec2-priv.yaml"
+            - "cfn-templates/dh-openvpn-cfn_ec2-priv.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         ProjectName:
@@ -281,7 +281,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.ec2-lt.yaml"
+            - "cfn-templates/dh-openvpn-cfn_ec2-lt.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         ProjectName:
@@ -310,7 +310,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.ec2-tg.yaml"
+            - "cfn-templates/dh-openvpn-cfn_ec2-tg.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -335,7 +335,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.sns.yaml"
+            - "cfn-templates/dh-openvpn-cfn_sns.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         OpenvpnSubsEmailSNS:
@@ -364,7 +364,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.ec2-asg.yaml"
+            - "cfn-templates/dh-openvpn-cfn_ec2-asg.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         PublicSubnetIdA:
@@ -398,7 +398,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.ec2-nlb.yaml"
+            - "cfn-templates/dh-openvpn-cfn_ec2-nlb.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         VPCID:
@@ -433,7 +433,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.cw.yaml"
+            - "cfn-templates/dh-openvpn-cfn_cw.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         OpenvpnSNSTopicARN:
@@ -459,7 +459,7 @@ Resources:
             - ".s3."
             - !Ref "AWS::Region"
             - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn.r53.yaml"
+            - "cfn-templates/dh-openvpn-cfn_r53.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
         OpenvpnDomainName:
