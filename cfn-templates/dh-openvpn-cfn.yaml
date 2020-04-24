@@ -20,6 +20,18 @@ Metadata: {}
 Parameters:
 #===========================================
 
+#--- Script Build Step Counter
+#-------------------------------------------
+  BuildStep: 
+    Description: Shell script step counter.
+    ConstraintDescription: Must be > 0 & < 3.
+    Type: String
+    Default: Stage1
+    AllowedValues: 
+      - Stage1
+      - Stage2
+      - Stage3
+
 #--- The Project Name
 #-------------------------------------------
   ProjectName:
@@ -46,19 +58,6 @@ Parameters:
     Description: An Amazon Route 53 hosted zone ID 
     Type: AWS::Route53::HostedZone::Id
 #-------------------------------------------
-
-#--- Script Build Stage Counter
-#-------------------------------------------
-  BuildStage: 
-    Description: Shell script Stage counter.
-    ConstraintDescription: Must be > 0 & < 3.
-    Type: String
-    Default: Stage0
-    AllowedValues: 
-      - Stage0
-      - Stage1
-      - Stage2
-      - Stage3
 
 #--- Latest Amazon_Linux_2 AMI
 #-------------------------------------------
@@ -109,10 +108,9 @@ Parameters:
 #Conditions: {}
 Conditions:
 #===========================================  
-  CreateResourcesStage0: !Equals [ !Ref BuildStage, Stage0]
-  CreateResourcesStage1: !Equals [ !Ref BuildStage, Stage1]
-  CreateResourcesStage2: !Equals [ !Ref BuildStage, Stage2]
-  CreateResourcesStage3: !Equals [ !Ref BuildStage, Stage3]
+  CreateResourcesStage1: !Equals [ !Ref BuildStep, Stage1]
+  CreateResourcesStage2: !Equals [ !Ref BuildStep, Stage2]
+  CreateResourcesStage3: !Equals [ !Ref BuildStep, Stage3]
 
 
 Resources:
@@ -140,8 +138,8 @@ Resources:
             - "cfn-templates/dh-openvpn-cfn_vpc.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
-        BuildStage:
-          !Ref BuildStage
+        BuildStep:
+          !Ref BuildStep
       TimeoutInMinutes: 5
 #-------------------------------------------
 #-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
@@ -211,7 +209,7 @@ Resources:
 #-------------------------------------------
   InstancePubDef:
     Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage1
+    Condition: CreateResourcesStage2
     DependsOn: VPCDef
     Properties:
 #,,,,,,,,,,,,,,,,
@@ -238,7 +236,7 @@ Resources:
 #-------------------------------------------
   InstancePrivDef:
     Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage1
+    Condition: CreateResourcesStage2
     DependsOn: InstancePubDef
     Properties:
 #,,,,,,,,,,,,,,,,
@@ -484,15 +482,15 @@ Outputs:
 
 #--- Instance IDs
 #-------------------------------------------
-  InstanceIdPublic1:
+  InstanceIdPublic:
     Description:  Public Instance ID
-    Condition: CreateResourcesStage1
+    Condition: CreateResourcesStage2
     Value:
-      !GetAtt InstancePubDef.Outputs.Pub1EC2InstanceId
+      !GetAtt InstancePubDef.Outputs.PubEC2InstanceId
 #-------------------------------------------
   InstanceIdPrivate:
     Description: Private Instance ID
-    Condition: CreateResourcesStage1
+    Condition: CreateResourcesStage2
     Value:
       !GetAtt InstancePrivDef.Outputs.PrivEC2InstanceId
 #-------------------------------------------

@@ -11,20 +11,20 @@ END
 
 #-----------------------------
 # Record Script Execution Time
-TIME_START=$(date +%s)
-TIME_STAMP=$(date "+%Y-%m-%d %Hh%Mm%Ss")
-echo "Time Stamp: $TIME_STAMP"
+TIME_START_PROJ=$(date +%s)
+TIME_STAMP_PROJ=$(date "+%Y-%m-%d %Hh%Mm%Ss")
+echo "The Time Stamp.................: $TIME_STAMP_PROJ"
 
+#.............................
 
 #-----------------------------
 # Name Given to Entire Project
 # must be compatible with s3bucket name restrictions
-PROJECT_NAME="dh-openvpn-test7"
+PROJECT_NAME="dh-openvpn"
 [[ ! $PROJECT_NAME =~ (^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$) ]] \
-    && { echo "Invalid Project Name "; exit 1; } \
-    || { echo "Project Name: $PROJECT_NAME"; }
+    && { echo "Invalid Project Name!"; exit 1; } \
+    || { echo "The Project Name...............: $PROJECT_NAME"; }
 #.............................
-
 
 #-----------------------------
 # Get Route 53 Domain hosted zone ID
@@ -32,186 +32,205 @@ AWS_DOMAIN_NAME="cloudemprise.net"
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name $AWS_DOMAIN_NAME \
     --query "HostedZones[].Id" --output text | awk -F "/" '{print $3}')
 [[ -z $HOSTED_ZONE_ID ]] \
-    && { echo "Invalid Hosted Zone "; exit 1; } \
-    || { echo "Hosted Zone ID: $HOSTED_ZONE_ID"; }
+    && { echo "Invalid Hosted Zone!"; exit 1; } \
+    || { echo "The Hosted Zone ID.............: $HOSTED_ZONE_ID"; }
+#.............................
+
+#-----------------------------
+# Variable Creation
+#-----------------------------
+# Name given to Cloudformation Stack
+STACK_NAME="cfn-stack-$PROJECT_NAME"
+echo "The Stack Name.................: $STACK_NAME"
+# Region to deploy
+AWS_REGION=$(aws configure get region)
+echo "The Deploy Region..............: $AWS_REGION"
+# Get Account(ROOT) ID
+AWS_ACC_ID=$(aws sts get-caller-identity --query Account --output text)
+echo "The Root Account ID............: $AWS_ACC_ID"
+# CLI profile userid
+AWS_CLI_ID=$(aws sts get-caller-identity --query UserId --output text)
+echo "The Script Caller userid.......: $AWS_CLI_ID"
+# EC2 Instance Profile Name
+EC2_ROLE_NAME="dh-openvpn-server-system-administrator"
+echo "The Instance Profile Name......: $EC2_ROLE_NAME"
+# EC2 Instance Profile userid
+EC2_ROLE_ID=$(aws iam get-role --role-name $EC2_ROLE_NAME \
+    --query "Role.RoleId" --output text)
+echo "The Instance Profile userid....: $EC2_ROLE_ID"
+# Grab the latest Amazon_Linux_2 AMI
+AMI_LATEST=$(aws ssm get-parameters --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --query 'Parameters[0].[Value]' --output text)
+echo "The lastest Amazon Linux 2 AMI.: $AMI_LATEST"
 #.............................
 
 
 #-----------------------------
-# Get Region
-AWS_REGION=$(aws configure get region)
-echo "Region : $AWS_REGION"
-
-#-----------------------------
-# Get Account(ROOT) ID
-AWS_ACC_ID=$(aws sts get-caller-identity --query Account --output text)
-echo "Account ID : $AWS_ACC_ID"
-
-#-----------------------------
-# CLI profile userid
-AWS_CLI_ID=$(aws sts get-caller-identity --query UserId --output text)
-echo "Script Caller userid : $AWS_CLI_ID"
-
-#-----------------------------
-# EC2 Instance Profile Name
-EC2_ROLE_NAME="dh.instprofile.managed.sysadmin"
-echo "Instance Profile Name : $EC2_ROLE_NAME"
-
-#-----------------------------
-# EC2 Instance Profile userid
-EC2_ROLE_ID=$(aws iam get-role --role-name $EC2_ROLE_NAME \
-    --query "Role.RoleId" --output text)
-echo "Instance Profile userid : $EC2_ROLE_ID"
-
-
-
-#-----------------------------
-# Create Project S3 Bucket Policy from Template
-if [ -f policies/s3-buckets/template_s3-bucket-policy.json ]
+# Create Project S3 Bucket Policy from local template
+if [ -f policies/s3-buckets/template-s3-bucket-policy.json ]
 then 
-  cp policies/s3-buckets/template_s3-bucket-policy.json policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json
-  sed -i "s/ProjectName/$PROJECT_NAME/" policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json
-  sed -i "s/RootAccount/$AWS_ACC_ID/" policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json
-  sed -i "s/ScriptCallerUserId/$AWS_CLI_ID/" policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json
-  sed -i "s/Ec2RoleUserId/$EC2_ROLE_ID/" policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json
+  cp policies/s3-buckets/template-s3-bucket-policy.json policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json
+  sed -i "s/ProjectName/$PROJECT_NAME/" policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json
+  sed -i "s/RootAccount/$AWS_ACC_ID/" policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json
+  sed -i "s/ScriptCallerUserId/$AWS_CLI_ID/" policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json
+  sed -i "s/Ec2RoleUserId/$EC2_ROLE_ID/" policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json
 else
-  echo "Template Bucket Policy Not Found"
+  echo "Template Bucket Policy Not Found!"
   exit 1
 fi
+#.............................
 
 
 #-----------------------------
+# Create S3 Project Bucket with Encryption & Policy
 set -x
-# Create Project S3 Bucket with Encryption & Policy
-if (aws s3 mb s3://$PROJECT_NAME)
+PROJECT_BUCKET="s3://${PROJECT_NAME}"
+if (aws s3 mb $PROJECT_BUCKET)
 then 
-  aws s3api put-bucket-encryption \
-      --bucket $PROJECT_NAME \
-      --server-side-encryption-configuration \
+  aws s3api put-bucket-encryption --bucket $PROJECT_NAME  \
+      --server-side-encryption-configuration              \
       '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
-  aws s3api put-bucket-policy --bucket $PROJECT_NAME \
-      --policy "file://policies/s3-buckets/${PROJECT_NAME}_s3-bucket-policy.json"
+  aws s3api put-bucket-policy --bucket $PROJECT_NAME      \
+      --policy "file://policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json"
 else
-  echo "Failed to create s3 project bucket"
+  echo "Failed to create s3 project bucket!"
   exit 1
 fi
 set +x
 #.............................
-
-
-# S3 Project Directory Structure
-#S3_LOCATION_TEMPLATES="s3://$PROJECT_NAME/cfn-templates/"
-#S3_LOCATION_POLICIES="s3://$PROJECT_NAME/policies/"
-S3_LOCATION_EASYRSA="s3://$PROJECT_NAME/easy-rsa/"
-S3_LOCATION_IPTABLES="s3://$PROJECT_NAME/iptables/"
-S3_LOCATION_OPENVPN="s3://$PROJECT_NAME/openvpn/"
-S3_LOCATION_SSH="s3://$PROJECT_NAME/ssh/"
-
-
-# Cloudformation Stack Conditional Build Counter
-BUILD_COUNTER="Stage0"
-
-# Name given to Cloudformation Stack
-STACK_NAME="$PROJECT_NAME-cfn-stack"
-STACK_ID=""
-
-INSTANCE_ID_PUB=""
-INSTANCE_ID_PRIV=""
-
-AMI_CURRENT=""
-AMI_IMAGE_PUB=""
-AMI_IMAGE_PRIV=""
-
 
 
 #----------------------------------------------
 # Upload Latest Stack Policy to S3
-echo "Uploading Policy Documents to S3 Bucket :  s3://$PROJECT_NAME"
-for file in $(ls policies/*/*.json); do [ -f $file ] && aws s3 cp $file s3://$PROJECT_NAME/$file || echo "Failed to upload : $file"; done
-
+echo "Uploading Policy Documents to S3 Bucket :  ${PROJECT_BUCKET}/policies/"
+for file in $(ls policies/*/*.json); do [ -f $file ] && \
+    aws s3 cp $file ${PROJECT_BUCKET}/${file} || echo "Failed to upload : $file"; done
+#.............................
 
 #----------------------------------------------
-# Upload Latest (Nested) Templates to S3
-echo "Uploading Cloudformation Templates to S3 location: s3://$PROJECT_NAME/cfn-templates"
-for file in $(ls cfn-templates/*.yaml); do [ -f $file ] && aws s3 cp $file s3://$PROJECT_NAME/$file || echo "Failed to upload : $file"; done
-
-
-
-
-
-
-#-----------------------------
-# Get some debug messages here to validate
-set -x
-#-----------------------------
-#Compress & Upload iptables script to S3
-tar -zcf - iptables/dh-openvpn-ec2-pub-iptables.sh | aws s3 cp - ${S3_LOCATION_IPTABLES}dh-openvpn-ec2-pub-iptables.sh.tar.gz
-tar -zcf - iptables/dh-openvpn-ec2-priv-iptables.sh | aws s3 cp - ${S3_LOCATION_IPTABLES}dh-openvpn-ec2-priv-iptables.sh.tar.gz
-#Compress & Upload sshd hardening script to S3
-tar -zcf - ssh/dh-openvpn-ec2-harden-ssh.sh | aws s3 cp - ${S3_LOCATION_SSH}dh-openvpn-ec2-harden-ssh.sh.tar.gz
-#Compress & Upload openvpn server configs to S3
-tar -zcf - openvpn/server/dh-openvpn-server*.conf | aws s3 cp - ${S3_LOCATION_OPENVPN}server/dh-openvpn-server-1194.conf.tar.gz
-#Upload easy-rsa pki keygen configs to S3
-tar -zcf - easy-rsa/vars* | aws s3 cp - ${S3_LOCATION_EASYRSA}gen-reqs/dh-openvpn-easyrsa-vars.tar.gz
-set +x
+# Upload Latest Nested Templates to S3
+echo "Uploading Cloudformation Templates to S3 location: ${PROJECT_BUCKET}/cfn-templates/"
+for file in $(ls cfn-templates/*.yaml); do [ -f $file ] && \
+    aws s3 cp $file ${PROJECT_BUCKET}/${file} || echo "Failed to upload : $file"; done
 #.............................
 
 
 #-----------------------------
-# Grab the latest Amazon_Linux_2 AMI
-AMI_CURRENT=$(aws ssm get-parameters --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --query 'Parameters[0].[Value]' --output text)
-echo "The lastest Amazon Linux 2 AMI : $AMI_CURRENT"
-
+# Upload to S3: EC2 Instance configuration files & local scripts
+set -x
+#-----------------------------
+#Upload easy-rsa pki keygen configs to S3
+tar -zcf - easy-rsa/vars* | aws s3 cp - ${PROJECT_BUCKET}/easy-rsa/gen-reqs/dh-openvpn-easyrsa-vars.tar.gz
+#Compress & Upload separate iptables scripts to S3
+tar -zcf - iptables/dh-openvpn-ec2-pub-iptables.sh | aws s3 cp - ${PROJECT_BUCKET}/iptables/dh-openvpn-ec2-pub-iptables.sh.tar.gz
+tar -zcf - iptables/dh-openvpn-ec2-priv-iptables.sh | aws s3 cp - ${PROJECT_BUCKET}/iptables/dh-openvpn-ec2-priv-iptables.sh.tar.gz
+#Compress & Upload openvpn server configs to S3
+tar -zcf - openvpn/server/dh-openvpn-server*.conf | aws s3 cp - ${PROJECT_BUCKET}/openvpn/server/dh-openvpn-server-1194.conf.tar.gz
+#Compress & Upload sshd hardening script to S3
+tar -zcf - ssh/dh-openvpn-ec2-harden-ssh.sh | aws s3 cp - ${PROJECT_BUCKET}/ssh/dh-openvpn-ec2-harden-ssh.sh.tar.gz
+set +x
+#.............................
 
 
 
 #-----------------------------
-# Create Stage0 Stack
-echo "$BUILD_COUNTER"
-#STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage0 --template-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml" --on-failure DO_NOTHING --output text)
-STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters \
-    ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME \
-    ParameterKey=DomainName,ParameterValue=$AWS_DOMAIN_NAME \
-    ParameterKey=DomainHostedZoneId,ParameterValue=$HOSTED_ZONE_ID \
-    ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER \
-    ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT \
-    --tags Key=Name,Value=openvpn-stage0 \
-    --stack-policy-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/policies/cfn-stacks/template_cfn-stack-policy.json" \
-    --template-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml" \
-    --on-failure DO_NOTHING --output text)
-echo "$BUILD_COUNTER Stack has now been Initiated..."
-echo "Cloudformation Stack ID : $STACK_ID"
-# Wait for Stage0 to complete
-if (aws cloudformation wait stack-create-complete --stack-name $STACK_ID)
-then echo "$BUILD_COUNTER Stack Update is now Complete : $STACK_ID"
-else echo "Error: Stack Wait Update Failed : $STACK_ID"
-fi
-
-
-
 #-----------------------------
-# Update Stack with Stage1 parameters
+# Stage1 Stack Creation Code Block
 BUILD_COUNTER="Stage1"
-echo "$BUILD_COUNTER"
-#aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT --tags Key=Name,Value=openvpn-stage1 --use-previous-template > /dev/null
-aws cloudformation update-stack --stack-name $STACK_ID --parameters \
-    ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME \
-    ParameterKey=DomainName,ParameterValue=$AWS_DOMAIN_NAME \
-    ParameterKey=DomainHostedZoneId,ParameterValue=$HOSTED_ZONE_ID \
-    ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  \
-    ParameterKey=CurrentAmi,ParameterValue=$AMI_CURRENT \
-    --tags Key=Name,Value=openvpn-stage1 --use-previous-template > /dev/null
-
-echo "$BUILD_COUNTER Stack has now been Initiated..."
-# Wait for Stage1 Update to complete
-if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
-then echo "$BUILD_COUNTER Stack Update is now Complete : $STACK_ID"
-else echo "Error: Stack Wait Update Failed : $STACK_ID"
+echo "Cloudformation Stack Creation: $BUILD_COUNTER"
+TIME_START_STACK=$(date +%s)
+#-----------------------------
+STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters  \
+                ParameterKey=BuildStep,ParameterValue=$BUILD_COUNTER             \
+                ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME             \
+                ParameterKey=DomainName,ParameterValue=$AWS_DOMAIN_NAME           \
+                ParameterKey=DomainHostedZoneId,ParameterValue=$HOSTED_ZONE_ID    \
+                ParameterKey=CurrentAmi,ParameterValue=$AMI_LATEST                \
+                --tags Key=Name,Value=openvpn-stage1                              \
+                --stack-policy-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/policies/cfn-stacks/template_cfn-stack-policy.json" \
+                --template-url "https://$PROJECT_NAME.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml" \
+                --on-failure DO_NOTHING --output text)
+#-----------------------------
+if [[ $? -eq 0 ]]; then
+  # Wait for stack creation to complete
+  echo "Waiting for $BUILD_COUNTER stack creation to complete:"
+  CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${STACK_ID} --query 'Stacks[0].StackStatus' --output text)
+  while [[ $CREATE_STACK_STATUS == "REVIEW_IN_PROGRESS" ]] || [[ $CREATE_STACK_STATUS == "CREATE_IN_PROGRESS" ]]
+  do
+      # Wait 1 seconds and then check stack status again
+      sleep 1
+      printf '.'
+      CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${STACK_ID} --query 'Stacks[0].StackStatus' --output text)
+  done
+  printf "\n"
 fi
+#-----------------------------
+# Validate stack creation has not failed
+if (aws cloudformation wait stack-create-complete --stack-name ${STACK_ID})
+then echo "Stack $BUILD_COUNTER is now Complete with Stack ID:"
+else 
+  echo "Error: Stack Creation Failed!"
+  exit 1
+fi
+echo "$STACK_ID"
+#-----------------------------
+# Calculate Stack Creation Execution Time
+TIME_END_STACK=$(date +%s)
+TIME_DIFF_STACK=$(($TIME_END_STACK - $TIME_START_STACK))
+echo "Execution Time $BUILD_COUNTER : $(( ${TIME_DIFF_STACK} / 3600 ))h $(( (${TIME_DIFF_STACK} / 60) % 60 ))m $(( ${TIME_DIFF_STACK} % 60 ))s"
+#.............................
+#.............................
+
+
+
+#-----------------------------
+#-----------------------------
+# Stage2 Stack Creation Code Block
+BUILD_COUNTER="Stage2"
+echo "Cloudformation Stack Update: $BUILD_COUNTER"
+TIME_START_STACK=$(date +%s)
+#-----------------------------
+aws cloudformation update-stack --stack-name $STACK_ID --parameters   \
+      ParameterKey=BuildStep,ParameterValue=$BUILD_COUNTER            \
+      ParameterKey=ProjectName,UsePreviousValue=true                  \
+      ParameterKey=DomainName,UsePreviousValue=true                   \
+      ParameterKey=DomainHostedZoneId,UsePreviousValue=true           \
+      ParameterKey=CurrentAmi,UsePreviousValue=true                   \
+      --tags Key=Name,Value=openvpn-stage2 --use-previous-template > /dev/null
+#-----------------------------
+if [[ $? -eq 0 ]]; then
+  # Wait for stack creation to complete
+  echo "Waiting for $BUILD_COUNTER stack update to complete:"
+  CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${STACK_ID} --query 'Stacks[0].StackStatus' --output text)
+  while [[ $CREATE_STACK_STATUS == "UPDATE_IN_PROGRESS" ]] || [[ $CREATE_STACK_STATUS == "CREATE_IN_PROGRESS" ]]
+  do
+      # Wait 1 seconds and then check stack status again
+      sleep 1
+      printf '.'
+      CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${STACK_ID} --query 'Stacks[0].StackStatus' --output text)
+  done
+  printf "\n"
+fi
+#-----------------------------
+# Validate stack creation has not failed
+if (aws cloudformation wait stack-update-complete --stack-name ${STACK_ID})
+then 
+  echo "Stack $BUILD_COUNTER Update is now complete. Stack ID:"
+  echo "$STACK_ID"
+else 
+  echo "Error: Stack Update Failed!"
+  exit 1
+fi
+#-----------------------------
+# Calculate Stack Creation Execution Time
+TIME_END_STACK=$(date +%s)
+TIME_DIFF_STACK=$(($TIME_END_STACK - $TIME_START_STACK))
+echo "Execution Time $BUILD_COUNTER : $(( ${TIME_DIFF_STACK} / 3600 ))h $(( (${TIME_DIFF_STACK} / 60) % 60 ))m $(( ${TIME_DIFF_STACK} % 60 ))s"
+#.............................
+#.............................
 
 #-----------------------------
 # Grab the IDs of the ec2 instances for further processing
-INSTANCE_ID_PUB=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic1'].OutputValue")
+INSTANCE_ID_PUB=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic'].OutputValue")
 echo "Public $BUILD_COUNTER Instance ID is : $INSTANCE_ID_PUB"
 INSTANCE_ID_PRIV=$(aws cloudformation describe-stacks --stack-name $STACK_ID --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPrivate'].OutputValue")
 echo "Private Instance ID is : $INSTANCE_ID_PRIV"
@@ -226,13 +245,6 @@ P2=$!
 wait $P1 $P2
 echo "Public $BUILD_COUNTER Instance State: Ok..."
 echo "Private Instance State: Ok..."
-
-
-
-
-
-
-
 
 
 
@@ -260,30 +272,57 @@ echo "$BUILD_COUNTER Instances have now terminated..."
 
 
 #-----------------------------
-# Create Launch Template for AutoScaling Group
-# Update Stack with Stage3 parameters
+#-----------------------------
+# Stage3 Stack Creation Code Block
 BUILD_COUNTER="Stage3"
-echo "$BUILD_COUNTER"
-#aws cloudformation update-stack --stack-name $STACK_ID --parameters ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER  ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB --tags Key=Name,Value=openvpn-stage3 --use-previous-template > /dev/null
-aws cloudformation update-stack --stack-name $STACK_ID --parameters \
-    ParameterKey=ProjectName,ParameterValue=$PROJECT_NAME \
-    ParameterKey=DomainName,ParameterValue=$AWS_DOMAIN_NAME \
-    ParameterKey=DomainHostedZoneId,ParameterValue=$HOSTED_ZONE_ID \
-    ParameterKey=BuildStage,ParameterValue=$BUILD_COUNTER \
-    ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB \
-    --tags Key=Name,Value=openvpn-stage3 --use-previous-template > /dev/null
-
-
-echo "$BUILD_COUNTER Stack has now been Initiated..."
-# Wait for Stage3 Update to complete
-if (aws cloudformation wait stack-update-complete --stack-name $STACK_ID)
-then echo "$BUILD_COUNTER Stack Update is now Complete : $STACK_ID"
-else echo "Error: Stack Wait Update Failed : $STACK_ID"
+echo "Cloudformation Stack Update: $BUILD_COUNTER"
+TIME_START_STACK=$(date +%s)
+#-----------------------------
+aws cloudformation update-stack --stack-name $STACK_ID --parameters   \
+      ParameterKey=BuildStep,ParameterValue=$BUILD_COUNTER            \
+      ParameterKey=CurrentAmi,ParameterValue=$AMI_IMAGE_PUB           \
+      ParameterKey=ProjectName,UsePreviousValue=true                  \
+      ParameterKey=DomainName,UsePreviousValue=true                   \
+      ParameterKey=DomainHostedZoneId,UsePreviousValue=true           \
+      --tags Key=Name,Value=openvpn-stage3 --use-previous-template > /dev/null
+#-----------------------------
+if [[ $? -eq 0 ]]; then
+  # Wait for stack creation to complete
+  echo "Waiting for $BUILD_COUNTER stack update to complete:"
+  CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${STACK_ID} --query 'Stacks[0].StackStatus' --output text)
+  while [[ $CREATE_STACK_STATUS == "UPDATE_IN_PROGRESS" ]] || [[ $CREATE_STACK_STATUS == "CREATE_IN_PROGRESS" ]]
+  do
+      # Wait 1 seconds and then check stack status again
+      sleep 1
+      printf '.'
+      CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${STACK_ID} --query 'Stacks[0].StackStatus' --output text)
+  done
+  printf "\n"
 fi
+#-----------------------------
+# Validate stack creation has not failed
+if (aws cloudformation wait stack-update-complete --stack-name ${STACK_ID})
+then 
+  echo "Stack $BUILD_COUNTER Update is now complete. Stack ID:"
+  echo "$STACK_ID"
+else 
+  echo "Error: Stack Update Failed!"
+  exit 1
+fi
+#-----------------------------
+# Calculate Stack Creation Execution Time
+TIME_END_STACK=$(date +%s)
+TIME_DIFF_STACK=$(($TIME_END_STACK - $TIME_START_STACK))
+echo "Execution Time $BUILD_COUNTER : $(( ${TIME_DIFF_STACK} / 3600 ))h $(( (${TIME_DIFF_STACK} / 60) % 60 ))m $(( ${TIME_DIFF_STACK} % 60 ))s"
+#.............................
+#.............................
+
+
+
 
 # Copy client configuration files locally & timestamp
 cd openvpn/client
-if (aws s3 sync s3://$PROJECT_NAME/openvpn/client/ . --exclude "*" --include "*.tar.gz")
+if (aws s3 sync $PROJECT_BUCKET/openvpn/client/ . --exclude "*" --include "*.tar.gz")
 then 
   echo "OpenVPN client files successfully copied locally"
   for file in $(ls *.tar.gz); do [ -f $file ] && mv $file "${file%%.*}_$(date +%F_%H%M).tar.gz" || echo "Failed to timestamp : $file"; done
@@ -296,9 +335,7 @@ cd ..
 
 #-----------------------------
 # Calculate Script Total Execution Time
-TIME_END=$(date +%s)
-TIME_DIFF=$(($TIME_END - $TIME_START))
-echo "Execution Time: $(( ${TIME_DIFF} / 3600 ))h $(( (${TIME_DIFF} / 60) % 60 ))m $(( ${TIME_DIFF} % 60 ))s"
-
-
+TIME_END_PROJ=$(date +%s)
+TIME_DIFF=$(($TIME_END_PROJ - $TIME_START_PROJ))
+echo "Total Execution Time: $(( ${TIME_DIFF} / 3600 ))h $(( (${TIME_DIFF} / 60) % 60 ))m $(( ${TIME_DIFF} % 60 ))s"
 

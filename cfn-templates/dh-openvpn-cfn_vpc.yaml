@@ -32,15 +32,15 @@ Parameters:
 
 #--- Stack Build Stage Indicator
 #-------------------------------------------
-  BuildStage: 
-    Description: Specify the Build Stage
+  BuildStep: 
+    Description: Specify the Stage of the Build.
     Type: String
 
 
 #Conditions: {}
 Conditions:
 #===========================================
-  CreateResourcesStage1: !Equals [ !Ref BuildStage, Stage1]
+  CreateResourcesStage1: !Equals [ !Ref BuildStep, Stage1]
 
 
 Resources:

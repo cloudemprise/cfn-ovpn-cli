@@ -1,4 +1,4 @@
-set_var EASYRSA_REQ_CN "s6-android-client"
+set_var EASYRSA_REQ_CN "droid-bmetal-client"
 set_var EASYRSA_BATCH "yes"
 set_var EASYRSA_ALGO ec
 set_var EASYRSA_CURVE secp384r1
