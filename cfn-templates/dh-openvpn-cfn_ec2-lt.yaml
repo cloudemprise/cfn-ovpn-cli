@@ -73,12 +73,14 @@ Resources:
           - !Ref PublicSgResourceId
 #.............................
         IamInstanceProfile: 
-          Name: "dh.instprofile.managed.sysadmin"
+          Name: "dh-openvpn-server-system-administrator"
 #.............................
         UserData:
           Fn::Base64: 
             !Sub |
-              #!/bin/bash -xe
+              #!/bin/bash -x
+              # https://github.com/aws/aws-cli/issues/1588 bug with --exclude below
+              #set -e
               # Download Server Certs & start Openvpn dual-protocol service
               aws s3 sync s3://${ProjectName}/easy-rsa/issued-certs/ /tmp --exclude "*" --include "*server.tar.gz"
               tar -xzf /tmp/*server.tar.gz -C /etc/openvpn/server/

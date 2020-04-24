@@ -85,7 +85,7 @@ Resources:
               Ref: 'AWS::Region'
 #.............................
       DisableApiTermination: false
-      IamInstanceProfile: "dh.instprofile.managed.sysadmin"
+      IamInstanceProfile: "dh-openvpn-server-system-administrator"
       ImageId: !Ref PublicAmiId
       InstanceType: "t2.nano"
       KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
@@ -137,7 +137,7 @@ Resources:
           type: "S3"
           buckets: 
             - !Ref ProjectName
-          roleName: "dh.instprofile.managed.sysadmin"
+          roleName: "dh-openvpn-server-system-administrator"
 
 #,,,,,,,,,,,,,,
       AWS::CloudFormation::Init:
@@ -450,15 +450,25 @@ Resources:
                 !Sub "aws s3 cp pfSn-virt-client.key s3://${ProjectName}/openvpn/client/"
             6a_genClient3:
               cwd: "/usr/local/easy-rsa"
-              command: "mv vars_dh-openvpn-s6-android-client vars"
+              command: "mv vars_dh-openvpn-droid-bmetal-client vars"
             6b_genClient3:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req s6-android-client nopass"
+              command: "./easyrsa gen-req droid-bmetal-client nopass"
             6c_genClient3:
               cwd: "/usr/local/easy-rsa/pki/private"
               command: 
-                !Sub "aws s3 cp s6-android-client.key s3://${ProjectName}/openvpn/client/"
-            7a_mvReqs:
+                !Sub "aws s3 cp droid-bmetal-client.key s3://${ProjectName}/openvpn/client/"
+            7a_genClient3:
+              cwd: "/usr/local/easy-rsa"
+              command: "mv vars_dh-openvpn-droid-virt-client vars"
+            7b_genClient3:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa gen-req droid-virt-client nopass"
+            7c_genClient3:
+              cwd: "/usr/local/easy-rsa/pki/private"
+              command: 
+                !Sub "aws s3 cp droid-virt-client.key s3://${ProjectName}/openvpn/client/"
+            8a_mvReqs:
               cwd: "/usr/local/easy-rsa/pki/reqs"
               command: 
                 !Sub "tar -zcf - *.req | aws s3 cp - s3://${ProjectName}/easy-rsa/sign-reqs/dh-openvpn-easyrsa-sign-reqs.tar.gz"
@@ -534,7 +544,7 @@ Outputs:
 
 #--- Public Instance ID
 #-------------------------------------------
-  Pub1EC2InstanceId:
+  PubEC2InstanceId:
     Description: Public Instance ID
     Value:
       Ref: PublicEC2Instance

@@ -85,7 +85,7 @@ Resources:
               Ref: 'AWS::Region'
 #.............................
       DisableApiTermination: false
-      IamInstanceProfile: "dh.instprofile.managed.sysadmin"
+      IamInstanceProfile: "dh-openvpn-server-system-administrator"
       ImageId: !Ref PrivateAmiId
       InstanceType: "t2.nano"
       KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
@@ -137,7 +137,7 @@ Resources:
           type: "S3"
           buckets: 
             - !Ref ProjectName
-          roleName: "dh.instprofile.managed.sysadmin"
+          roleName: "dh-openvpn-server-system-administrator"
 #,,,,,,,,,,,,,,
       AWS::CloudFormation::Init:
         configSets:
