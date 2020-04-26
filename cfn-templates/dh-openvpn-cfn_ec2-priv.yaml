@@ -416,11 +416,13 @@ Resources:
             4b_signReqs_1:
               cwd: "/usr/local/easy-rsa/pki/issued"
               command: 
-                !Sub "tar -czf - ca.crt *server.crt | aws s3 cp - s3://${ProjectName}/easy-rsa/issued-certs/dh-openvpn-easyrsa-issued-certs-server.tar.gz"
+#                !Sub "tar -czf - ca.crt *server.crt | aws s3 cp - s3://${ProjectName}/easy-rsa/issued-certs/dh-openvpn-easyrsa-issued-certs-server.tar.gz"
+                !Sub "tar -czf - ca.crt *server.crt | aws s3 cp - s3://${ProjectName}/openvpn/server/crt/dh-openvpn-server-crt.tar.gz"
             4b_signReqs_2:
               cwd: "/usr/local/easy-rsa/pki/issued"
               command: 
-                !Sub "tar -czf - ca.crt *client.crt | aws s3 cp - s3://${ProjectName}/easy-rsa/issued-certs/dh-openvpn-easyrsa-issued-certs-client.tar.gz"
+#                !Sub "tar -czf - ca.crt *client.crt | aws s3 cp - s3://${ProjectName}/easy-rsa/issued-certs/dh-openvpn-easyrsa-issued-certs-client.tar.gz"
+                !Sub "tar -czf - ca.crt *client.crt | aws s3 cp - s3://${ProjectName}/openvpn/client/crt/dh-openvpn-client-crt.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -435,14 +437,14 @@ Resources:
             3_cmd:
               cwd: "/tmp/openvpn-client-files"
               command: "cp /usr/local/easy-rsa/pki/issued/*client.crt ."
-            4_cmd:
-              cwd: "/tmp/openvpn-client-files"
-              command: 
-                !Sub 'aws s3 sync s3://${ProjectName}/openvpn/client/ . --exclude "*" --include "*.key"'
-            5_cmd:
-              cwd: "/tmp/openvpn-client-files"
-              command: 
-                !Sub "tar -czf - * | aws s3 cp - s3://${ProjectName}/openvpn/client/openvpn-client-files.tar.gz"
+#            4_cmd:
+#              cwd: "/tmp/openvpn-client-files"
+#              command: 
+#                !Sub 'aws s3 sync s3://${ProjectName}/openvpn/client/key/ . --exclude "*" --include "*.key"'
+#            5_cmd:
+#              cwd: "/tmp/openvpn-client-files"
+#              command: 
+#                !Sub "tar -czf - * | aws s3 cp - s3://${ProjectName}/openvpn/client/openvpn-client-files.tar.gz"
 
 
 #,,,,,,,,,,,,,,,,,,,,,,,,,,,,

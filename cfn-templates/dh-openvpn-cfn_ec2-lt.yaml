@@ -82,9 +82,10 @@ Resources:
               # https://github.com/aws/aws-cli/issues/1588 bug with --exclude below
               #set -e
               # Download Server Certs & start Openvpn dual-protocol service
-              aws s3 sync s3://${ProjectName}/easy-rsa/issued-certs/ /tmp --exclude "*" --include "*server.tar.gz"
-              tar -xzf /tmp/*server.tar.gz -C /etc/openvpn/server/
-              rm /tmp/*server.tar.gz
+              #aws s3 sync s3://${ProjectName}/easy-rsa/issued-certs/ /tmp --exclude "*" --include "*server.tar.gz"
+              aws s3 sync s3://${ProjectName}/openvpn/server/crt/ /tmp --exclude "*" --include "*server-crt.tar.gz"
+              tar -xzf /tmp/*server-crt.tar.gz -C /etc/openvpn/server/
+              rm /tmp/*server-crt.tar.gz
               systemctl enable openvpn-server@dh-openvpn-server-udp1194
               systemctl enable openvpn-server@dh-openvpn-server-tcp1194
               systemctl start openvpn-server@dh-openvpn-server-udp1194

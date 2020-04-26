@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/bin/bash 
+#-xe
 
 
 #!! COMMENT BEGIN
@@ -20,11 +21,13 @@ echo "The Time Stamp.................: $TIME_STAMP_PROJ"
 #-----------------------------
 # Name Given to Entire Project
 # must be compatible with s3bucket name restrictions
-PROJECT_NAME="dh-openvpn"
+PROJECT_NAME="dh-openvpn-test6"
 [[ ! $PROJECT_NAME =~ (^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$) ]] \
     && { echo "Invalid Project Name!"; exit 1; } \
     || { echo "The Project Name...............: $PROJECT_NAME"; }
 #.............................
+
+
 
 #-----------------------------
 # Get Route 53 Domain hosted zone ID
@@ -120,11 +123,18 @@ set -x
 #-----------------------------
 #Upload easy-rsa pki keygen configs to S3
 tar -zcf - easy-rsa/vars* | aws s3 cp - ${PROJECT_BUCKET}/easy-rsa/gen-reqs/dh-openvpn-easyrsa-vars.tar.gz
+
 #Compress & Upload separate iptables scripts to S3
 tar -zcf - iptables/dh-openvpn-ec2-pub-iptables.sh | aws s3 cp - ${PROJECT_BUCKET}/iptables/dh-openvpn-ec2-pub-iptables.sh.tar.gz
 tar -zcf - iptables/dh-openvpn-ec2-priv-iptables.sh | aws s3 cp - ${PROJECT_BUCKET}/iptables/dh-openvpn-ec2-priv-iptables.sh.tar.gz
-#Compress & Upload openvpn server configs to S3
-tar -zcf - openvpn/server/dh-openvpn-server*.conf | aws s3 cp - ${PROJECT_BUCKET}/openvpn/server/dh-openvpn-server-1194.conf.tar.gz
+
+#Compress & Upload openvpn server/client configs to S3
+# Remove hierarchy from archives more flexible extraction options.
+#tar -zcf - openvpn/server/conf/dh-openvpn-server*.conf | aws s3 cp - ${PROJECT_BUCKET}/openvpn/server/conf/dh-openvpn-server-1194.conf.tar.gz
+tar -zcf - -C openvpn/server/conf/ . | aws s3 cp - ${PROJECT_BUCKET}/openvpn/server/conf/dh-openvpn-server-1194.conf.tar.gz
+#tar -zcf - openvpn/client/ovpn/template-client*.ovpn | aws s3 cp - ${PROJECT_BUCKET}/openvpn/client/ovpn/dh-openvpn-client-1194.ovpn.tar.gz
+tar -zcf - -C openvpn/client/ovpn/ . | aws s3 cp - ${PROJECT_BUCKET}/openvpn/client/ovpn/dh-openvpn-client-1194.ovpn.tar.gz
+
 #Compress & Upload sshd hardening script to S3
 tar -zcf - ssh/dh-openvpn-ec2-harden-ssh.sh | aws s3 cp - ${PROJECT_BUCKET}/ssh/dh-openvpn-ec2-harden-ssh.sh.tar.gz
 set +x
@@ -315,22 +325,65 @@ TIME_END_STACK=$(date +%s)
 TIME_DIFF_STACK=$(($TIME_END_STACK - $TIME_START_STACK))
 echo "Execution Time $BUILD_COUNTER : $(( ${TIME_DIFF_STACK} / 3600 ))h $(( (${TIME_DIFF_STACK} / 60) % 60 ))m $(( ${TIME_DIFF_STACK} % 60 ))s"
 #.............................
+
+
+
+
+#-----------------------------
+# DOWNLOAD & SORT CLIENT CONFIGURATION FILES
+#-----------------------------
+
+# Create Temporary scratch folder
+TMP_DIR=/tmp/ovpn
+rm -Rf $TMP_DIR
+mkdir $TMP_DIR
+echo "Temporary working directory....: $TMP_DIR"
+
+
+# Download client archives locally
+aws s3 sync $PROJECT_BUCKET/openvpn/client/ $TMP_DIR  --exclude "*" --include "*.tar.gz"
+
+# Extract archive and then delete them
+for FILE in $(find $TMP_DIR -type f -name '*.tar.gz'); do 
+  tar -zxf $FILE -C $(dirname "${FILE}");
+  rm $FILE
+done
+
+# Make directory for each client and distribute files
+for FILE in $(find $TMP_DIR -type f -name "*-client*" ! -path "$TMP_DIR/ovpn/*"); do
+  mkdir -p "${TMP_DIR}/client/$(basename ${FILE%%-client*})"
+  cp ${TMP_DIR}/crt/ca.crt $_
+  cp ${TMP_DIR}/hmac-sig.key $_
+  cp ${TMP_DIR}/ovpn/*.ovpn $_
+  cp $FILE $_
+done
+
+# Remove unwanted files
+find $TMP_DIR -name "*" ! -path "$TMP_DIR/client/*" -delete
+
+
+# Create client specific configurations files
+for FILE in $(find $TMP_DIR -type f); do
+  # Rename template files to reflect client specifics via parameter expansion
+  [[ "$(basename $FILE)" == "template-client"* ]] && mv $FILE ${FILE//template-client/$(basename $(dirname $FILE))}
+  # Insert certificates into respective sections configuration files
+  [[ $(basename $FILE) = "ca.crt" ]] && { sed -i -e "/<ca>/ r ${FILE}" $(dirname $FILE)/*.ovpn; }
+  [[ $(basename $FILE) = "hmac-sig.key" ]] && { sed -i -e "/<tls-crypt>/ r ${FILE}" $(dirname $FILE)/*.ovpn; }
+  [[ "$(basename $FILE)" == *"-client.crt" ]] && { sed -i -e "/<cert>/ r ${FILE}" $(dirname $FILE)/*.ovpn; }
+  [[ "$(basename $FILE)" == *"-client.key" ]] && { sed -i -e "/<key>/ r ${FILE}" $(dirname $FILE)/*.ovpn; }
+done
+
+# Archive individual client configuration directories
+for DIR in $(find $TMP_DIR/client/* -type d); do
+  tar -zcf "$(basename $DIR)_$(date +%F_%H%M).tar.gz" -C $DIR .
+  echo "Configuration archive..........: ./openvpn/client/$(ls *.tar.gz)"
+  mv $(basename $DIR)*.tar.gz ./openvpn/client/
+#  echo "Configuration archive..........: $_"
+done
+
+# Delete temporary files
+rm -Rf $TMP_DIR
 #.............................
-
-
-
-
-# Copy client configuration files locally & timestamp
-cd openvpn/client
-if (aws s3 sync $PROJECT_BUCKET/openvpn/client/ . --exclude "*" --include "*.tar.gz")
-then 
-  echo "OpenVPN client files successfully copied locally"
-  for file in $(ls *.tar.gz); do [ -f $file ] && mv $file "${file%%.*}_$(date +%F_%H%M).tar.gz" || echo "Failed to timestamp : $file"; done
-else 
-  echo "OpenVPN client files failed to copy locally"
-fi
-cd ..
-
 
 
 #-----------------------------
@@ -338,4 +391,5 @@ cd ..
 TIME_END_PROJ=$(date +%s)
 TIME_DIFF=$(($TIME_END_PROJ - $TIME_START_PROJ))
 echo "Total Execution Time: $(( ${TIME_DIFF} / 3600 ))h $(( (${TIME_DIFF} / 60) % 60 ))m $(( ${TIME_DIFF} % 60 ))s"
+#.............................
 

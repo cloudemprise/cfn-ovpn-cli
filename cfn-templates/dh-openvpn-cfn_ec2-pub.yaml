@@ -434,41 +434,29 @@ Resources:
             4b_genClient1:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa gen-req pfSn-bmetal-client nopass"
-            4c_genClient1:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: 
-                !Sub "aws s3 cp pfSn-bmetal-client.key s3://${ProjectName}/openvpn/client/"
             5a_genClient2:
               cwd: "/usr/local/easy-rsa"
               command: "mv vars_dh-openvpn-pfSn-virt-client vars"
             5b_genClient2:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa gen-req pfSn-virt-client nopass"
-            5c_genClient2:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: 
-                !Sub "aws s3 cp pfSn-virt-client.key s3://${ProjectName}/openvpn/client/"
             6a_genClient3:
               cwd: "/usr/local/easy-rsa"
               command: "mv vars_dh-openvpn-droid-bmetal-client vars"
             6b_genClient3:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa gen-req droid-bmetal-client nopass"
-            6c_genClient3:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: 
-                !Sub "aws s3 cp droid-bmetal-client.key s3://${ProjectName}/openvpn/client/"
             7a_genClient3:
               cwd: "/usr/local/easy-rsa"
               command: "mv vars_dh-openvpn-droid-virt-client vars"
             7b_genClient3:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa gen-req droid-virt-client nopass"
-            7c_genClient3:
+            8a_mvKeys:
               cwd: "/usr/local/easy-rsa/pki/private"
               command: 
-                !Sub "aws s3 cp droid-virt-client.key s3://${ProjectName}/openvpn/client/"
-            8a_mvReqs:
+                !Sub "tar -zcf - *client.key | aws s3 cp - s3://${ProjectName}/openvpn/client/key/dh-openvpn-client-key.tar.gz"
+            9a_mvReqs:
               cwd: "/usr/local/easy-rsa/pki/reqs"
               command: 
                 !Sub "tar -zcf - *.req | aws s3 cp - s3://${ProjectName}/easy-rsa/sign-reqs/dh-openvpn-easyrsa-sign-reqs.tar.gz"
@@ -480,7 +468,7 @@ Resources:
             yum:
               openvpn: []
           sources:
-            /etc:
+            /etc/openvpn/server:
               !Join
                 - ""
                 - - "https://"
@@ -488,7 +476,7 @@ Resources:
                   - ".s3."
                   - !Ref "AWS::Region"
                   - ".amazonaws.com/"
-                  - "openvpn/server/dh-openvpn-server-1194.conf.tar.gz"
+                  - "openvpn/server/conf/dh-openvpn-server-1194.conf.tar.gz"
           files:
             "/usr/local/bin/vpn-server-status":
               content: |
@@ -503,11 +491,11 @@ Resources:
           commands:
             1a_gen-HMAC:
               cwd: "/etc/openvpn/server"
-              command: "openvpn --genkey --secret HMAC-sig.key"
+              command: "openvpn --genkey --secret hmac-sig.key"
             1b_gen-HMAC:
               cwd: "/etc/openvpn/server"
               command: 
-                !Sub "aws s3 cp HMAC-sig.key s3://${ProjectName}/openvpn/client/"
+                !Sub "tar -czf - hmac-sig.key | aws s3 cp - s3://${ProjectName}/openvpn/client/dh-openvpn-client-hmac.tar.gz"
             2a_cpSvrDH:
               cwd: "/usr/local/easy-rsa/pki"
               command: "cp dh.pem /etc/openvpn/server/"
