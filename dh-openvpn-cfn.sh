@@ -21,7 +21,7 @@ echo "The Time Stamp.................: $TIME_STAMP_PROJ"
 #-----------------------------
 # Name Given to Entire Project
 # must be compatible with s3bucket name restrictions
-PROJECT_NAME="dh-openvpn-test6"
+PROJECT_NAME="dh-openvpn-test8"
 [[ ! $PROJECT_NAME =~ (^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$) ]] \
     && { echo "Invalid Project Name!"; exit 1; } \
     || { echo "The Project Name...............: $PROJECT_NAME"; }
@@ -122,7 +122,7 @@ for file in $(ls cfn-templates/*.yaml); do [ -f $file ] && \
 set -x
 #-----------------------------
 #Upload easy-rsa pki keygen configs to S3
-tar -zcf - easy-rsa/vars* | aws s3 cp - ${PROJECT_BUCKET}/easy-rsa/gen-reqs/dh-openvpn-easyrsa-vars.tar.gz
+tar -zcf - easy-rsa/dh-openvpn-vars/vars* | aws s3 cp - ${PROJECT_BUCKET}/easy-rsa/dh-openvpn-vars/dh-openvpn-easyrsa-vars.tar.gz
 
 #Compress & Upload separate iptables scripts to S3
 tar -zcf - iptables/dh-openvpn-ec2-pub-iptables.sh | aws s3 cp - ${PROJECT_BUCKET}/iptables/dh-openvpn-ec2-pub-iptables.sh.tar.gz

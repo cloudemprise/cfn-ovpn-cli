@@ -400,6 +400,18 @@ Resources:
           packages:
             yum:
               easy-rsa: []
+          files:
+            "/usr/local/easy-rsa/vars":
+              content: |
+                set_var EASYRSA_REQ_CN "none"
+                set_var EASYRSA_BATCH "yes"
+                set_var EASYRSA_ALGO ec
+                set_var EASYRSA_CURVE secp521r1
+                set_var EASYRSA_KEY_SIZE 4096
+                set_var EASYRSA_DIGEST "sha512"
+              mode: '000644'
+              owner: root
+              group: root
           sources:
             /usr/local:
               !Join
@@ -409,49 +421,49 @@ Resources:
                   - ".s3."
                   - !Ref "AWS::Region"
                   - ".amazonaws.com/"
-                  - "easy-rsa/gen-reqs/dh-openvpn-easyrsa-vars.tar.gz"
+                  - "easy-rsa/dh-openvpn-vars/dh-openvpn-easyrsa-vars.tar.gz"
           commands:
             1a_initPKI:
-              command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
+              command: "mkdir -p /usr/local/easy-rsa && cp -r /usr/share/easy-rsa/3/* $_"
             1b_initPKI:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa init-pki"
-            2a_genDH:
+            2a_genSVR:
               cwd: "/usr/local/easy-rsa"
-              command: "mv vars_gen-dh vars"
-            2b_genDH:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-dh"
-            3a_genSVR:
-              cwd: "/usr/local/easy-rsa"
-              command: "mv vars_dh-openvpn-server vars"
-            3b_genSVR:
+              command: "cp ./dh-openvpn-vars/vars_dh-openvpn-server ./vars"
+            2b_genSVR:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa gen-req dh-openvpn-server nopass"
-            4a_genClient1:
+            3a_genClient1:
               cwd: "/usr/local/easy-rsa"
-              command: "mv vars_dh-openvpn-pfSn-bmetal-client vars"
-            4b_genClient1:
+              command: "cp ./dh-openvpn-vars/vars_pfSense-bmetal-client ./vars"
+            3b_genClient1:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req pfSn-bmetal-client nopass"
-            5a_genClient2:
+              command: "./easyrsa gen-req pfSense-bmetal-client nopass"
+            4a_genClient2:
               cwd: "/usr/local/easy-rsa"
-              command: "mv vars_dh-openvpn-pfSn-virt-client vars"
-            5b_genClient2:
+              command: "cp ./dh-openvpn-vars/vars_pfSense-virt-client ./vars"
+            4b_genClient2:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req pfSn-virt-client nopass"
+              command: "./easyrsa gen-req pfSense-virt-client nopass"
+            5a_genClient3:
+              cwd: "/usr/local/easy-rsa"
+              command: "cp ./dh-openvpn-vars/vars_android-bmetal-client ./vars"
+            5b_genClient3:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa gen-req android-bmetal-client nopass"
             6a_genClient3:
               cwd: "/usr/local/easy-rsa"
-              command: "mv vars_dh-openvpn-droid-bmetal-client vars"
+              command: "cp ./dh-openvpn-vars/vars_android-virt-client ./vars"
             6b_genClient3:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req droid-bmetal-client nopass"
-            7a_genClient3:
+              command: "./easyrsa gen-req android-virt-client nopass"
+            7a_genDH:
               cwd: "/usr/local/easy-rsa"
-              command: "mv vars_dh-openvpn-droid-virt-client vars"
-            7b_genClient3:
+              command: "cp ./dh-openvpn-vars/vars_gen-dh ./vars"
+            7b_genDH:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req droid-virt-client nopass"
+              command: "./easyrsa gen-dh"
             8a_mvKeys:
               cwd: "/usr/local/easy-rsa/pki/private"
               command: 
