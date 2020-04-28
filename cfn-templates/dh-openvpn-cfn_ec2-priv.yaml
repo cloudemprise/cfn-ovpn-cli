@@ -380,8 +380,9 @@ Resources:
                 set_var EASYRSA_REQ_CN "dh-openvpn-server-cert-auth"
                 set_var EASYRSA_BATCH "yes"
                 set_var EASYRSA_ALGO ec
-                set_var EASYRSA_CURVE secp384r1
+                set_var EASYRSA_CURVE secp521r1
                 set_var EASYRSA_KEY_SIZE 4096
+                set_var EASYRSA_DIGEST "sha512"
               mode: '000644'
               owner: root
               group: root
@@ -397,7 +398,7 @@ Resources:
                   - "easy-rsa/sign-reqs/dh-openvpn-easyrsa-sign-reqs.tar.gz"
           commands:
             1a_initPKI:
-              command: "cp -r /usr/share/easy-rsa/3/* /usr/local/easy-rsa/"
+              command: "mkdir -p /usr/local/easy-rsa && cp -r /usr/share/easy-rsa/3/* $_"
             1b_initPKI:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa init-pki"
