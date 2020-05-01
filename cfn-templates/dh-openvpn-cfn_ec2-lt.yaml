@@ -61,7 +61,7 @@ Resources:
     Description: "Openvpn Launch Template for AutoScaling"
 #.............................
     Properties:
-      LaunchTemplateName: "openvpn-launch-template"
+      LaunchTemplateName: !Sub "${ProjectName}-launch-template"
 #.............................
       LaunchTemplateData:
         ImageId: !Ref PublicLtAmiId
