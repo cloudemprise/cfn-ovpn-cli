@@ -73,7 +73,7 @@ Resources:
           ToPort: -1
           CidrIp: "10.0.0.0/16"
 ############################################
-        - Description: httpd access (temporary)
+        - Description: httpd access for nlb health check
           IpProtocol: tcp
           FromPort: 80
           ToPort: 80

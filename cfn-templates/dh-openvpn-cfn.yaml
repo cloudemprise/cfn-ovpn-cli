@@ -311,6 +311,8 @@ Resources:
             - "cfn-templates/dh-openvpn-cfn_ec2-tg.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
       TimeoutInMinutes: 5
@@ -336,6 +338,8 @@ Resources:
             - "cfn-templates/dh-openvpn-cfn_sns.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         OpenvpnSubsEmailSNS:
           !Ref OpenvpnSubsEmailSNS
       TimeoutInMinutes: 5
@@ -365,6 +369,8 @@ Resources:
             - "cfn-templates/dh-openvpn-cfn_ec2-asg.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         PublicSubnetIdA:
           !GetAtt VPCDef.Outputs.PublicSubnetIdA
         PublicSubnetIdB:
@@ -399,6 +405,8 @@ Resources:
             - "cfn-templates/dh-openvpn-cfn_ec2-nlb.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
         PublicSubnetIdA:
@@ -434,6 +442,8 @@ Resources:
             - "cfn-templates/dh-openvpn-cfn_cw.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         OpenvpnSNSTopicARN:
           !GetAtt OpenvpnSNSTopicDef.Outputs.OpenvpnSNSTopicARN
       TimeoutInMinutes: 5
@@ -460,6 +470,8 @@ Resources:
             - "cfn-templates/dh-openvpn-cfn_r53.yaml"
 #,,,,,,,,,,,,,,,,
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         OpenvpnDomainName:
           !Ref DomainName
         OpenvpnR53HostedZoneId:

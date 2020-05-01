@@ -404,8 +404,14 @@ Resources:
               command: "./easyrsa init-pki"
             2a_buildCA:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa build-ca nopass"
+              command: "touch pki-cert-auth.txt && chmod 600 $_"
             2b_buildCA:
+              cwd: "/usr/local/easy-rsa"
+              command: 'aws ssm get-parameters --names /dh-openvpn-server/pki-cert-auth --with-decryption --query "Parameters[].Value" --output text > pki-cert-auth.txt; echo $_ >> pki-cert-auth.txt'
+            2y_buildCA:
+              cwd: "/usr/local/easy-rsa"
+              command: "./easyrsa --passin=file:pki-cert-auth.txt --passout=file:pki-cert-auth.txt build-ca"
+            2z_buildCA:
               cwd: "/usr/local/easy-rsa/pki"
               command: "cp ca.crt issued/"
             3_importReqs:
@@ -413,7 +419,7 @@ Resources:
               command: "for REQUEST in /tmp/sign-reqs/*; do ./easyrsa import-req $REQUEST $(basename $REQUEST .req); done"
             4a_signReqs:
               cwd: "/usr/local/easy-rsa"
-              command: "for REQUEST in /usr/local/easy-rsa/pki/reqs/*; do EntityName=$(basename $REQUEST .req); ./easyrsa sign-req ${EntityName##*-} $EntityName; done"
+              command: "for REQUEST in /usr/local/easy-rsa/pki/reqs/*; do EntityName=$(basename $REQUEST .req); ./easyrsa --passin=file:pki-cert-auth.txt sign-req ${EntityName##*-} $EntityName; done"
             4b_signReqs_1:
               cwd: "/usr/local/easy-rsa/pki/issued"
               command: 
