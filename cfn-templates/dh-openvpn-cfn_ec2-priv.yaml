@@ -407,7 +407,7 @@ Resources:
               command: "touch pki-cert-auth.txt && chmod 600 $_"
             2b_buildCA:
               cwd: "/usr/local/easy-rsa"
-              command: 'aws ssm get-parameters --names /dh-openvpn-server/pki-cert-auth --with-decryption --query "Parameters[].Value" --output text > pki-cert-auth.txt; echo $_ >> pki-cert-auth.txt'
+              command: !Sub 'aws ssm get-parameters --names "/${ProjectName}/pki-cert-auth" --with-decryption --query "Parameters[].Value" --output text > pki-cert-auth.txt; echo $_ >> pki-cert-auth.txt'
             2y_buildCA:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa --passin=file:pki-cert-auth.txt --passout=file:pki-cert-auth.txt build-ca"
