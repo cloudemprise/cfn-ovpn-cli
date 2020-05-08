@@ -73,7 +73,8 @@ Resources:
           - !Ref PublicSgResourceId
 #.............................
         IamInstanceProfile: 
-          Name: "dh-openvpn-server-system-administrator"
+#          Name: "dh-openvpn-server-restrictive"
+          Name: !Sub "${ProjectName}-instance-profile-${AWS::Region}"
 #.............................
         UserData:
           Fn::Base64: 

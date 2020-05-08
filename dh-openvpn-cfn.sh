@@ -54,13 +54,6 @@ echo "The Root Account ID ...........................: $AWS_ACC_ID"
 # CLI profile userid
 AWS_CLI_ID=$(aws sts get-caller-identity --query UserId --output text)
 echo "The Script Caller userid ......................: $AWS_CLI_ID"
-# EC2 Instance Profile Name
-EC2_ROLE_NAME="dh-openvpn-server-system-administrator"
-echo "The Instance Profile Name .....................: $EC2_ROLE_NAME"
-# EC2 Instance Profile userid
-EC2_ROLE_ID=$(aws iam get-role --role-name $EC2_ROLE_NAME \
-    --query "Role.RoleId" --output text)
-echo "The Instance Profile userid ...................: $EC2_ROLE_ID"
 # Grab the latest Amazon_Linux_2 AMI
 AMI_LATEST=$(aws ssm get-parameters --output text                         \
     --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 \
@@ -98,6 +91,78 @@ aws ssm put-parameter --name $CERT_AUTH_PASS_NAME --value $CERT_AUTH_PASS \
         --description "Openvpn PKI Certificate Authority Private Key Passphrase" > /dev/null
 #.............................
 
+
+#-----------------------------
+# Create IAM Role
+EC2_ROLE_NAME="${PROJECT_NAME}-iam-role-${AWS_REGION}"
+echo "The IAM Role Name .............................: $EC2_ROLE_NAME"
+ASSUME_ROLE_POLICY=$(cat ./policies/ec2-role/assume-role-policy.json | tr -d " \t\n\r")
+EC2_ROLE_ID=$(aws iam create-role --role-name ${EC2_ROLE_NAME}  \
+    --assume-role-policy-document ${ASSUME_ROLE_POLICY}         \
+    --output text --query 'Role.RoleId')
+echo "The IAM Role userid ...........................: $EC2_ROLE_ID"
+#.............................
+
+#-----------------------------
+# Create EC2 Instance Profile
+EC2_PROFILE_NAME="${PROJECT_NAME}-instance-profile-${AWS_REGION}"
+echo "The EC2 Instance Profile Name .................: $EC2_PROFILE_NAME"
+EC2_PROFILE_ID=$(aws iam create-instance-profile --output text  \
+    --instance-profile-name $EC2_PROFILE_NAME                   \
+    --query 'InstanceProfile.InstanceProfileId')
+echo "The EC2 Instance Profile userid ...............: $EC2_PROFILE_ID"
+#.............................
+
+#-----------------------------
+# Add the IAM role to the instance profile
+aws iam add-role-to-instance-profile --instance-profile-name ${EC2_PROFILE_NAME} \
+    --role-name ${EC2_ROLE_NAME}
+echo "IAM Role Added to Instance Profile ............: "
+#.............................
+
+
+#-----------------------------
+# Create Inline Role Policy for S3 Access from local template
+if [ -f policies/ec2-role/template-s3-access-policy.json ]
+then
+  cp policies/ec2-role/template-s3-access-policy.json policies/ec2-role/${PROJECT_NAME}-s3-access-policy.json
+  sed -i "s/ProjectName/$PROJECT_NAME/g" policies/ec2-role/${PROJECT_NAME}-s3-access-policy.json
+else
+  echo "Template EC2 S3 Role Policy Not Found!"
+  exit 1
+fi
+#.............................
+
+#-----------------------------
+# Create Inline Role Policy for SSM Access from local template
+if [ -f policies/ec2-role/template-ssm-access-policy.json ]
+then
+  cp policies/ec2-role/template-ssm-access-policy.json policies/ec2-role/${PROJECT_NAME}-ssm-access-policy.json
+  sed -i "s/ProjectName/$PROJECT_NAME/g" policies/ec2-role/${PROJECT_NAME}-ssm-access-policy.json
+else
+  echo "Template EC2 SSM Role Policy Not Found!"
+  exit 1
+fi
+#.............................
+
+
+#-----------------------------
+# Embedd S3 inline policy document in IAM role
+EC2_ROLE_S3_POLICY=$(cat ./policies/ec2-role/${PROJECT_NAME}-s3-access-policy.json | tr -d " \t\n\r")
+EC2_ROLE_S3_NAME="${PROJECT_NAME}-ec2-s3-${AWS_REGION}"
+aws iam put-role-policy --role-name ${EC2_ROLE_NAME}      \
+    --policy-name "${EC2_ROLE_S3_NAME}"  \
+    --policy-document ${EC2_ROLE_S3_POLICY}
+echo "S3 Access Policy Attached to IAM Role .........: ${EC2_ROLE_S3_NAME}"
+
+#-----------------------------
+# Embedd SSM inline policy document in IAM role
+EC2_ROLE_SSM_POLICY=$(cat ./policies/ec2-role/${PROJECT_NAME}-ssm-access-policy.json | tr -d " \t\n\r")
+EC2_ROLE_SSM_NAME="${PROJECT_NAME}-ec2-ssm-${AWS_REGION}"
+aws iam put-role-policy --role-name ${EC2_ROLE_NAME}      \
+    --policy-name "${EC2_ROLE_SSM_NAME}"  \
+    --policy-document ${EC2_ROLE_SSM_POLICY}
+echo "SSM Access Policy Attached to IAM Role ........: ${EC2_ROLE_SSM_NAME}"
 
 
 #-----------------------------
@@ -236,7 +301,7 @@ STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --parameters
                 --tags Key=Name,Value=openvpn-stage1                              \
                 --stack-policy-url "https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/policies/cfn-stacks/${PROJECT_NAME}-cfn-stack-policy.json" \
                 --template-url "https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml" \
-                --on-failure DO_NOTHING --output text)
+                --on-failure DO_NOTHING --capabilities CAPABILITY_NAMED_IAM --output text)
 #-----------------------------
 if [[ $? -eq 0 ]]; then
   # Wait for stack creation to complete
@@ -285,6 +350,7 @@ aws cloudformation update-stack --stack-name $STACK_ID --parameters   \
       ParameterKey=DomainName,UsePreviousValue=true                   \
       ParameterKey=DomainHostedZoneId,UsePreviousValue=true           \
       ParameterKey=CurrentAmi,UsePreviousValue=true                   \
+      --capabilities CAPABILITY_NAMED_IAM                             \
       --tags Key=Name,Value=openvpn-stage2 --use-previous-template > /dev/null
 #-----------------------------
 if [[ $? -eq 0 ]]; then
@@ -364,6 +430,7 @@ echo "$BUILD_COUNTER Instances Terminated ...................:"
 #.............................
 
 
+
 #-----------------------------
 #-----------------------------
 # Stage3 Stack Creation Code Block
@@ -422,7 +489,7 @@ echo "Server Instance ID ............................: $INSTANCE_ID_PRIV"
 
 
 #-----------------------------
-# DOWNLOAD & SORT CLIENT CONFIGURATION FILES
+# DOWNLOAD & MANGLE CLIENT CONFIGURATION FILES
 #-----------------------------
 
 # Create Temporary scratch folder
@@ -484,5 +551,4 @@ TIME_END_PROJ=$(date +%s)
 TIME_DIFF=$(($TIME_END_PROJ - $TIME_START_PROJ))
 echo "Total Finished Execution Time .................: $(( ${TIME_DIFF} / 3600 ))h $(( (${TIME_DIFF} / 60) % 60 ))m $(( ${TIME_DIFF} % 60 ))s"
 #.............................
-
 
