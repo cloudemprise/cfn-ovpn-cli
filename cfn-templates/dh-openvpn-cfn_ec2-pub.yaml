@@ -49,6 +49,13 @@ Parameters:
     Type: AWS::EC2::SecurityGroup::Id
 #-------------------------------------------
 
+#--- EC2 Instance Profile ARN
+#-------------------------------------------
+#  InstanceProfileARN:
+#    Description: Openvpn EC2 Instance Profile ARN
+#    Type: String
+#-------------------------------------------
+
 
 Conditions: {}
 
@@ -86,7 +93,8 @@ Resources:
               Ref: 'AWS::Region'
 #.............................
       DisableApiTermination: false
-      IamInstanceProfile: "dh-openvpn-server-system-administrator"
+#      IamInstanceProfile: "dh-openvpn-server-restrictive"
+      IamInstanceProfile: !Sub "${ProjectName}-instance-profile-${AWS::Region}"
       ImageId: !Ref PublicAmiId
       InstanceType: "t2.nano"
       KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
@@ -138,7 +146,8 @@ Resources:
           type: "S3"
           buckets: 
             - !Ref ProjectName
-          roleName: "dh-openvpn-server-system-administrator"
+#          roleName: "dh-openvpn-server-restrictive"
+          roleName: !Sub "${ProjectName}-iam-role-${AWS::Region}"
 
 #,,,,,,,,,,,,,,
       AWS::CloudFormation::Init:

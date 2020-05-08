@@ -210,7 +210,8 @@ Resources:
   InstancePubDef:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage2
-    DependsOn: VPCDef
+    DependsOn: 
+      - VPCDef
     Properties:
 #,,,,,,,,,,,,,,,,
       TemplateURL:
@@ -237,7 +238,8 @@ Resources:
   InstancePrivDef:
     Type: AWS::CloudFormation::Stack
     Condition: CreateResourcesStage2
-    DependsOn: InstancePubDef
+    DependsOn: 
+      - InstancePubDef
     Properties:
 #,,,,,,,,,,,,,,,,
       TemplateURL:
