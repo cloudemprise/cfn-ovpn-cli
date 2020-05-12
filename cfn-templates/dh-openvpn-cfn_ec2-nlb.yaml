@@ -30,10 +30,6 @@ Parameters:
 #-------------------------------------------
 #--- AWS-Specific Parameter Type
 #-------------------------------------------
-  VPCID:
-    Description: VPC to associate with load balancer 
-    Type: AWS::EC2::VPC::Id
-#-------------------------------------------
   PublicSubnetIdA:
     Description: Public Subnet ID AZ-A
     Type: AWS::EC2::Subnet::Id

@@ -1,155 +1,143 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Launch Template EC2 Server for OpenVPN Implementation.
-  A Nested Stack that comprises: 
+  A Nested Stack that comprises:
   Bla Bla.
   Inputs include:
   Bla Bla.
   Outputs include:
   Bla Bla.
-#-------------------------------------------
+# ------------------------------------------
 
 
+# ==========================================
 Metadata: {}
+# Metadata:
 
 
-#Parameters: {}
+# ==========================================
+# Parameters {}
 Parameters:
-#===========================================
 
-#--- The Project Name
-#-------------------------------------------
+  # ------------------------------------------
+  # --- The Project Name
   ProjectName:
-    Description: Name of this Openvpn project.
-    ConstraintDescription: Specify name of the project.
+    Description: "Name of this Openvpn project"
+    ConstraintDescription: "Specify name of the project"
     Type: String
     Default: "dh-openvpn"
     MinLength: 3
     MaxLength: 63
-    AllowedPattern: (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
+    AllowedPattern:
+      (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
 
-#--- AMI for EC2 instance
-#-------------------------------------------
+  # ------------------------------------------
+  # --- AMI for EC2 instance
   PublicAmiId:
-    Description: Public AMI ID
-    Type: AWS::EC2::Image::Id
-#-------------------------------------------
+    Description: "Public AMI ID"
+    Type: "AWS::EC2::Image::Id"
 
-#--- Public Subnet ID
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public Subnet ID
   PublicSubnetIdA:
-    Description: Public Subnet ID AZ-A
-    Type: AWS::EC2::Subnet::Id
-#-------------------------------------------
+    Description: "Public Subnet ID AZ-A"
+    Type: "AWS::EC2::Subnet::Id"
 
-#--- Public Security Group Resource ID
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public Security Group Resource ID
   PublicSgResourceId:
-    Description: Public Security Group ID AZ-A
-    Type: AWS::EC2::SecurityGroup::Id
-#-------------------------------------------
-
-#--- EC2 Instance Profile ARN
-#-------------------------------------------
-#  InstanceProfileARN:
-#    Description: Openvpn EC2 Instance Profile ARN
-#    Type: String
-#-------------------------------------------
+    Description: "Public Security Group ID AZ-A"
+    Type: "AWS::EC2::SecurityGroup::Id"
 
 
+# ==========================================
 Conditions: {}
+# Conditions:
 
 
+# ==========================================
 Resources:
-#===========================================
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #         PUBLIC EC2 DEFINITION
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PUBLIC EC2 DEFINITION
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-#--- Public EC2 Instance
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public EC2 Instance
   PublicEC2Instance:
-    Type: AWS::EC2::Instance
-#.............................
+    Type: "AWS::EC2::Instance"
+    # .............................
     CreationPolicy:
-      ResourceSignal:    
+      ResourceSignal:
         Count: 1
         Timeout: "PT10M"
-#.............................
+    # .............................
     Properties:
-#.............................
+      # .............................
       Tags:
         -
           Key: "Name"
           Value: "openvpn-public"
-#.............................
+      # .............................
       AvailabilityZone:
         'Fn::Select':
           - '0'
           - 'Fn::GetAZs':
               Ref: 'AWS::Region'
-#.............................
+      # .............................
       DisableApiTermination: false
-#      IamInstanceProfile: "dh-openvpn-server-restrictive"
       IamInstanceProfile: !Sub "${ProjectName}-instance-profile-${AWS::Region}"
       ImageId: !Ref PublicAmiId
       InstanceType: "t2.nano"
       KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
       Monitoring: false
-#      SubnetId:
-#        Ref: PublicSubnetIdA
-#      SecurityGroupIds:
-#        - !Ref PublicSgResourceId
-#.............................
-      BlockDeviceMappings: 
-      - 
-        DeviceName: "/dev/xvda"
-        Ebs: 
-          Encrypted: true
-          VolumeSize: 8
-          VolumeType: "gp2"
+      # .............................
+      BlockDeviceMappings:
+        -
+          DeviceName: "/dev/xvda"
+          Ebs:
+            Encrypted: true
+            VolumeSize: 8
+            VolumeType: "gp2"
+            DeleteOnTermination: true
+      # .............................
+      NetworkInterfaces:
+        -
+          Description: "Primary Public NIC"
           DeleteOnTermination: true
-#.............................
-      NetworkInterfaces: 
-      - 
-        Description: "Primary Public NIC"
-        DeleteOnTermination: true
-        DeviceIndex: 0
-        PrivateIpAddress: 10.0.128.10
-        SubnetId: !Ref PublicSubnetIdA
-        GroupSet: 
-          - !Ref PublicSgResourceId
-#.............................
+          DeviceIndex: "0"
+          PrivateIpAddress: "10.0.128.10"
+          SubnetId: !Ref PublicSubnetIdA
+          GroupSet:
+            - !Ref PublicSgResourceId
+      # .............................
       UserData:
         Fn::Base64:
           !Sub |
             #!/bin/bash -xe
             # Update Packages, inc. aws-cfn-bootstrap
             yum update -y
-            # Fix openssl error (easy-rsa) : random seed file 
-            export RANDFILE=/tmp/.rnd 
+            # Fix openssl error (easy-rsa) : random seed file
+            export RANDFILE=/tmp/.rnd
             # Start cfn-init
             /opt/aws/bin/cfn-init -v --configsets Step1 --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
             # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
             #/opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
             # All done so signal success
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region}
-#.............................
+    # .............................
     Metadata:
-      Comment: Metadata description here.
-#,,,,,,,,,,,,,,
-      AWS::CloudFormation::Authentication: 
-        rolebased: 
+      Comment: "Metadata description here"
+      # .............................
+      AWS::CloudFormation::Authentication:
+        rolebased:
           type: "S3"
-          buckets: 
+          buckets:
             - !Ref ProjectName
-#          roleName: "dh-openvpn-server-restrictive"
           roleName: !Sub "${ProjectName}-iam-role-${AWS::Region}"
-
-#,,,,,,,,,,,,,,
+      # .............................
       AWS::CloudFormation::Init:
         configSets:
           Step1:
@@ -162,19 +150,7 @@ Resources:
             - configWebServer
             - configEasyRSA
             - configOpenvpn
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-#        configTemplate:
-#          packages: {}
-#          groups: {}
-#          users: {}
-#          sources: {}
-#          files: {}
-#          commands: {}
-#          services: {}
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-
-
+        # / / / / / / / / / / / / / / /
         configMisc:
           commands:
             1_dhcpv6:
@@ -185,24 +161,25 @@ Resources:
               command: "sed -i 's/.*Storage.*/Storage=persistent/' /etc/systemd/journald.conf"
           services:
             sysvinit:
+              # .............................
               network:
                 ensureRunning: "true"
                 enabled: "true"
                 commands:
                   - "1_dhcpv6"
+              # .............................
               chronyd:
                 ensureRunning: "true"
                 enabled: "true"
                 commands:
                   - "2_timePool"
+              # .............................
               systemd-journald:
                 ensureRunning: "true"
                 enabled: "true"
                 commands:
                   - "3_persistLogs"
-
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,        
+        # / / / / / / / / / / / / / / /
         configRepo:
           packages:
             rpm:
@@ -212,9 +189,7 @@ Resources:
               command: "yum-config-manager --enable epel"
             1b_epel:
               command: 'sed -i "/\[epel\]/a priority=20" /etc/yum.repos.d/epel.repo'
-
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,        
+        # / / / / / / / / / / / / / / /
         configYum:
           packages:
             yum:
@@ -231,23 +206,21 @@ Resources:
                 enabled: "true"
                 commands:
                   - "1b_yumCron"
-
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        # / / / / / / / / / / / / / / /
         configHardenSsh:
           packages:
             yum:
               fail2ban: []
           sources:
-            /tmp: 
+            /tmp:
               !Join
-                - ""
-                - - "https://"
-                  - !Ref ProjectName
-                  - ".s3."
-                  - !Ref "AWS::Region"
-                  - ".amazonaws.com/"
-                  - "ssh/dh-openvpn-ec2-harden-ssh.sh.tar.gz"
+              - ""
+              - - "https://"
+                - !Ref ProjectName
+                - ".s3."
+                - !Ref "AWS::Region"
+                - ".amazonaws.com/"
+                - "ssh/dh-openvpn-ec2-harden-ssh.sh.tar.gz"
           files:
             "/etc/fail2ban/jail.local":
               content: |
@@ -260,8 +233,8 @@ Resources:
                 mode = aggressive
                 banaction = iptables-multiport
               mode: '000644'
-              owner: root
-              group: root
+              owner: "root"
+              group: "root"
           commands:
             HardenF2B:
               cwd: "/etc/fail2ban/jail.d"
@@ -271,24 +244,25 @@ Resources:
               command: "./dh-openvpn-ec2-harden-ssh.sh"
           services:
             sysvinit:
+              # .............................
               firewalld:
                 ensureRunning: "false"
                 enabled: "false"
-              fail2ban: 
+              # .............................
+              fail2ban:
                 enabled: "true"
                 ensureRunning: "true"
                 files:
                   - "/etc/fail2ban/jail.local"
-                commands: 
+                commands:
                   - "HardenF2B"
+              # .............................
               sshd:
                 enabled: "true"
                 ensureRunning: "true"
                 commands:
                   - "HardenSsh"
-
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        # / / / / / / / / / / / / / / /
         configIPtables:
           packages:
             yum:
@@ -296,13 +270,13 @@ Resources:
           sources:
             /tmp:
               !Join
-                - ""
-                - - "https://"
-                  - !Ref ProjectName
-                  - ".s3."
-                  - !Ref "AWS::Region"
-                  - ".amazonaws.com/"
-                  - "iptables/dh-openvpn-ec2-pub-iptables.sh.tar.gz"
+              - ""
+              - - "https://"
+                - !Ref ProjectName
+                - ".s3."
+                - !Ref "AWS::Region"
+                - ".amazonaws.com/"
+                - "iptables/dh-openvpn-ec2-pub-iptables.sh.tar.gz"
           files:
             "/etc/sysctl.d/30-dh-openvpn-iptables.conf":
               content: |
@@ -314,8 +288,8 @@ Resources:
                 net.ipv4.conf.all.rp_filter = 1
                 net.ipv4.tcp_syncookies = 1
               mode: '000644'
-              owner: root
-              group: root
+              owner: "root"
+              group: "root"
           commands:
             1_kernelParams:
               command: "sysctl -p /etc/sysctl.d/30-dh-openvpn-iptables.conf"
@@ -329,20 +303,18 @@ Resources:
                 enabled: "true"
                 commands:
                   - "2_iptRules"
-
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        # / / / / / / / / / / / / / / /
         configLogs:
           files:
-#---------------------------
+            # .............................
             "/etc/rsyslog.d/30-iptables.conf":
               content: |
                 :msg, startswith, "IPTlog" -/var/log/dh-openvpn-server-iptables.log
                 & stop
               mode: '000644'
-              owner: root
-              group: root
-#---------------------------
+              owner: "root"
+              group: "root"
+            # .............................
             "/etc/logrotate.d/dh-openvpn-logs":
               content: |
                 /var/log/dh-openvpn-server-*.log
@@ -363,15 +335,16 @@ Resources:
                  endscript
                 }
               mode: '000644'
-              owner: root
-              group: root
-#---------------------------
+              owner: "root"
+              group: "root"
+            # .............................
             "/etc/cron.d/dh-openvpn-logs-schedule":
               content: |
                 */30 * * * * root /sbin/logrotate /etc/logrotate.d/dh-openvpn-logs
               mode: '000644'
-              owner: root
-              group: root
+              owner: "root"
+              group: "root"
+          # .............................
           services:
             sysvinit:
               rsyslog:
@@ -379,10 +352,12 @@ Resources:
                 enabled: "true"
                 files:
                   - "/etc/rsyslog.d/30-iptables.conf"
-
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-# For use: Network LoadBalancer HealthChecks
+        # / / / / / / / / / / / / / / /
+        # For use: Network LoadBalancer HealthChecks.
+        # systemd service is only enabled within the
+        # Autoscale Launch Template so as to validate
+        # the success/failure of Launch Template
+        # UserData script.
         configWebServer:
           packages:
             yum:
@@ -392,20 +367,14 @@ Resources:
               content: !Sub |
                 <h1>Hello from ${AWS::StackId}<h1>
               mode: '000644'
-              owner: root
-              group: root
-# Service enabled within Autoscaling Launch Template 
-# UserData to facilitate validation.
-#          services:
-#            sysvinit:
-#              httpd:
-#                enabled: "true"
-#                ensureRunning: "true"
-#                files:
-#                  - "/var/www/html/index.html"
-
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+              owner: "root"
+              group: "root"
+          services:
+            sysvinit:
+              httpd:
+                enabled: "false"
+                ensureRunning: "false"
+        # / / / / / / / / / / / / / / /
         configEasyRSA:
           packages:
             yum:
@@ -420,18 +389,18 @@ Resources:
                 set_var EASYRSA_KEY_SIZE 4096
                 set_var EASYRSA_DIGEST "sha512"
               mode: '000644'
-              owner: root
-              group: root
+              owner: "root"
+              group: "root"
           sources:
             /usr/local:
               !Join
-                - ""
-                - - "https://"
-                  - !Ref ProjectName
-                  - ".s3."
-                  - !Ref "AWS::Region"
-                  - ".amazonaws.com/"
-                  - "easy-rsa/dh-openvpn-vars/dh-openvpn-easyrsa-vars.tar.gz"
+              - ""
+              - - "https://"
+                - !Ref ProjectName
+                - ".s3."
+                - !Ref "AWS::Region"
+                - ".amazonaws.com/"
+                - "easy-rsa/dh-openvpn-vars/dh-openvpn-easyrsa-vars.tar.gz"
           commands:
             1a_initPKI:
               command: "mkdir -p /usr/local/easy-rsa && cp -r /usr/share/easy-rsa/3/* $_"
@@ -476,15 +445,13 @@ Resources:
               command: "./easyrsa gen-dh"
             8a_mvKeys:
               cwd: "/usr/local/easy-rsa/pki/private"
-              command: 
+              command:
                 !Sub "tar -zcf - *client.key | aws s3 cp - s3://${ProjectName}/openvpn/client/key/dh-openvpn-client-key.tar.gz"
             9a_mvReqs:
               cwd: "/usr/local/easy-rsa/pki/reqs"
-              command: 
+              command:
                 !Sub "tar -zcf - *.req | aws s3 cp - s3://${ProjectName}/easy-rsa/sign-reqs/dh-openvpn-easyrsa-sign-reqs.tar.gz"
-
-
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        # / / / / / / / / / / / / / / /
         configOpenvpn:
           packages:
             yum:
@@ -492,13 +459,13 @@ Resources:
           sources:
             /etc/openvpn/server:
               !Join
-                - ""
-                - - "https://"
-                  - !Ref ProjectName
-                  - ".s3."
-                  - !Ref "AWS::Region"
-                  - ".amazonaws.com/"
-                  - "openvpn/server/conf/dh-openvpn-server-1194.conf.tar.gz"
+              - ""
+              - - "https://"
+                - !Ref ProjectName
+                - ".s3."
+                - !Ref "AWS::Region"
+                - ".amazonaws.com/"
+                - "openvpn/server/conf/dh-openvpn-server-1194.conf.tar.gz"
           files:
             "/usr/local/bin/vpn-server-status":
               content: |
@@ -508,15 +475,15 @@ Resources:
                 journalctl -u openvpn-server@dh-openvpn-server-udp1194
                 journalctl -u openvpn-server@dh-openvpn-server-tcp1194
               mode: '000755'
-              owner: ec2-user
-              group: ec2-user
+              owner: "ec2-user"
+              group: "ec2-user"
           commands:
             1a_gen-HMAC:
               cwd: "/etc/openvpn/server"
               command: "openvpn --genkey --secret hmac-sig.key"
             1b_gen-HMAC:
               cwd: "/etc/openvpn/server"
-              command: 
+              command:
                 !Sub "tar -czf - hmac-sig.key | aws s3 cp - s3://${ProjectName}/openvpn/client/dh-openvpn-client-hmac.tar.gz"
             2a_cpSvrDH:
               cwd: "/usr/local/easy-rsa/pki"
@@ -530,32 +497,14 @@ Resources:
             4_addPATH:
               command: |
                 printf '\nPATH="/usr/local/bin:$PATH"\n' >> /home/ec2-user/.bashrc
-#          services:
-#            sysvinit:
-#              openvpn:
-#                enabled: "false"
-#                ensureRunning: "false"
-#                files:
-#                  - "/etc/openvpn/server/dh-openvpn-server-udp1194.conf"
-#                  - "/etc/openvpn/server/dh-openvpn-server-tcp1194.conf"
 
 
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-
-
-#-------------------------------------------
-
-
-
-#Outputs: {}
+# ==========================================
+# Outputs: {}
 Outputs:
-#===========================================
 
-
-#--- Public Instance ID
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public Instance ID
   PubEC2InstanceId:
-    Description: Public Instance ID
-    Value:
-      Ref: PublicEC2Instance
-#-------------------------------------------
+    Description: "Public Instance ID"
+    Value: !Ref PublicEC2Instance

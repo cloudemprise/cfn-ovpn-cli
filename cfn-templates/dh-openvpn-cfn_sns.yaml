@@ -1,94 +1,90 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Simple Notification Service for OpenVPN Implementation.
-  A Nested Stack that comprises: 
+  A Nested Stack that comprises:
   Bla Bla.
   Inputs include:
   Bla Bla.
   Outputs include:
   Bla Bla.
-#-------------------------------------------
+# ------------------------------------------
 
 
+# ==========================================
 Metadata: {}
+# Metadata:
 
 
-#Parameters: {}
+# ==========================================
+# Parameters {}
 Parameters:
-#===========================================
 
-#--- The Project Name
-#-------------------------------------------
+  # ------------------------------------------
+  # --- The Project Name
   ProjectName:
-    Description: Name of this Openvpn project.
-    ConstraintDescription: Specify name of the project.
+    Description: "Name of this Openvpn project"
+    ConstraintDescription: "Specify name of the project"
     Type: String
     Default: "dh-openvpn"
     MinLength: 3
     MaxLength: 63
-    AllowedPattern: (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
+    AllowedPattern:
+      (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
 
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Email Endpoint Notifications
   OpenvpnSubsEmailSNS:
-    Description: Openvpn SNS Email Endpoint
+    Description: "Openvpn SNS Email Endpoint"
     Type: String
-#-------------------------------------------
 
 
+# ==========================================
 Conditions: {}
+# Conditions:
 
 
+# ==========================================
 Resources:
-#===========================================
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #         SNS NOTIFICATIONS
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SNS NOTIFICATIONS
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-#--- SNS Topic Definition
-#-------------------------------------------
+  # ------------------------------------------
+  # --- SNS Topic Definition
   OpenvpnTopicSNS:
     Type: "AWS::SNS::Topic"
-#.............................
+    # .............................
     Properties:
       DisplayName: "OpenvpnNotice"
       TopicName: !Sub "${ProjectName}-activity-notice-${AWS::Region}"
-#.............................
-      Tags: 
-      - 
-        Key: "Name"
-        Value: "openvpn-activity-sns"
-#.............................
-#      KmsMasterKeyId: "alias/aws/sns"
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+      KmsMasterKeyId: "alias/aws/sns"
+      # .............................
+      Tags:
+        -
+          Key: "Name"
+          Value: "openvpn-activity-sns"
 
-
-#--- SNS Subscription Definition
-#-------------------------------------------
+  # ------------------------------------------
+  # --- SNS Subscription Definition
   OpenvpnSubscriptionSNS:
     Type: "AWS::SNS::Subscription"
-#.............................
+    # .............................
     Properties:
       TopicArn: !Ref OpenvpnTopicSNS
       Endpoint: !Ref OpenvpnSubsEmailSNS
       Protocol: "email"
       Region: !Ref AWS::Region
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
-#-------------------------------------------
-
-
-#Outputs: {}
+# ==========================================
+# Outputs: {}
 Outputs:
-#===========================================
 
-
-#--- SNS Topic ARN
-#-------------------------------------------
+  # ------------------------------------------
+  # --- SNS Topic ARN
   OpenvpnSNSTopicARN:
     Description: "Openvpn SNS Activity Topic ARN"
     Value: !Ref OpenvpnTopicSNS
-#-------------------------------------------
