@@ -1,7 +1,8 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   NetSec Defense-In-Depth Restrictive NACL Definitions.
-  A Nested Stack that comprises: 
+  A Nested Stack that comprises:
   Ingress Private & Public NACL Definitions.
   Egress Private & Public NACL Definitions.
   Inputs include:
@@ -10,623 +11,617 @@ Description: >
   Private & Public Subnet IDs.
   Outputs include:
   To be determined.
-#-------------------------------------------
+# ------------------------------------------
 
 
+# ==========================================
 Metadata: {}
-Conditions: {}
+# Metadata:
 
 
+# ==========================================
+# Parameters {}
 Parameters:
-#===========================================
 
-#--- AWS-Specific Parameter Type
-#-------------------------------------------
+  # ------------------------------------------
+  # --- The Project Name
+  ProjectName:
+    Description: "Name of this Openvpn project"
+    ConstraintDescription: "Specify name of the project"
+    Type: String
+    Default: "dh-openvpn"
+    MinLength: 3
+    MaxLength: 63
+    AllowedPattern:
+      (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
+
+  # ------------------------------------------
+  # --- AWS-Specific Parameter Types
   VPCID:
-    Description: VPC to create the NACL into.
-    Type: AWS::EC2::VPC::Id
-#-------------------------------------------
+    Description: "VPC to create the NACL into"
+    Type: "AWS::EC2::VPC::Id"
+  # ------------------------------------------
   PublicSubnetIdA:
-    Description: Public Subnet ID AZ-A
-    Type: AWS::EC2::Subnet::Id
-#-------------------------------------------
+    Description: "Public Subnet ID AZ-A"
+    Type: "AWS::EC2::Subnet::Id"
+  # ------------------------------------------
   PublicSubnetIdB:
-    Description: Public Subnet ID AZ-B
-    Type: AWS::EC2::Subnet::Id
-#-------------------------------------------
+    Description: "Public Subnet ID AZ-B"
+    Type: "AWS::EC2::Subnet::Id"
+  # ------------------------------------------
   PrivateSubnetIdA:
-    Description: Private Subnet ID AZ-A
-    Type: AWS::EC2::Subnet::Id
-#-------------------------------------------
+    Description: "Private Subnet ID AZ-A"
+    Type: "AWS::EC2::Subnet::Id"
+  # ------------------------------------------
   PrivateSubnetIdB:
-    Description: Private Subnet ID AZ-B
-    Type: AWS::EC2::Subnet::Id
-#-------------------------------------------
+    Description: "Private Subnet ID AZ-B"
+    Type: "AWS::EC2::Subnet::Id"
 
+
+# ==========================================
+Conditions: {}
+# Conditions:
+
+
+# ==========================================
 Resources:
-#===========================================
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# NACL DEFINITIONS
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #         NACL DEFINITIONS
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#--- Public NACL & Subnet Associations
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public NACL & Subnet Associations
   PublicNAcl:
-    Type: AWS::EC2::NetworkAcl
+    Type: "AWS::EC2::NetworkAcl"
+    # .............................
     Properties:
-      VpcId:
-        Ref: VPCID
+      VpcId: !Ref VPCID
       Tags:
-        - Key: Name
-          Value: 
-            !Sub ${AWS::StackName}-PubNacl
-#-------------------------------------------
+        - Key: "Name"
+          Value:
+            !Sub "${ProjectName}-PubNacl"
+  # ------------------------------------------
   PublicSubetNAclAssociationA:
-    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      SubnetId:
-        Ref: PublicSubnetIdA
-#-------------------------------------------
+      NetworkAclId: !Ref PublicNAcl
+      SubnetId: !Ref PublicSubnetIdA
+  # ------------------------------------------
   PublicSubetNAclAssociationB:
-    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      SubnetId:
-        Ref: PublicSubnetIdB
+      NetworkAclId: !Ref PublicNAcl
+      SubnetId: !Ref PublicSubnetIdB
 
 
-#--- Private NACL & Subnet Associations
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Private NACL & Subnet Associations
   PrivateNAcl:
-    Type: AWS::EC2::NetworkAcl
+    Type: "AWS::EC2::NetworkAcl"
+    # .............................
     Properties:
-      VpcId:
-        Ref: VPCID
+      VpcId: !Ref VPCID
       Tags:
-        - Key: Name
-          Value: 
-            !Sub ${AWS::StackName}-PrivNacl
-#-------------------------------------------
+        - Key: "Name"
+          Value:
+            !Sub "${ProjectName}-PrivNacl"
+  # ------------------------------------------
   PrivateSubetNAclAssociationA:
-    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      SubnetId:
-        Ref: PrivateSubnetIdA
-#-------------------------------------------
+      NetworkAclId: !Ref PrivateNAcl
+      SubnetId: !Ref PrivateSubnetIdA
+  # ------------------------------------------
   PrivateSubetNAclAssociationB:
-    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      SubnetId:
-        Ref: PrivateSubnetIdB
-#-------------------------------------------
+      NetworkAclId: !Ref PrivateNAcl
+      SubnetId: !Ref PrivateSubnetIdB
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Public NACL DEFINITIONS
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #         Public NACL DEFINITIONS
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-#--- Ingress Public NACL Group
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Ingress Public NACL Group
   PublicNAclIngress10:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 10
       Protocol: 6
-      RuleAction: allow
+      RuleAction: "allow"
       CidrBlock: "10.0.0.0/16"
       PortRange:
         From: 80
         To: 80
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclIngress11:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 11
       Protocol: 6
-      RuleAction: allow
+      RuleAction: "allow"
       CidrBlock: "10.0.0.0/16"
       PortRange:
         From: 443
         To: 443
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclIngress50:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 50
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 22
         To: 22
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclIngress60:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 60
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 1194
         To: 1194
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclIngress61:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 61
       Protocol: 17
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 1194
         To: 1194
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclIngress62:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 62
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 1024
         To: 65535
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclIngress63:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 63
       Protocol: 17
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 1024
         To: 65535
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclIngress70:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 70
       Protocol: 1
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       Icmp:
         Type: 8
         Code: -1
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclIngress71:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 71
       Protocol: 1
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       Icmp:
         Type: 0
         Code: -1
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclIngress100:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 100
       Protocol: -1
-      RuleAction: deny
-      CidrBlock: 0.0.0.0/0
-#-------------------------------------------
-# Temporary for Web Access Test
-############################################
+      RuleAction: "deny"
+      CidrBlock: "0.0.0.0/0"
+  # ------------------------------------------
+  # --- Web Access for nlb health checks
   PublicNAclIngress01:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: false
       RuleNumber: 1
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 80
         To: 80
-############################################
 
-#--- Egress Public NACL Group
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Egress Public NACL Group
   PublicNAclEgress10:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 10
       Protocol: 6
-      RuleAction: allow
+      RuleAction: "allow"
       CidrBlock: "10.0.0.0/16"
       PortRange:
         From: 22
         To: 22
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress50:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 50
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 80
         To: 80
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress51:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 51
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 443
         To: 443
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress52:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 52
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 22
         To: 22
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress53:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 53
       Protocol: 17
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 53
         To: 53
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress54:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 54
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 53
         To: 53
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress55:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 55
       Protocol: 17
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 123
         To: 123
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress56:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 56
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 5228
         To: 5228
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress57:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 57
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 5094
         To: 5094
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress58:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 58
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 5222
         To: 5222
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress60:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 60
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 1024
         To: 65535
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress61:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 61
       Protocol: 17
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 1024
         To: 65535
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress70:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 70
       Protocol: 1
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       Icmp:
         Type: 8
         Code: -1
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress71:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 71
       Protocol: 1
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       Icmp:
         Type: 0
         Code: -1
-#-------------------------------------------
+  # ------------------------------------------
   PublicNAclEgress100:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PublicNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PublicNAcl
+      Egress: true
       RuleNumber: 100
       Protocol: -1
-      RuleAction: deny
-      CidrBlock: 0.0.0.0/0
-#-------------------------------------------
+      RuleAction: "deny"
+      CidrBlock: "0.0.0.0/0"
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Private NACL DEFINITIONS
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #         Private NACL DEFINITIONS
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-#--- Ingress Private NACL Group
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Ingress Private NACL Group
   PrivateNAclIngress10:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PrivateNAcl
+      Egress: false
       RuleNumber: 10
       Protocol: 6
-      RuleAction: allow
+      RuleAction: "allow"
       CidrBlock: "10.0.0.0/16"
       PortRange:
         From: 22
         To: 22
-#-------------------------------------------
+  # ------------------------------------------
   PrivateNAclIngress30:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PrivateNAcl
+      Egress: false
       RuleNumber: 30
       Protocol: 1
-      RuleAction: allow
+      RuleAction: "allow"
       CidrBlock: "10.0.0.0/16"
       Icmp:
         Type: -1
         Code: -1
-#-------------------------------------------
+  # ------------------------------------------
   PrivateNAclIngress60:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PrivateNAcl
+      Egress: false
       RuleNumber: 60
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 1024
         To: 65535
-#-------------------------------------------
+  # ------------------------------------------
   PrivateNAclIngress100:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      Egress: 'false'
+      NetworkAclId: !Ref PrivateNAcl
+      Egress: false
       RuleNumber: 100
       Protocol: -1
-      RuleAction: deny
-      CidrBlock: 0.0.0.0/0
-#--- Egress Private NACL Group
-#-------------------------------------------
+      RuleAction: "deny"
+      CidrBlock: "0.0.0.0/0"
+
+  # ------------------------------------------
+  # --- Egress Private NACL Group
   PrivateNAclEgress20:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PrivateNAcl
+      Egress: true
       RuleNumber: 20
       Protocol: 6
-      RuleAction: allow
+      RuleAction: "allow"
       CidrBlock: "10.0.0.0/16"
       PortRange:
         From: 1024
         To: 65535
-#-------------------------------------------
+  # ------------------------------------------
   PrivateNAclEgress30:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PrivateNAcl
+      Egress: true
       RuleNumber: 30
       Protocol: 1
-      RuleAction: allow
+      RuleAction: "allow"
       CidrBlock: "10.0.0.0/16"
       Icmp:
         Type: -1
         Code: -1
-#-------------------------------------------
+  # ------------------------------------------
   PrivateNAclEgress50:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PrivateNAcl
+      Egress: true
       RuleNumber: 50
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 80
         To: 80
-#-------------------------------------------
+  # ------------------------------------------
   PrivateNAclEgress51:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PrivateNAcl
+      Egress: true
       RuleNumber: 51
       Protocol: 6
-      RuleAction: allow
-      CidrBlock: 0.0.0.0/0
+      RuleAction: "allow"
+      CidrBlock: "0.0.0.0/0"
       PortRange:
         From: 443
         To: 443
-#-------------------------------------------
+  # ------------------------------------------
   PrivateNAclEgress100:
-    Type: AWS::EC2::NetworkAclEntry
+    Type: "AWS::EC2::NetworkAclEntry"
+    # .............................
     Properties:
-      NetworkAclId:
-        Ref: PrivateNAcl
-      Egress: 'true'
+      NetworkAclId: !Ref PrivateNAcl
+      Egress: true
       RuleNumber: 100
       Protocol: -1
-      RuleAction: deny
-      CidrBlock: 0.0.0.0/0
-#-------------------------------------------
+      RuleAction: "deny"
+      CidrBlock: "0.0.0.0/0"
 
 
-
+# ==========================================
 Outputs: {}
-#Outputs:
-#===========================================
-
-
-#---Public NACL Export
-#-------------------------------------------
-#  NAclPublicId:
-#    Description: Public NACL ID
-#    Value: 
-#      Ref: PublicNAcl
-#---Private NACL Export
-#-------------------------------------------
-#  NAclPrivateId:
-#    Description: Private NACL ID
-#    Value: 
-#      Ref: PrivateNAcl
+# Outputs:

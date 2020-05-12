@@ -1,7 +1,8 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   NetSec Defense-In-Depth Restrictive Security Group Definitions.
-  A Nested Stack that comprises: 
+  A Nested Stack that comprises:
   Private & Public Security Group Rule Definitions.
   Inputs include:
   VPC Top Level VPC ID.
@@ -9,124 +10,129 @@ Description: >
   Outputs include:
   Private Security Group Resource ID.
   Public Security Group Resource ID.
-#-------------------------------------------
+# ------------------------------------------
 
 
+# ==========================================
 Metadata: {}
+# Metadata:
 
 
+# ==========================================
+# Parameters {}
 Parameters:
-#===========================================
 
-#--- Parameter Types
-#-------------------------------------------
+  # ------------------------------------------
+  # --- AWS-Specific Parameter VPC Id
   VPCID:
-    Description: VPC to create the SG into.
-    Type: AWS::EC2::VPC::Id
-#-------------------------------------------
+    Description: "VPC to create the SG into"
+    Type: "AWS::EC2::VPC::Id"
 
 
+# ==========================================
 Conditions: {}
+# Conditions:
 
 
+# ==========================================
 Resources:
-#===========================================
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #         SECURITY GROUP DEFINITIONS
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SECURITY GROUP DEFINITIONS
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-#--- Public Subnet Security Group
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public Subnet Security Group (Ingress)
   PublicSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+    Type: "AWS::EC2::SecurityGroup"
+    # .............................
     Properties:
-      GroupDescription: Public Security Group
-      VpcId:
-        Ref: VPCID
+      GroupDescription: "Public Subnet Security Group"
+      VpcId: !Ref VPCID
       SecurityGroupIngress:
-        - Description: SSH External
-          IpProtocol: tcp
+        - Description: "SSH External"
+          IpProtocol: "tcp"
           FromPort: 22
           ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - Description: OpenVPN TCP
-          IpProtocol: tcp
+          CidrIp: "0.0.0.0/0"
+        - Description: "OpenVPN TCP"
+          IpProtocol: "tcp"
           FromPort: 1194
           ToPort: 1194
-          CidrIp: 0.0.0.0/0
-        - Description: OpenVPN UDP
-          IpProtocol: udp
+          CidrIp: "0.0.0.0/0"
+        - Description: "OpenVPN UDP"
+          IpProtocol: "udp"
           FromPort: 1194
           ToPort: 1194
-          CidrIp: 0.0.0.0/0
-        - Description: Ping External
-          IpProtocol: icmp
+          CidrIp: "0.0.0.0/0"
+        - Description: "Ping External"
+          IpProtocol: "icmp"
           FromPort: 8
           ToPort: -1
-          CidrIp: 0.0.0.0/0
-        - Description: Ping Local
-          IpProtocol: icmp
+          CidrIp: "0.0.0.0/0"
+        - Description: "Ping Local"
+          IpProtocol: "icmp"
           FromPort: 8
           ToPort: -1
           CidrIp: "10.0.0.0/16"
-############################################
-        - Description: httpd access for nlb health check
-          IpProtocol: tcp
+        - Description: "httpd access for nlb health check"
+          IpProtocol: "tcp"
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
-############################################
+          CidrIp: "0.0.0.0/0"
 
-#--- Private Subnet Security Group
-#-------------------------------------------
+
+  # ------------------------------------------
+  # --- Private Subnet Security Group
   PrivateSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+    Type: "AWS::EC2::SecurityGroup"
+    # .............................
     Properties:
-      GroupDescription: Private Security Group
-      VpcId:
-        Ref: VPCID
-#-------------------------------------------
+      GroupDescription: "Private Subnet Security Group"
+      VpcId: !Ref VPCID
+
+  # ------------------------------------------
+  # --- Private Subnet Ingress SSH local only
   PrivateInboundRuleSSH:
-    Type: AWS::EC2::SecurityGroupIngress
+    Type: "AWS::EC2::SecurityGroupIngress"
+    # .............................
     Properties:
       GroupId:
         !GetAtt PrivateSecurityGroup.GroupId
-      IpProtocol: tcp
+      IpProtocol: "tcp"
       FromPort: 22
       ToPort: 22
       SourceSecurityGroupId:
         !GetAtt PublicSecurityGroup.GroupId
-#-------------------------------------------
+
+  # ------------------------------------------
+  # --- Private Subnet Ingress ICMP local only
   PrivateInboundRuleICMP:
-      Type: AWS::EC2::SecurityGroupIngress
-      Properties:
-        GroupId:
-          !GetAtt PrivateSecurityGroup.GroupId
-        IpProtocol: icmp
-        FromPort: 8
-        ToPort: -1
-        SourceSecurityGroupId:
-          !GetAtt PublicSecurityGroup.GroupId
-#-------------------------------------------
+    Type: "AWS::EC2::SecurityGroupIngress"
+    # .............................
+    Properties:
+      GroupId:
+        !GetAtt PrivateSecurityGroup.GroupId
+      IpProtocol: "icmp"
+      FromPort: 8
+      ToPort: -1
+      SourceSecurityGroupId:
+        !GetAtt PublicSecurityGroup.GroupId
 
 
-
-#Outputs: {}
+# ==========================================
+# Outputs: {}
 Outputs:
-#===========================================
 
-
-#---Public Security Group Export
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public Security Group Id
   PublicSgResourceId:
-    Description: Public SG Resource ID.
+    Description: "Public SG Resource ID"
     Value: !Ref PublicSecurityGroup
 
-#---Private Security Group Export
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Private Security Group Id
   PrivateSgResourceId:
-    Description: Private SG Resource ID.
+    Description: "Private SG Resource ID"
     Value: !Ref PrivateSecurityGroup

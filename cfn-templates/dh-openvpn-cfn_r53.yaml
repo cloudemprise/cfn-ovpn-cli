@@ -1,107 +1,88 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   DNS Record Set for OpenVPN Implementation.
-  A Nested Stack that comprises: 
+  A Nested Stack that comprises:
   Bla Bla.
   Inputs include:
   Bla Bla.
   Outputs include:
   Bla Bla.
-#-------------------------------------------
+# ------------------------------------------
 
 
+# ==========================================
 Metadata: {}
+# Metadata:
 
 
-#Parameters: {}
+# ==========================================
+# Parameters {}
 Parameters:
-#===========================================
 
-#--- The Project Name
-#-------------------------------------------
+  # ------------------------------------------
+  # --- The Project Name
   ProjectName:
-    Description: Name of this Openvpn project.
-    ConstraintDescription: Specify name of the project.
+    Description: "Name of this Openvpn project"
+    ConstraintDescription: "Specify name of the project"
     Type: String
     Default: "dh-openvpn"
     MinLength: 3
     MaxLength: 63
-    AllowedPattern: (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
+    AllowedPattern:
+      (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
 
-#-------------------------------------------
-#--- Route53 Particulars
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Route53 Particulars
   OpenvpnDomainName:
-    Description: OpenVPN Domain Name 
+    Description: "OpenVPN Domain Name"
     Type: String
     Default: "cloudemprise.net"
-    AllowedPattern: ^(([a-zA-Z]{1})|([a-zA-Z]{1}[a-zA-Z]{1})|([a-zA-Z]{1}[0-9]{1})|([0-9]{1}[a-zA-Z]{1})|([a-zA-Z0-9][a-zA-Z0-9-_]{1,61}[a-zA-Z0-9]))\.([a-zA-Z]{2,6}|[a-zA-Z0-9-]{2,30}\.[a-zA-Z]{2,3})$
-#-------------------------------------------
+    AllowedPattern:
+      ^(([a-zA-Z]{1})|([a-zA-Z]{1}[a-zA-Z]{1})|([a-zA-Z]{1}[0-9]{1})|([0-9]{1}[a-zA-Z]{1})|([a-zA-Z0-9][a-zA-Z0-9-_]{1,61}[a-zA-Z0-9]))\.([a-zA-Z]{2,6}|[a-zA-Z0-9-]{2,30}\.[a-zA-Z]{2,3})$
+  # .............................
   OpenvpnR53HostedZoneId:
-    Description: An Amazon Route 53 hosted zone ID 
+    Description: "An Amazon Route 53 hosted zone ID"
     Type: AWS::Route53::HostedZone::Id
-#-------------------------------------------
+  # .............................
   OpenvpnLoadBalancerDNS:
-    Description: OpenVPN Network Loadbalancer DNS 
+    Description: "OpenVPN Network Loadbalancer DNS"
     Type: String
-#-------------------------------------------
+  # .............................
   OpenvpnLoadBalancerZoneId:
-    Description: Network Loadbalancer Hosted Zone ID 
+    Description: "Network Loadbalancer Hosted Zone ID"
     Type: String
-#-------------------------------------------
 
 
-
+# ==========================================
 Conditions: {}
+# Conditions:
 
 
+# ==========================================
 Resources:
-#===========================================
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #         ROUTE 53 RECORD SET
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ROUTE 53 RECORD SET
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-#--- Record Set Definition
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Record Set Definition
   OpenvpnR53RecordSet:
     Type: "AWS::Route53::RecordSet"
-#.............................
+    # .............................
     Properties:
-#.............................
       Name: !Sub "${ProjectName}.${OpenvpnDomainName}"
       Comment: "Openvpn Route53 Record Set"
-#.............................
       Type: "A"
       HostedZoneId: !Ref OpenvpnR53HostedZoneId
-#.............................
-      AliasTarget: 
+      AliasTarget:
         HostedZoneId: !Ref OpenvpnLoadBalancerZoneId
         DNSName: !Ref OpenvpnLoadBalancerDNS
         EvaluateTargetHealth: true
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
-#-------------------------------------------
-
-
-
+# ==========================================
 Outputs: {}
-#Outputs:
-#===========================================
-
-
-#--- EC2 Load Balancer ARN
-#-------------------------------------------
-#  OpenvpnLoadBalancerARN:
-#    Description: Network Loadbalancer ARN
-#    Value: !Ref OpenvpnLoadBalancer
-#-------------------------------------------
-#--- EC2 Load Balancer Name
-#-------------------------------------------
-#  OpenvpnLoadBalancerName:
-#    Description: Network Loadbalancer Name
-#    Value: !GetAtt OpenvpnLoadBalancer.LoadBalancerName
-#-------------------------------------------
+# Outputs:

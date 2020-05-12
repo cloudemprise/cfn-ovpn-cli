@@ -1,3 +1,4 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   An OpenVPN implementation that comprises:
@@ -10,159 +11,157 @@ Description: >
   Bla Bla.
   Outputs.
   Bla Bla.
-#-------------------------------------------
+# ------------------------------------------
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SUBNET CIDR DEFINITIONS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# --- AZ-A Public Subnet
+# ------------------------------------------
+# Public Subnet A CIDR : 10.0.128.0/20
+
+# --- AZ-B Public Subnet
+# ------------------------------------------
+# Public Subnet B CIDR : 10.0.144.0/20
+
+# --- AZ-A Private Subnet
+# ------------------------------------------
+# Public Subnet A CIDR : 10.0.0.0/19
+
+# --- AZ-B Private Subnet
+# ------------------------------------------
+# Public Subnet B CIDR : 10.0.32.0/19
+
+# ------------------------------------------
+
+# ==========================================
 Metadata: {}
-#===========================================
+# Metadata:
 
 
+# ==========================================
+# Parameters {}
 Parameters:
-#===========================================
 
-#--- Script Build Step Counter
-#-------------------------------------------
-  BuildStep: 
-    Description: Shell script step counter.
-    ConstraintDescription: Must be > 0 & < 3.
+  # ------------------------------------------
+  # --- Script Build Step Counter
+  BuildStep:
+    Description: "Shell script step counter"
+    ConstraintDescription: "Must be > 0 & < 3"
     Type: String
-    Default: Stage1
-    AllowedValues: 
-      - Stage1
-      - Stage2
-      - Stage3
+    Default: "Stage1"
+    AllowedValues:
+      - "Stage1"
+      - "Stage2"
+      - "Stage3"
 
-#--- The Project Name
-#-------------------------------------------
+  # ------------------------------------------
+  # --- The Project Name
   ProjectName:
-    Description: Name of this Openvpn project.
-    ConstraintDescription: Specify name of the project.
+    Description: "Name of this Openvpn project"
+    ConstraintDescription: "Specify name of the project"
     Type: String
     Default: "dh-openvpn"
     MinLength: 3
     MaxLength: 63
-    AllowedPattern: (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
+    AllowedPattern:
+      (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
 
-#--- The Hosted Zone Domain Name
-#-------------------------------------------
+  # ------------------------------------------
+  # --- The Hosted Zone Domain Name
   DomainName:
-    Description: The Hosted Zone Apex Domain Name.
-    ConstraintDescription: Specify the domain name of the project.
+    Description: "The Hosted Zone Apex Domain Name"
+    ConstraintDescription: "Specify the domain name of the project"
     Type: String
     Default: "cloudemprise.net"
-    AllowedPattern: ^(([a-zA-Z]{1})|([a-zA-Z]{1}[a-zA-Z]{1})|([a-zA-Z]{1}[0-9]{1})|([0-9]{1}[a-zA-Z]{1})|([a-zA-Z0-9][a-zA-Z0-9-_]{1,61}[a-zA-Z0-9]))\.([a-zA-Z]{2,6}|[a-zA-Z0-9-]{2,30}\.[a-zA-Z]{2,3})$
+    AllowedPattern:
+      ^(([a-zA-Z]{1})|([a-zA-Z]{1}[a-zA-Z]{1})|([a-zA-Z]{1}[0-9]{1})|([0-9]{1}[a-zA-Z]{1})|([a-zA-Z0-9][a-zA-Z0-9-_]{1,61}[a-zA-Z0-9]))\.([a-zA-Z]{2,6}|[a-zA-Z0-9-]{2,30}\.[a-zA-Z]{2,3})$
 
-#--- Route 53 Hosted Zone ID
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Route 53 Hosted Zone ID
   DomainHostedZoneId:
-    Description: An Amazon Route 53 hosted zone ID 
-    Type: AWS::Route53::HostedZone::Id
-#-------------------------------------------
+    Description: "An Amazon Route 53 hosted zone ID"
+    Type: "AWS::Route53::HostedZone::Id"
 
-#--- Latest Amazon_Linux_2 AMI
-#-------------------------------------------
-#   (Value retrived via shell scrip)
+  # ------------------------------------------
+  # --- Latest Amazon_Linux_2 AMI
+  # --- Value retrived via shell scrip
   CurrentAmi:
-    Description: The AMI to use for EC2 instances.
-    Type: AWS::EC2::Image::Id
-# SSM method below but variable type not versatile to scripts. 
-#  myAmi:
-#    Description: The AMI to use for EC2 instances.
-#    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-#    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Description: "The AMI to use for EC2 instances"
+    Type: "AWS::EC2::Image::Id"
+  # SSM method below but variable type not versatile within scripts
+  #  CurrentAmi:
+  #    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+  #    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
 
-#--- SNS Email Notifications
-#-------------------------------------------
+  # ------------------------------------------
+  # --- SNS Email Notifications
   OpenvpnSubsEmailSNS:
-    Description: Openvpn SNS Email Endpoint.
-    ConstraintDescription: Must be a valid email address.
+    Description: "Openvpn SNS Email Endpoint"
+    ConstraintDescription: "Must be a valid email address"
     Type: String
     Default: "dh.info@posteo.net"
-    AllowedPattern: ^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$
-#-------------------------------------------
+    AllowedPattern:
+      ^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SUBNET CIDR DEFINITIONS
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#--- AZ-A Public Subnet
-#-------------------------------------------
-# Public Subnet A CIDR : 10.0.128.0/20
-
-#--- AZ-B Public Subnet
-#-------------------------------------------
-# Public Subnet B CIDR : 10.0.144.0/20
-
-#--- AZ-A Private Subnet
-#-------------------------------------------
-# Public Subnet A CIDR : 10.0.0.0/19
-
-#--- AZ-B Private Subnet
-#-------------------------------------------
-# Public Subnet B CIDR : 10.0.32.0/19
-
-#-------------------------------------------
-
-
-#Conditions: {}
+# ==========================================
+# Conditions: {}
 Conditions:
-#===========================================  
-  CreateResourcesStage1: !Equals [ !Ref BuildStep, Stage1]
-  CreateResourcesStage2: !Equals [ !Ref BuildStep, Stage2]
-  CreateResourcesStage3: !Equals [ !Ref BuildStep, Stage3]
+  # CreateResourcesStage1: !Equals [ !Ref BuildStep, "Stage1"]
+  CreateResourcesStage2: !Equals [!Ref BuildStep, "Stage2"]
+  CreateResourcesStage3: !Equals [!Ref BuildStep, "Stage3"]
 
 
+# ==========================================
 Resources:
-#===========================================
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# NESTED STACKS
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #         NESTED STACK DECLARATIONS
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-#--- VPC Definition
-#-------------------------------------------
+  # ------------------------------------------
+  # --- VPC Definition
   VPCDef:
-    Type: AWS::CloudFormation::Stack
+    Type: "AWS::CloudFormation::Stack"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_vpc.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_vpc.yaml"
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         BuildStep:
           !Ref BuildStep
       TimeoutInMinutes: 5
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- Public/Private NACLs
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public & Private NACLs
   NaclDefs:
-    Type: AWS::CloudFormation::Stack
-    DependsOn: VPCDef
+    Type: "AWS::CloudFormation::Stack"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_vpc-nacl.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_vpc-nacl.yaml"
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
         PublicSubnetIdA:
@@ -174,56 +173,45 @@ Resources:
         PrivateSubnetIdB:
           !GetAtt VPCDef.Outputs.PrivateSubnetIdB
       TimeoutInMinutes: 5
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- Public/Private Security Groups
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public/Private Security Groups
   SgDefs:
-    Type: AWS::CloudFormation::Stack
-    DependsOn: VPCDef
+    Type: "AWS::CloudFormation::Stack"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_vpc-sg.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_vpc-sg.yaml"
       Parameters:
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
-#        ApplicationName:
-#          Ref: AWS::StackName
       TimeoutInMinutes: 5
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- Private/Public EC2 Instances
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public EC2 Instance
   InstancePubDef:
-    Type: AWS::CloudFormation::Stack
+    Type: "AWS::CloudFormation::Stack"
     Condition: CreateResourcesStage2
-    DependsOn: 
-      - VPCDef
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_ec2-pub.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_ec2-pub.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -234,24 +222,25 @@ Resources:
         PublicSgResourceId:
           !GetAtt SgDefs.Outputs.PublicSgResourceId
       TimeoutInMinutes: 10
-#-------------------------------------------
+
+
+  # ------------------------------------------
+  # --- Private EC2 Instance
   InstancePrivDef:
-    Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage2
-    DependsOn: 
-      - InstancePubDef
+    Type: "AWS::CloudFormation::Stack"
+    Condition: "CreateResourcesStage2"
+    DependsOn: "InstancePubDef"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_ec2-priv.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_ec2-priv.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -262,27 +251,24 @@ Resources:
         PrivateSgResourceId:
           !GetAtt SgDefs.Outputs.PrivateSgResourceId
       TimeoutInMinutes: 10
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- EC2 Launch Template
-#-------------------------------------------
+  # ------------------------------------------
+  # --- EC2 Launch Template
   LaunchTemplateDef:
-    Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage3
+    Type: "AWS::CloudFormation::Stack"
+    Condition: "CreateResourcesStage3"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_ec2-lt.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_ec2-lt.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -291,85 +277,72 @@ Resources:
         PublicSgResourceId:
           !GetAtt SgDefs.Outputs.PublicSgResourceId
       TimeoutInMinutes: 5
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- EC2 Target Group
-#-------------------------------------------
+  # ------------------------------------------
+  # --- EC2 Target Group
   TargetGroupDef:
-    Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage3
+    Type: "AWS::CloudFormation::Stack"
+    Condition: "CreateResourcesStage3"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_ec2-tg.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_ec2-tg.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
       TimeoutInMinutes: 5
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- SNS Topic
-#-------------------------------------------
+  # ------------------------------------------
+  # --- SNS Topic for Alarms
   OpenvpnSNSTopicDef:
-    Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage3
+    Type: "AWS::CloudFormation::Stack"
+    Condition: "CreateResourcesStage3"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_sns.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_sns.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
         OpenvpnSubsEmailSNS:
           !Ref OpenvpnSubsEmailSNS
       TimeoutInMinutes: 5
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- EC2 AutoScaling Group
-#-------------------------------------------
+  # ------------------------------------------
+  # --- EC2 AutoScaling Group
   AutoScaleGroupDef:
-    Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage3
-    DependsOn: 
-      - LaunchTemplateDef
-      - TargetGroupDef
-      - OpenvpnSNSTopicDef
+    Type: "AWS::CloudFormation::Stack"
+    Condition: "CreateResourcesStage3"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_ec2-asg.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_ec2-asg.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -384,33 +357,28 @@ Resources:
         OpenvpnSNSTopicARN:
           !GetAtt OpenvpnSNSTopicDef.Outputs.OpenvpnSNSTopicARN
       TimeoutInMinutes: 5
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- EC2 Network Load Balancer 
-#-------------------------------------------
+  # ------------------------------------------
+  # --- EC2 Network Load Balancer
   NetworkLoadBalancerDef:
-    Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage3
-    DependsOn: AutoScaleGroupDef
+    Type: "AWS::CloudFormation::Stack"
+    Condition: "CreateResourcesStage3"
+    DependsOn: "AutoScaleGroupDef"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_ec2-nlb.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_ec2-nlb.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
-        VPCID:
-          !GetAtt VPCDef.Outputs.VPCID
         PublicSubnetIdA:
           !GetAtt VPCDef.Outputs.PublicSubnetIdA
         PublicSubnetIdB:
@@ -418,59 +386,51 @@ Resources:
         TargetGroupArnNLB:
           !GetAtt TargetGroupDef.Outputs.OpenvpnTargetGroupARN
       TimeoutInMinutes: 5
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- CloudWatch Alarm 
-#-------------------------------------------
+  # ------------------------------------------
+  # --- CloudWatch Alarm
   OpenvpnCloudWatchAlarmDef:
-    Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage3
-    DependsOn: 
-      - NetworkLoadBalancerDef
-      - TargetGroupDef
-      - OpenvpnSNSTopicDef
+    Type: "AWS::CloudFormation::Stack"
+    Condition: "CreateResourcesStage3"
+    DependsOn:
+      - "NetworkLoadBalancerDef"
+      - "TargetGroupDef"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_cw.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_cw.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
         OpenvpnSNSTopicARN:
           !GetAtt OpenvpnSNSTopicDef.Outputs.OpenvpnSNSTopicARN
       TimeoutInMinutes: 5
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#--- Route53 Record Set 
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Route53 Record Set
   OpenvpnR53RecordSetDef:
-    Type: AWS::CloudFormation::Stack
-    Condition: CreateResourcesStage3
-    DependsOn: NetworkLoadBalancerDef
+    Type: "AWS::CloudFormation::Stack"
+    Condition: "CreateResourcesStage3"
+    # .............................
     Properties:
-#,,,,,,,,,,,,,,,,
       TemplateURL:
         !Join
-          - ""
-          - - "https://"
-            - !Ref ProjectName
-            - ".s3."
-            - !Ref "AWS::Region"
-            - ".amazonaws.com/"
-            - "cfn-templates/dh-openvpn-cfn_r53.yaml"
-#,,,,,,,,,,,,,,,,
+        - ""
+        - - "https://"
+          - !Ref ProjectName
+          - ".s3."
+          - !Ref "AWS::Region"
+          - ".amazonaws.com/"
+          - "cfn-templates/dh-openvpn-cfn_r53.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -483,33 +443,24 @@ Resources:
         OpenvpnLoadBalancerZoneId:
           !GetAtt NetworkLoadBalancerDef.Outputs.OpenvpnLoadBalancerZoneId
       TimeoutInMinutes: 5
-#-------------------------------------------
-#-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-
 
 
-#-------------------------------------------
-
-
-#Outputs: {}
+# ==========================================
+# Outputs: {}
 Outputs:
-#===========================================
 
-#--- Instance IDs
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public Instance ID
   InstanceIdPublic:
-    Description:  Public Instance ID
-    Condition: CreateResourcesStage2
+    Description: "Public Instance ID"
+    Condition: "CreateResourcesStage2"
     Value:
       !GetAtt InstancePubDef.Outputs.PubEC2InstanceId
-#-------------------------------------------
+
+  # ------------------------------------------
+  # --- Private Instance ID
   InstanceIdPrivate:
-    Description: Private Instance ID
-    Condition: CreateResourcesStage2
+    Description: "Private Instance ID"
+    Condition: "CreateResourcesStage2"
     Value:
       !GetAtt InstancePrivDef.Outputs.PrivEC2InstanceId
-#-------------------------------------------
-#  ExportsStackName:
-#    Value: !Ref 'AWS::StackName'
-#    Export:
-#      Name: !Sub 'ExportsStackName-${AWS::StackName}'
-
