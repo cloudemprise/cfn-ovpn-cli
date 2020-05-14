@@ -1,27 +1,25 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  A Nested Stack that comprises:
-  VPC Top Level Definition.
-  Multi-AZ Private & Public Subnet Definitions.
-  Internet Gateway Definition.
-  NAT Gateway Definition.
-  Multi-AZ Private & Public Route Table Definitions.
-  Inputs include:
-  VPC Top Level CIDR Definition.
-  Private & Public Subnet CIDR Definitions.
-  Outputs include:
-  VPC ID
-  Private Subnet IDs
-  Public Subnet IDs
-# ------------------------------------------
-# --- CIDR Strings
-# ------------------------------------------
-# Public Subnet A CIDR : 10.0.128.0/20
-# Public Subnet B CIDR : 10.0.144.0/20
-# ------------------------------------------
-# Public Subnet A CIDR : 10.0.0.0/19
-# Public Subnet B CIDR : 10.0.32.0/19
+  A VPC declaration comprising a public and private subnet, spaning two 
+  availability zones. The following auxillary components are included here:
+
+  Public & Private Route Tables.
+  An Internet Gatway.
+  A NAT Gateway.
+
+  Note that the NAT Gateway is only active during Stage2 of the build process.
+
+  CIDR Allocations:
+
+  Public Subnet Total      : 10.0.128.0/18
+  Availability Zone A CIDR : 10.0.128.0/20
+  Availability Zone B CIDR : 10.0.144.0/20
+
+  Private Subnet Total     : 10.0.0.0/17
+  Availability Zone A CIDR : 10.0.0.0/19
+  Availability Zone B CIDR : 10.0.32.0/19
+
 # ------------------------------------------
 
 

@@ -1,13 +1,10 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  DNS Record Set for OpenVPN Implementation.
-  A Nested Stack that comprises:
-  Bla Bla.
-  Inputs include:
-  Bla Bla.
-  Outputs include:
-  Bla Bla.
+  Creates an aliased A Record Set for the Network Loadbalancer associated with 
+  Openvpn service.
+  Prerequisite: A registered Domain Name and a previously defined Hosted Zone.
+
 # ------------------------------------------
 
 

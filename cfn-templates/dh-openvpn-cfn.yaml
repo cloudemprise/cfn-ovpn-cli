@@ -1,39 +1,31 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  An OpenVPN implementation that comprises:
-  Highly Available EC2 Instance bla bla.
-  Autoscaling Group bla bla.
-  Isolated Certificate Authority bla bla.
-  Nested Stack as follows:
-  Bla Bla.
-  Inputs:
-  Bla Bla.
-  Outputs.
-  Bla Bla.
-# ------------------------------------------
+  An standalone openvpn server with a privately isolated pki certification 
+  authority. Code design comprises a two-level hierarchical structure composed 
+  of a single root and one-level of child nested templates.
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SUBNET CIDR DEFINITIONS
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Orchestration is controlled via shell script commands and is achieved in a 
+  three phase stack creation/update process that is promoted via a counter 
+  variable.
 
-# --- AZ-A Public Subnet
-# ------------------------------------------
-# Public Subnet A CIDR : 10.0.128.0/20
+  Nested template components include:
 
-# --- AZ-B Public Subnet
-# ------------------------------------------
-# Public Subnet B CIDR : 10.0.144.0/20
-
-# --- AZ-A Private Subnet
-# ------------------------------------------
-# Public Subnet A CIDR : 10.0.0.0/19
-
-# --- AZ-B Private Subnet
-# ------------------------------------------
-# Public Subnet B CIDR : 10.0.32.0/19
+  A Virtual Private Cloud.
+  A Network Access Control List.
+  A Public and Private Security Group definition.
+  A Public EC2 Instance declaration.
+  A Private EC2 Instance declaration.
+  An Auto Scaling Group.
+  A EC2 Launch Template.
+  A SNS Notification Topic. 
+  A Cloudwatch Alarm.
+  A Target Group.
+  A Network Load Balancer.
+  A DNS Record Set.
 
 # ------------------------------------------
+
 
 # ==========================================
 Metadata: {}
@@ -86,7 +78,7 @@ Parameters:
 
   # ------------------------------------------
   # --- Latest Amazon_Linux_2 AMI
-  # --- Value retrived via shell scrip
+  # --- Value retrived via shell script
   CurrentAmi:
     Description: "The AMI to use for EC2 instances"
     Type: "AWS::EC2::Image::Id"
@@ -128,14 +120,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_vpc.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-vpc.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -151,14 +136,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_vpc-nacl.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-vpc-nacl.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -182,14 +160,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_vpc-sg.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-vpc-sg.yaml"
       Parameters:
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
@@ -204,14 +175,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_ec2-pub.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-pub.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -233,14 +197,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_ec2-priv.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-priv.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -261,14 +218,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_ec2-lt.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-lt.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -287,14 +237,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_ec2-tg.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-tg.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -311,14 +254,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_sns.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-sns.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -335,14 +271,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_ec2-asg.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-asg.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -368,14 +297,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_ec2-nlb.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-nlb.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -399,14 +321,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_cw.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-cw.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -423,14 +338,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Join
-        - ""
-        - - "https://"
-          - !Ref ProjectName
-          - ".s3."
-          - !Ref "AWS::Region"
-          - ".amazonaws.com/"
-          - "cfn-templates/dh-openvpn-cfn_r53.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-r53.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName

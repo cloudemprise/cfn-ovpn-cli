@@ -1,16 +1,14 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  NetSec Defense-In-Depth Restrictive NACL Definitions.
-  A Nested Stack that comprises:
-  Ingress Private & Public NACL Definitions.
-  Egress Private & Public NACL Definitions.
-  Inputs include:
-  VPC Top Level VPC ID.
-  VPC Top Level CIDR Definition.
-  Private & Public Subnet IDs.
-  Outputs include:
-  To be determined.
+  Network Security Defense-In-Depth.
+
+  A Restricted Public Subnet Network Access Control List.
+  A Restricted Private Subnet Network Access Control List.
+  Ingress & Egress Definitions.
+
+  Private subnets can only be access via a Bastion Host on Public subnets.
+  
 # ------------------------------------------
 
 

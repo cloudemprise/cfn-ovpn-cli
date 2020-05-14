@@ -1,13 +1,8 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Simple Notification Service for OpenVPN Implementation.
-  A Nested Stack that comprises:
-  Bla Bla.
-  Inputs include:
-  Bla Bla.
-  Outputs include:
-  Bla Bla.
+  A encrypted SNS Topic with an email subscription.
+  
 # ------------------------------------------
 
 

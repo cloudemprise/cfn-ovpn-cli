@@ -1,13 +1,14 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Launch Template EC2 Server for OpenVPN Implementation.
-  A Nested Stack that comprises:
-  Bla Bla.
-  Inputs include:
-  Bla Bla.
-  Outputs include:
-  Bla Bla.
+  EC2 Autoscaling Launch Template for OpenVPN Implementation.
+
+  Main objective besides defining virtual server parameters include:
+    1) Pulling down of signed certificates from S3.
+    2) Enabling and starting services.
+
+  Note: ami used is the preconfigured image created in Stage2.
+
 # ------------------------------------------
 
 
@@ -81,12 +82,11 @@ Resources:
         UserData:
           Fn::Base64:
             !Sub |
-              #!/bin/bash -x
-              # https://github.com/aws/aws-cli/issues/1588 bug with --exclude below
-              #set -e
+              #!/bin/bash -xe
+              # https://github.com/aws/aws-cli/issues/1588 bug with --exclude & set -e below
+              # aws s3 sync s3://${ProjectName}/openvpn/server/crt/ /tmp --exclude "*" --include "*server-crt.tar.gz"
               # Download Server Certs & start Openvpn dual-protocol service
-              #aws s3 sync s3://${ProjectName}/easy-rsa/issued-certs/ /tmp --exclude "*" --include "*server.tar.gz"
-              aws s3 sync s3://${ProjectName}/openvpn/server/crt/ /tmp --exclude "*" --include "*server-crt.tar.gz"
+              aws s3 cp s3://${ProjectName}/openvpn/server/crt/dh-openvpn-server-crt.tar.gz /tmp
               tar -xzf /tmp/*server-crt.tar.gz -C /etc/openvpn/server/
               rm /tmp/*server-crt.tar.gz
               systemctl enable openvpn-server@dh-openvpn-server-udp1194

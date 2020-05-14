@@ -35,6 +35,7 @@ PROJECT_NAME="dh-openvpn-test4"
 # Get Route 53 Domain hosted zone ID
 AWS_DOMAIN_NAME="cloudemprise.net"
 echo "The IP Domain Name ............................: $AWS_DOMAIN_NAME"
+echo "The Openvpn Server FQDN .......................: ${PROJECT_NAME}.${AWS_DOMAIN_NAME}"
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name "$AWS_DOMAIN_NAME" \
     --query "HostedZones[].Id" --output text | awk -F "/" '{print $3}')
 [[ -z "$HOSTED_ZONE_ID" ]] \
