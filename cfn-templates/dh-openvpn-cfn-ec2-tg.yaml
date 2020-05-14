@@ -1,13 +1,9 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Target Group for OpenVPN Implementation.
-  A Nested Stack that comprises:
-  Bla Bla.
-  Inputs include:
-  Bla Bla.
-  Outputs include:
-  Bla Bla.
+  A Target Group for the Network Loadbalancer associated with the Openvpn 
+  service. Health Checks come from a webserver running on the same EC2 instance.
+
 # ------------------------------------------
 
 

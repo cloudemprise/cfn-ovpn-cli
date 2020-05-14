@@ -1,13 +1,28 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Launch Template EC2 Server for OpenVPN Implementation.
-  A Nested Stack that comprises:
-  Bla Bla.
-  Inputs include:
-  Bla Bla.
-  Outputs include:
-  Bla Bla.
+  An AWS virtual server offering Public Key Infrastructure Certification 
+  Authority services. 
+
+  An EC2 Instance is declared with an associated CreationPolicy attribute for OS 
+  configuration activities. 
+
+  cfn-init helper script authenticated by a least-privileged IAM role identity 
+  grant containing customer managed inline policies.
+
+  The private key of the Cetification Authority is encrypted with a passphrase 
+  pulled down from AWS Systems Manager Parameter Store.
+
+  Notable segments of the metadata configuration tasks include:
+    1) Persistent syslog reporting on all important system and application 
+      services.
+    2) Configure repository priorities and automatic OS security patching.
+    3) Hardening of the ssh service.
+    4) Harden local network interfaces and configure a restrictive and 
+      redundant statefull firewall, i.e. iptables.
+    5) Setup and configure a Public Key Infrastructure for Certification 
+      Authority services.
+
 # ------------------------------------------
 
 
@@ -129,7 +144,7 @@ Resources:
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PrivateEC2Instance --region ${AWS::Region}
     # .............................
     Metadata:
-      Comment: "Metadata description here"
+      Comment: "Configuring an EC2 Instance offering Public Key Infrastructure Certification Authority services."
       # .............................
       AWS::CloudFormation::Authentication:
         rolebased:

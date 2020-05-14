@@ -1,15 +1,20 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  NetSec Defense-In-Depth Restrictive Security Group Definitions.
-  A Nested Stack that comprises:
-  Private & Public Security Group Rule Definitions.
-  Inputs include:
-  VPC Top Level VPC ID.
-  VPC Top Level CIDR Definition.
-  Outputs include:
-  Private Security Group Resource ID.
-  Public Security Group Resource ID.
+  Network Security Defense-In-Depth.
+
+  A Restricted Public Subnet Security Group.
+  A Restricted Private Subnet Security Group.
+  
+  Public Ingress Rules limited to services on offer only. Public http ingress to 
+  facilitate network load balancer health checks.
+
+  Private Ingress Rules restricted to Public Security Group only, i.e. Bastion
+  Host must be used to access private subnets.
+
+  Public egress is completely open while Private egress limited to Public 
+  Security Group.
+
 # ------------------------------------------
 
 

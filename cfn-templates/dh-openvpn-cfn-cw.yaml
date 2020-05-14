@@ -1,13 +1,10 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Cloudwatch Notices for OpenVPN Implementation.
-  A Nested Stack that comprises:
-  Bla Bla.
-  Inputs include:
-  Bla Bla.
-  Outputs include:
-  Bla Bla.
+  Two Cloudwatch metrics from the AWS/AutoScaling Namespace are used to create 
+  Alarms for OpenVPN Implementation. These monitor the number of instances in 
+  each out-of-service and in-service state.
+
 # ------------------------------------------
 
 

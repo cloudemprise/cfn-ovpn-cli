@@ -1,12 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Network Load Balancer for OpenVPN Implementation.
-  A Nested Stack that comprises: 
-  Bla Bla.
-  Inputs include:
-  Bla Bla.
-  Outputs include:
-  Bla Bla.
+  A Network Loadbalancer and its associated Listener for OpenVPN Implementation.
+  Servicing public subnets in multiple availablity zones.
+
 #-------------------------------------------
 
 
@@ -25,7 +21,8 @@ Parameters:
     Default: "dh-openvpn"
     MinLength: 3
     MaxLength: 63
-    AllowedPattern: (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
+    AllowedPattern: 
+      (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
 
 #-------------------------------------------
 #--- AWS-Specific Parameter Type

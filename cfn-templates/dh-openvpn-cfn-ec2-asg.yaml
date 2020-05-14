@@ -1,13 +1,11 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Auto Scale Group EC2 Server for OpenVPN Implementation.
-  A Nested Stack that comprises:
-  Bla Bla.
-  Inputs include:
-  Bla Bla.
-  Outputs include:
-  Bla Bla.
+  An EC2 Auto Scaling Group with static scaling policy for a standalone OpenVPN 
+  Implementation. Requires a Launch Template, a Target Group and a SNS 
+  notification topic. Two metrics are collected, i.e. GroupInServiceInstances 
+  and GroupTotalInstances. Notifies on all state changes.
+
 # ------------------------------------------
 
 
