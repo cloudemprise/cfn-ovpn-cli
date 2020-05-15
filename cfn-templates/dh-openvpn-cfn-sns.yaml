@@ -2,7 +2,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   A encrypted SNS Topic with an email subscription.
-  
+
 # ------------------------------------------
 
 

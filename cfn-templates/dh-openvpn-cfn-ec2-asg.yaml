@@ -1,9 +1,9 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  An EC2 Auto Scaling Group with static scaling policy for a standalone OpenVPN 
-  Implementation. Requires a Launch Template, a Target Group and a SNS 
-  notification topic. Two metrics are collected, i.e. GroupInServiceInstances 
+  An EC2 Auto Scaling Group with static scaling policy for a standalone OpenVPN
+  Implementation. Requires a Launch Template, a Target Group and a SNS
+  notification topic. Two metrics are collected, i.e. GroupInServiceInstances
   and GroupTotalInstances. Notifies on all state changes.
 
 # ------------------------------------------

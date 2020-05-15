@@ -5,14 +5,14 @@ Description: >
 
   A Restricted Public Subnet Security Group.
   A Restricted Private Subnet Security Group.
-  
-  Public Ingress Rules limited to services on offer only. Public http ingress to 
+
+  Public Ingress Rules limited to services on offer only. Public http ingress to
   facilitate network load balancer health checks.
 
   Private Ingress Rules restricted to Public Security Group only, i.e. Bastion
   Host must be used to access private subnets.
 
-  Public egress is completely open while Private egress limited to Public 
+  Public egress is completely open while Private egress limited to Public
   Security Group.
 
 # ------------------------------------------
@@ -33,6 +33,16 @@ Parameters:
     Description: "VPC to create the SG into"
     Type: "AWS::EC2::VPC::Id"
 
+  # ------------------------------------------
+  # --- IP CIDR for SSH Bastion Host
+  SshAccessCIDR:
+    Description: IP range for SSH access into Public Instance.
+    Type: String
+    MinLength: "9"
+    MaxLength: "18"
+    Default: 0.0.0.0/0
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: Must be a valid IPv4 CIDR.
 
 # ==========================================
 Conditions: {}
@@ -60,7 +70,7 @@ Resources:
           IpProtocol: "tcp"
           FromPort: 22
           ToPort: 22
-          CidrIp: "0.0.0.0/0"
+          CidrIp: !Ref SshAccessCIDR
         - Description: "OpenVPN TCP"
           IpProtocol: "tcp"
           FromPort: 1194
@@ -81,11 +91,11 @@ Resources:
           FromPort: 8
           ToPort: -1
           CidrIp: "10.0.0.0/16"
-        - Description: "httpd access for nlb health check"
+        - Description: "httpd access for nlb health checks"
           IpProtocol: "tcp"
           FromPort: 80
           ToPort: 80
-          CidrIp: "0.0.0.0/0"
+          CidrIp: "10.0.0.0/16"
 
 
   # ------------------------------------------
