@@ -24,7 +24,7 @@ echo "The Time Stamp ................................: $TIME_STAMP_PROJ"
 #-----------------------------
 # Name Given to Cloudformation Entire Project
 # Must be compatible with s3bucket name restrictions
-PROJECT_NAME="dh-openvpn-test4"
+PROJECT_NAME="dh-openvpn-test8"
 [[ ! "$PROJECT_NAME" =~ (^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$) ]] \
     && { echo "Invalid Project Name!"; exit 1; } \
     || { echo "The Project Name ..............................: $PROJECT_NAME"; }
@@ -47,6 +47,9 @@ HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name "$AWS_DOMAIN_N
 #-----------------------------
 # Variable Creation
 #-----------------------------
+# Script caller IP CIDR for SSH Bastion Host
+SSH_ACCESS_CIDR="$(curl -s https://checkip.amazonaws.com/)/32"
+echo "The Script Caller IP CIDR  ....................: $SSH_ACCESS_CIDR"
 # Name given to Cloudformation Stack
 STACK_NAME="cfn-stack-$PROJECT_NAME"
 echo "The Stack Name ................................: $STACK_NAME"
@@ -186,15 +189,15 @@ fi
 #.............................
 
 
-#-----------------------------
-# Create Project cfn Stack Policy from local template
-if [ -f policies/cfn-stacks/template-cfn-stack-policy.json ]
-then 
-  cp policies/cfn-stacks/template-cfn-stack-policy.json policies/cfn-stacks/${PROJECT_NAME}-cfn-stack-policy.json
-else
-  echo "Template Stack Policy Not Found!"
-  exit 1
-fi
+#----------------------------------------------
+# Create cfn Stack policies from local templates
+echo "Creating Stack Policies .......................: "
+for FILE in policies/cfn-stacks/template-stage?-cfn-stack-policy.json
+do
+  [[ ! -e "$FILE" ]] \
+  && { echo "Template Stack Policy Not Found ...............: $FILE"; exit 1; } \
+  || { cp "$FILE" "$(dirname "$FILE")/$PROJECT_NAME${FILE#*template}"; }
+done
 #.............................
 
 
@@ -217,7 +220,7 @@ fi
 
 
 #----------------------------------------------
-# Upload Latest Stack/Bucket Policies to S3
+# Upload Latest Stack/IAM/Bucket Policies to S3
 echo "Uploading Policy Documents to S3 Location .....: $PROJECT_BUCKET/policies/"
 for FILE in policies/*/"$PROJECT_NAME"*.json
 do
@@ -299,19 +302,21 @@ fi
 #-----------------------------
 #-----------------------------
 # Stage1 Stack Creation Code Block
-BUILD_COUNTER="Stage1"
+BUILD_COUNTER="stage1"
 echo "cfn Stack Creation Initiated ..................: $BUILD_COUNTER"
+STACK_POLICY_URL="https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/policies/cfn-stacks/${PROJECT_NAME}-${BUILD_COUNTER}-cfn-stack-policy.json"
+TEMPLATE_URL="https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml"
 TIME_START_STACK=$(date +%s)
 #-----------------------------
 STACK_ID=$(aws cloudformation create-stack --stack-name "$STACK_NAME" --parameters  \
-                ParameterKey=BuildStep,ParameterValue="$BUILD_COUNTER"              \
                 ParameterKey=ProjectName,ParameterValue="$PROJECT_NAME"             \
+                ParameterKey=BuildStep,ParameterValue="$BUILD_COUNTER"              \
                 ParameterKey=DomainName,ParameterValue="$AWS_DOMAIN_NAME"           \
                 ParameterKey=DomainHostedZoneId,ParameterValue="$HOSTED_ZONE_ID"    \
+                ParameterKey=SshAccessCIDR,ParameterValue="$SSH_ACCESS_CIDR"        \
                 ParameterKey=CurrentAmi,ParameterValue="$AMI_LATEST"                \
                 --tags Key=Name,Value=openvpn-stage1                                \
-                --stack-policy-url "https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/policies/cfn-stacks/${PROJECT_NAME}-cfn-stack-policy.json" \
-                --template-url "https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml" \
+                --stack-policy-url $STACK_POLICY_URL --template-url $TEMPLATE_URL   \
                 --on-failure DO_NOTHING --capabilities CAPABILITY_NAMED_IAM --output text)
 #-----------------------------
 if [[ $? -eq 0 ]]; then
@@ -347,21 +352,21 @@ $(( TIME_DIFF_STACK / 3600 ))h $(( (TIME_DIFF_STACK / 60) % 60 ))m $(( TIME_DIFF
 #.............................
 
 
-
 #-----------------------------
 #-----------------------------
 # Stage2 Stack Creation Code Block
-BUILD_COUNTER="Stage2"
+BUILD_COUNTER="stage2"
 echo "cfn Stack Update Initiated ....................: $BUILD_COUNTER"
 TIME_START_STACK=$(date +%s)
 #-----------------------------
-aws cloudformation update-stack --stack-name "$STACK_ID" --parameters \
-      ParameterKey=BuildStep,ParameterValue="$BUILD_COUNTER"          \
-      ParameterKey=ProjectName,UsePreviousValue=true                  \
-      ParameterKey=DomainName,UsePreviousValue=true                   \
-      ParameterKey=DomainHostedZoneId,UsePreviousValue=true           \
-      ParameterKey=CurrentAmi,UsePreviousValue=true                   \
-      --capabilities CAPABILITY_NAMED_IAM                             \
+aws cloudformation update-stack --stack-name "$STACK_ID" --parameters          \
+      ParameterKey=BuildStep,ParameterValue="$BUILD_COUNTER"                   \
+      ParameterKey=ProjectName,UsePreviousValue=true                           \
+      ParameterKey=DomainName,UsePreviousValue=true                            \
+      ParameterKey=DomainHostedZoneId,UsePreviousValue=true                    \
+      ParameterKey=SshAccessCIDR,UsePreviousValue=true                         \
+      ParameterKey=CurrentAmi,UsePreviousValue=true                            \
+      --stack-policy-url $STACK_POLICY_URL --capabilities CAPABILITY_NAMED_IAM \
       --tags Key=Name,Value=openvpn-stage2 --use-previous-template > /dev/null
 #-----------------------------
 if [[ $? -eq 0 ]]; then
@@ -448,7 +453,7 @@ echo "$BUILD_COUNTER Instances Terminated ...................:"
 #-----------------------------
 #-----------------------------
 # Stage3 Stack Creation Code Block
-BUILD_COUNTER="Stage3"
+BUILD_COUNTER="stage3"
 echo "cfn Stack Update Initiated ....................: $BUILD_COUNTER"
 TIME_START_STACK=$(date +%s)
 #-----------------------------
@@ -458,7 +463,9 @@ aws cloudformation update-stack --stack-name "$STACK_ID" --parameters \
       ParameterKey=ProjectName,UsePreviousValue=true                  \
       ParameterKey=DomainName,UsePreviousValue=true                   \
       ParameterKey=DomainHostedZoneId,UsePreviousValue=true           \
-      --tags Key=Name,Value=openvpn-stage3 --use-previous-template > /dev/null
+      ParameterKey=SshAccessCIDR,UsePreviousValue=true                \
+      --stack-policy-url $STACK_POLICY_URL --use-previous-template    \
+      --tags Key=Name,Value=openvpn-stage3 > /dev/null    
 #-----------------------------
 if [[ $? -eq 0 ]]; then
   # Wait for stack creation to complete
@@ -584,3 +591,4 @@ TIME_DIFF=$((TIME_END_PROJ - TIME_START_PROJ))
 echo "Total Finished Execution Time .................: \
 $(( TIME_DIFF / 3600 ))h $(( (TIME_DIFF / 60) % 60 ))m $(( TIME_DIFF % 60 ))s"
 #.............................
+

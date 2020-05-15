@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  A Target Group for the Network Loadbalancer associated with the Openvpn 
+  A Target Group for the Network Loadbalancer associated with the Openvpn
   service. Health Checks come from a webserver running on the same EC2 instance.
 
 # ------------------------------------------

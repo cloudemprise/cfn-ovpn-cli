@@ -1,26 +1,26 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  An AWS virtual server offering Bastion Host and Virtual Private Network 
-  services. 
+  An AWS virtual server offering Bastion Host and Virtual Private Network
+  services.
 
-  An EC2 Instance is declared with an associated CreationPolicy attribute for OS 
-  configuration activities. 
+  An EC2 Instance is declared with an associated CreationPolicy attribute for OS
+  configuration activities.
 
-  cfn-init helper script authenticated by a least-privileged IAM role identity 
+  cfn-init helper script authenticated by a least-privileged IAM role identity
   grant containing customer managed inline policies.
 
   Network Loadbalancer Health Checks are facilitated by a small local Webserver.
 
   Notable segments of the metadata configuration tasks include:
-    1) Persistent syslog reporting on all important system and application 
+    1) Persistent syslog reporting on all important system and application
       services.
     2) Configure repository priorities and automatic OS security patching.
     3) Harden and configure the following outward facing services: ssh, http and
       openvpn.
-    4) Harden local network interfaces and configure a restrictive and 
+    4) Harden local network interfaces and configure a restrictive and
       redundant statefull firewall, i.e. iptables.
-    5) Setup and configure a Public Key Infrastructure for openvpn key-based 
+    5) Setup and configure a Public Key Infrastructure for openvpn key-based
       authentication.
 
 # ------------------------------------------

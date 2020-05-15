@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Creates an aliased A Record Set for the Network Loadbalancer associated with 
+  Creates an aliased A Record Set for the Network Loadbalancer associated with
   Openvpn service.
   Prerequisite: A registered Domain Name and a previously defined Hosted Zone.
 

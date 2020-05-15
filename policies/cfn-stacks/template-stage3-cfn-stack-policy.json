@@ -1,0 +1,21 @@
+{
+  "Statement" : [
+    {
+      "Effect" : "Allow",
+      "Action" : "Update:*",
+      "Principal": "*",
+      "NotResource" : [ 
+        "LogicalResourceId/VPCDef",
+        "LogicalResourceId/NaclDefs",
+        "LogicalResourceId/SgDefs",
+        "LogicalResourceId/LaunchTemplateDef",
+        "LogicalResourceId/TargetGroupDef",
+        "LogicalResourceId/OpenvpnSNSTopicDef",
+        "LogicalResourceId/AutoScaleGroupDef",
+        "LogicalResourceId/NetworkLoadBalancerDef",
+        "LogicalResourceId/OpenvpnCloudWatchAlarmDef",
+        "LogicalResourceId/OpenvpnR53RecordSetDef"
+      ]
+    }
+  ]
+}
