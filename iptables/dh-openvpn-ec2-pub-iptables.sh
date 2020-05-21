@@ -145,6 +145,14 @@ iptables -A FORWARD -s $VPN_CIDR -p tcp --syn --sport 1024:65535 --dport 22  -m 
 iptables -A IPTlogPASSfrwSSH -j LOG --log-prefix "IPTlogPASSfrw_:_SSH____:"
 iptables -A IPTlogPASSfrwSSH -j ACCEPT
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# allow forwarded imap/smtp traffic from VPN hosts
+iptables -N IPTlogPASSfrwMAIL
+iptables -A FORWARD -s $VPN_CIDR -p tcp --syn --sport 1024:65535 --dport 993  -m conntrack --ctstate NEW -o $NIC -j IPTlogPASSfrwMAIL
+iptables -A FORWARD -s $VPN_CIDR -p tcp --syn --sport 1024:65535 --dport 465  -m conntrack --ctstate NEW -o $NIC -j IPTlogPASSfrwMAIL
+iptables -A FORWARD -s $VPN_CIDR -p tcp --syn --sport 1024:65535 --dport 587  -m conntrack --ctstate NEW -o $NIC -j IPTlogPASSfrwMAIL
+iptables -A IPTlogPASSfrwMAIL -j LOG --log-prefix "IPTlogPASSfrw_:_MAIL___:"
+iptables -A IPTlogPASSfrwMAIL -j ACCEPT
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # allow forwarded google play store traffic from VPN hosts
 iptables -N IPTlogPASSfrwGPS
 iptables -A FORWARD -s $VPN_CIDR -p tcp --syn --sport 1024:65535 --dport 5228  -m conntrack --ctstate NEW -o $NIC -j IPTlogPASSfrwGPS

@@ -15,8 +15,7 @@
           "aws:userId": [
             "AIDAYNCYQ2G2GG6A5MATD",
             "RootAccount",
-            "ScriptCallerUserId",
-            "Ec2RoleUserId:*"
+            "ScriptCallerUserId"
           ]
         }
       }

@@ -103,7 +103,7 @@ Resources:
               Ref: 'AWS::Region'
       # .............................
       DisableApiTermination: false
-      IamInstanceProfile: !Sub "${ProjectName}-instance-profile-${AWS::Region}"
+      IamInstanceProfile: !Sub "${ProjectName}-pub-iam-ec2-${AWS::Region}"
       ImageId: !Ref PublicAmiId
       InstanceType: "t2.nano"
       KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
@@ -151,7 +151,7 @@ Resources:
           type: "S3"
           buckets:
             - !Ref ProjectName
-          roleName: !Sub "${ProjectName}-iam-role-${AWS::Region}"
+          roleName: !Sub "${ProjectName}-pub-iam-ec2-${AWS::Region}"
       # .............................
       AWS::CloudFormation::Init:
         configSets:

@@ -28,6 +28,18 @@ Metadata: {}
 Parameters:
 
   # ------------------------------------------
+  # --- The Project Name
+  ProjectName:
+    Description: "Name of this Openvpn project"
+    ConstraintDescription: "Specify name of the project"
+    Type: String
+    Default: "dh-openvpn"
+    MinLength: 3
+    MaxLength: 63
+    AllowedPattern:
+      (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
+
+  # ------------------------------------------
   # --- AWS-Specific Parameter VPC Id
   VPCID:
     Description: "VPC to create the SG into"
@@ -64,6 +76,7 @@ Resources:
     # .............................
     Properties:
       GroupDescription: "Public Subnet Security Group"
+      GroupName: !Sub "${ProjectName}-sg-pub-${AWS::Region}"
       VpcId: !Ref VPCID
       SecurityGroupIngress:
         - Description: "SSH External"
@@ -105,6 +118,7 @@ Resources:
     # .............................
     Properties:
       GroupDescription: "Private Subnet Security Group"
+      GroupName: !Sub "${ProjectName}-sg-priv-${AWS::Region}"
       VpcId: !Ref VPCID
 
   # ------------------------------------------

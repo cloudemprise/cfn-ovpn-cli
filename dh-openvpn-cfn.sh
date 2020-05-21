@@ -1,4 +1,5 @@
 #!/bin/bash -e
+# debug options include -v -x
 # dh-openvpn-cfn.sh 
 # A hardened, hightly available, multi-protocol, multi-client openvpn 
 # server cloudformation template composition.
@@ -24,10 +25,12 @@ echo "The Time Stamp ................................: $TIME_STAMP_PROJ"
 #-----------------------------
 # Name Given to Cloudformation Entire Project
 # Must be compatible with s3bucket name restrictions
-PROJECT_NAME="dh-openvpn-test8"
+PROJECT_NAME="dh-openvpn-test3"
 [[ ! "$PROJECT_NAME" =~ (^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$) ]] \
     && { echo "Invalid Project Name!"; exit 1; } \
     || { echo "The Project Name ..............................: $PROJECT_NAME"; }
+# Name of the Project S3 Bucket Document Store
+PROJECT_BUCKET="s3://${PROJECT_NAME}"
 #.............................
 
 
@@ -35,7 +38,7 @@ PROJECT_NAME="dh-openvpn-test8"
 # Get Route 53 Domain hosted zone ID
 AWS_DOMAIN_NAME="cloudemprise.net"
 echo "The IP Domain Name ............................: $AWS_DOMAIN_NAME"
-echo "The Openvpn Server FQDN .......................: ${PROJECT_NAME}.${AWS_DOMAIN_NAME}"
+echo "The Openvpn Server FQDN .......................: ${PROJECT_NAME}.${AWS_DOMAIN_NAME}:1194"
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name "$AWS_DOMAIN_NAME" \
     --query "HostedZones[].Id" --output text | awk -F "/" '{print $3}')
 [[ -z "$HOSTED_ZONE_ID" ]] \
@@ -70,11 +73,12 @@ echo "The lastest Amazon Linux 2 AMI ................: $AMI_LATEST"
 #.............................
 
 
+
 #-----------------------------
 # Request Cert Auth Private Key Passphrase
 USER_INPUT1="false"
 USER_INPUT2="true"
-# While user input is different or empty...
+# Validate! While user input is different or empty...
 while [[ "$USER_INPUT1" != "$USER_INPUT2" ]] || [[ "$USER_INPUT1" == '' ]] 
 do
   read -srep $'Enter PKI Cert Auth Private Key Passphrase ....:\n' USER_INPUT1
@@ -91,7 +95,7 @@ do
     fi
   fi
 done
-
+# Store Passphrase in SSM Parameter Store
 CERT_AUTH_PASS_NAME="/${PROJECT_NAME}/pki-cert-auth"
 echo "Adding Passphrase to AWS Parameter Store ......: $CERT_AUTH_PASS_NAME"
 aws ssm put-parameter --name "$CERT_AUTH_PASS_NAME" --value "$CERT_AUTH_PASS" \
@@ -99,98 +103,8 @@ aws ssm put-parameter --name "$CERT_AUTH_PASS_NAME" --value "$CERT_AUTH_PASS" \
         --description "Openvpn PKI Certificate Authority Private Key Passphrase" > /dev/null
 #.............................
 
-
-#-----------------------------
-# Create IAM Role
-EC2_ROLE_NAME="${PROJECT_NAME}-iam-role-${AWS_REGION}"
-echo "The IAM Role Name .............................: $EC2_ROLE_NAME"
-ASSUME_ROLE_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/assume-role-policy.json)
-EC2_ROLE_ID=$(aws iam create-role --role-name "$EC2_ROLE_NAME"  \
-    --assume-role-policy-document "$ASSUME_ROLE_POLICY"         \
-    --output text --query 'Role.RoleId')
-echo "The IAM Role userid ...........................: $EC2_ROLE_ID"
-#.............................
-
-#-----------------------------
-# Create EC2 Instance Profile
-EC2_PROFILE_NAME="${PROJECT_NAME}-instance-profile-${AWS_REGION}"
-echo "The EC2 Instance Profile Name .................: $EC2_PROFILE_NAME"
-EC2_PROFILE_ID=$(aws iam create-instance-profile --output text  \
-    --instance-profile-name "$EC2_PROFILE_NAME"                   \
-    --query 'InstanceProfile.InstanceProfileId')
-echo "The EC2 Instance Profile userid ...............: $EC2_PROFILE_ID"
-#.............................
-
-#-----------------------------
-# Add the IAM role to the instance profile
-aws iam add-role-to-instance-profile --instance-profile-name "$EC2_PROFILE_NAME" \
-    --role-name "$EC2_ROLE_NAME"
-echo "IAM Role Added to Instance Profile ............: "
-#.............................
-
-
-#-----------------------------
-# Create Inline Role Policy for S3 Access from local template
-if [ -f policies/ec2-role/template-s3-access-policy.json ]
-then
-  cp policies/ec2-role/template-s3-access-policy.json policies/ec2-role/${PROJECT_NAME}-s3-access-policy.json
-  sed -i "s/ProjectName/$PROJECT_NAME/g" policies/ec2-role/${PROJECT_NAME}-s3-access-policy.json
-else
-  echo "Template EC2 S3 Role Policy Not Found!"
-  exit 1
-fi
-#.............................
-
-#-----------------------------
-# Create Inline Role Policy for SSM Access from local template
-if [ -f policies/ec2-role/template-ssm-access-policy.json ]
-then
-  cp policies/ec2-role/template-ssm-access-policy.json policies/ec2-role/${PROJECT_NAME}-ssm-access-policy.json
-  sed -i "s/ProjectName/$PROJECT_NAME/g" policies/ec2-role/${PROJECT_NAME}-ssm-access-policy.json
-else
-  echo "Template EC2 SSM Role Policy Not Found!"
-  exit 1
-fi
-#.............................
-
-
-#-----------------------------
-# Embedd S3 inline policy document in IAM role
-EC2_ROLE_S3_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/${PROJECT_NAME}-s3-access-policy.json)
-EC2_ROLE_S3_NAME="${PROJECT_NAME}-ec2-s3-${AWS_REGION}"
-aws iam put-role-policy --role-name "$EC2_ROLE_NAME"  \
-    --policy-name "$EC2_ROLE_S3_NAME"                 \
-    --policy-document "$EC2_ROLE_S3_POLICY"
-echo "S3 Access Policy Attached to IAM Role .........: ${EC2_ROLE_S3_NAME}"
-
-#-----------------------------
-# Embedd SSM inline policy document in IAM role
-EC2_ROLE_SSM_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/${PROJECT_NAME}-ssm-access-policy.json)
-EC2_ROLE_SSM_NAME="${PROJECT_NAME}-ec2-ssm-${AWS_REGION}"
-aws iam put-role-policy --role-name "$EC2_ROLE_NAME"  \
-    --policy-name "$EC2_ROLE_SSM_NAME"                 \
-    --policy-document "$EC2_ROLE_SSM_POLICY"
-echo "SSM Access Policy Attached to IAM Role ........: ${EC2_ROLE_SSM_NAME}"
-
-
-#-----------------------------
-# Create Project S3 Bucket Policy from local template
-if [ -f policies/s3-buckets/template-s3-bucket-policy.json ]
-then
-  cp policies/s3-buckets/template-s3-bucket-policy.json policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json
-  sed -i "s/ProjectName/$PROJECT_NAME/" policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json
-  sed -i "s/RootAccount/$AWS_ACC_ID/" policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json
-  sed -i "s/ScriptCallerUserId/$AWS_CLI_ID/" policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json
-  sed -i "s/Ec2RoleUserId/$EC2_ROLE_ID/" policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json
-else
-  echo "Template Bucket Policy Not Found!"
-  exit 1
-fi
-#.............................
-
-
 #----------------------------------------------
-# Create cfn Stack policies from local templates
+# From local templates, create cfn Stack Policies
 echo "Creating Stack Policies .......................: "
 for FILE in policies/cfn-stacks/template-stage?-cfn-stack-policy.json
 do
@@ -200,10 +114,98 @@ do
 done
 #.............................
 
+#-----------------------------
+# From local template, create a Project S3 Bucket Policy
+find ./policies/s3-buckets/template* -type f -print0 |
+  while IFS= read -r -d '' TEMPLATE
+  do
+    # Copy/Rename template via parameter expansion
+    cp "$TEMPLATE" "${TEMPLATE//template/$PROJECT_NAME}"
+    # Replace appropriate variables
+    sed -i "s/ProjectName/$PROJECT_NAME/" "$_"
+    sed -i "s/RootAccount/$AWS_ACC_ID/" "$_"
+    sed -i "s/ScriptCallerUserId/$AWS_CLI_ID/" "$_"
+  done
+#.............................
+
+
+#-----------------------------
+# From template, create  Resource Inline Policies for IAM Role Access
+find ./policies/ec2-role/template* -type f -print0 |
+  while IFS= read -r -d '' TEMPLATE
+  do
+    # Copy/Rename template via parameter expansion
+    cp "$TEMPLATE" "${TEMPLATE//template/$PROJECT_NAME}"
+    sed -i "s/ProjectName/$PROJECT_NAME/g" "$_"
+  done
+#.............................
+
+#-----------------------------
+# Stringify json Resource Inline Policies for awscli command input
+ASSUME_ROLE_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/assume-role-policy.json)
+PRIV_SSM_EC2_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/${PROJECT_NAME}-priv-ssm-access-policy.json)
+PRIV_S3_EC2_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/${PROJECT_NAME}-priv-s3-access-policy.json)
+PUB_S3_EC2_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/${PROJECT_NAME}-pub-s3-access-policy.json)
+# similar method using jq (preservers whitespace)
+# jq '.' policy.json | jq -sR '.'
+
+
+#-----------------------------
+# Create EC2 Instance Profiles & IAM Role Polices for 
+# Public, Private & Launch Templates
+for PREFIX in PRIV PUB LT; do
+  # --- Create (variable) IAM Role Name = Instance Profile Name
+  declare "$PREFIX"_EC2_IAM_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-iam-ec2-"${AWS_REGION}"
+  VAR_NAME="$PREFIX"_EC2_IAM_NAME
+  echo "The EC2 IAM Role/Instance Profile Name ........: ${!VAR_NAME}"
+  # --- Create IAM Role
+  declare "$PREFIX"_EC2_ROLE_ID="$(aws iam create-role --role-name "${!VAR_NAME}" \
+      --assume-role-policy-document "$ASSUME_ROLE_POLICY"                         \
+      --output text --query 'Role.RoleId')"
+  VAR_ROLE_ID="$PREFIX"_EC2_ROLE_ID
+  echo "The IAM Role userid ...........................: ${!VAR_ROLE_ID}"
+  #--- Create EC2 Instance Profile
+  declare "$PREFIX"_EC2_PROFILE_ID="$(aws iam create-instance-profile --output text \
+      --instance-profile-name "${!VAR_NAME}"                                        \
+      --query 'InstanceProfile.InstanceProfileId')"
+  VAR_PROFILE_ID="$PREFIX"_EC2_PROFILE_ID
+  echo "The EC2 Instance Profile userid ...............: ${!VAR_PROFILE_ID}"
+  # --- Attaching IAM Role to Instance Profile
+  aws iam add-role-to-instance-profile --instance-profile-name "${!VAR_NAME}" \
+      --role-name "${!VAR_NAME}"
+  echo "IAM Role Attached to Instance Profile .........: "
+  # Add new json element to Project S3 Bucket Policy for EC2 RoleId
+  POLICY_DOC=$(find ./policies/s3-buckets/${PROJECT_NAME}* -type f)
+  jq --arg var_role_id "${!VAR_ROLE_ID}:*" '.Statement[].Condition.StringNotLike[] += [ $var_role_id ]' < "$POLICY_DOC" > "${POLICY_DOC}".tmp 
+  mv "${POLICY_DOC}".tmp "$POLICY_DOC"
+  # Attach relevant resource policies
+  if [[ $PREFIX == "PRIV" ]]; then
+      # Embedd SSM inline policy document in IAM role
+      EC2_ROLE_SSM_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-ec2-ssm-"${AWS_REGION}"
+      aws iam put-role-policy --role-name "${!VAR_NAME}"  \
+          --policy-name "$EC2_ROLE_SSM_NAME"                 \
+          --policy-document "$PRIV_SSM_EC2_POLICY"
+      echo "SSM Access Policy Attached to IAM Role ........: ${EC2_ROLE_SSM_NAME}"
+      # Embedd S3 inline policy document in IAM role
+      EC2_ROLE_S3_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-ec2-s3-"${AWS_REGION}"
+      aws iam put-role-policy --role-name "${!VAR_NAME}"  \
+          --policy-name "$EC2_ROLE_S3_NAME"                 \
+          --policy-document "$PRIV_S3_EC2_POLICY"
+      echo "S3 Access Policy Attached to IAM Role .........: ${EC2_ROLE_S3_NAME}"
+  else
+      # Embedd S3 inline policy document in IAM role
+      EC2_ROLE_S3_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-ec2-s3-"${AWS_REGION}"
+      aws iam put-role-policy --role-name "${!VAR_NAME}"  \
+          --policy-name "$EC2_ROLE_S3_NAME"                 \
+          --policy-document "$PUB_S3_EC2_POLICY"
+      echo "S3 Access Policy Attached to IAM Role .........: ${EC2_ROLE_S3_NAME}"
+  fi
+done
+#.............................
+
 
 #-----------------------------
 # Create S3 Project Bucket with Encryption & Policy
-PROJECT_BUCKET="s3://${PROJECT_NAME}"
 if (aws s3 mb "$PROJECT_BUCKET" > /dev/null)
 then 
   aws s3api put-bucket-encryption --bucket "$PROJECT_NAME"  \
@@ -350,6 +352,7 @@ echo "$BUILD_COUNTER Finished Execution Time ................: \
 $(( TIME_DIFF_STACK / 3600 ))h $(( (TIME_DIFF_STACK / 60) % 60 ))m $(( TIME_DIFF_STACK % 60 ))s"
 #.............................
 #.............................
+
 
 
 #-----------------------------
@@ -539,11 +542,13 @@ find "${TMP_DIR}/key" -type f -name '*-client*' -print0 |
   while IFS= read -r -d '' FILE
   do
     # make dir for each client key
-    mkdir -p "${TMP_DIR}/client/$(basename "${FILE%%-client*}")"
+    CLIENT_PREFIX=$(basename "${FILE%%-client*}")
+    mkdir -p "${TMP_DIR}/client/$CLIENT_PREFIX"
     # copy crt/key/ovpn into dir
     cp ${TMP_DIR}/crt/ca.crt "$_"
     cp ${TMP_DIR}/hmac-sig.key "$_"
     cp ${TMP_DIR}/ovpn/*.ovpn "$_"
+    cp ${TMP_DIR}/crt/"$CLIENT_PREFIX"*crt "$_"
     cp "$FILE" "$_"
   done
 # --
@@ -559,12 +564,12 @@ find $TMP_DIR -type f -print0 |
     FILE="$(basename "$RECORD")"
     DIR="$(dirname "$RECORD")"
     # Rename template files to reflect client specifics via parameter expansion
-    [[ "$FILE" == "template-client"* ]] && mv "$RECORD" "${RECORD//template-client/$(basename "$DIR")}"
+    if [[ "$FILE" == "template-client"* ]]; then mv "$RECORD" "${RECORD//template-client/$(basename "$DIR")}"; fi
     # Insert certificates into respective sections of config files
-    [[ "$FILE" == "ca.crt" ]] && { sed -i -e "/<ca>/r ${RECORD}" "$DIR"/*.ovpn; }
-    [[ "$FILE" == "hmac-sig.key" ]] && { sed -i -e "/<tls-crypt>/r ${RECORD}" "$DIR"/*.ovpn; }
-    [[ "$FILE" == *"-client.crt" ]] && { sed -i -e "/<cert>/r ${RECORD}" "$DIR"/*.ovpn; }
-    [[ "$FILE" == *"-client.key" ]] && { sed -i -e "/<key>/r ${RECORD}" "$DIR"/*.ovpn; }
+    if [[ "$FILE" == "ca.crt" ]]; then sed -i "/<ca>/r ${RECORD}" "$DIR"/*.ovpn; fi
+    if [[ "$FILE" == "hmac-sig.key" ]]; then sed -i "/<tls-crypt>/r ${RECORD}" "$DIR"/*.ovpn; fi
+    if [[ "$FILE" == *"-client.crt" ]]; then sed -i "/<cert>/r ${RECORD}" "$DIR"/*.ovpn; fi
+    if [[ "$FILE" == *"-client.key" ]]; then sed -i "/<key>/r ${RECORD}" "$DIR"/*.ovpn; fi
   done
 # --
 # Archive each client configuration directory
