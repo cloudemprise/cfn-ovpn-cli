@@ -173,6 +173,8 @@ Resources:
       TemplateURL:
         !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-vpc-sg.yaml"
       Parameters:
+        ProjectName:
+          !Ref ProjectName
         VPCID:
           !GetAtt VPCDef.Outputs.VPCID
         SshAccessCIDR:

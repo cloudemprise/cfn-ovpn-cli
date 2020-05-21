@@ -77,7 +77,7 @@ Resources:
           - !Ref PublicSgResourceId
         # .............................
         IamInstanceProfile:
-          Name: !Sub "${ProjectName}-instance-profile-${AWS::Region}"
+          Name: !Sub "${ProjectName}-lt-iam-ec2-${AWS::Region}"
         # .............................
         UserData:
           Fn::Base64:

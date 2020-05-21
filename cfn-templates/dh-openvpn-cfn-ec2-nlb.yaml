@@ -1,145 +1,134 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   A Network Loadbalancer and its associated Listener for OpenVPN Implementation.
   Servicing public subnets in multiple availablity zones.
 
-#-------------------------------------------
+# ------------------------------------------
 
 
+# ==========================================
 Metadata: {}
+# Metadata:
 
 
+# ==========================================
+# Parameters {}
 Parameters:
-#===========================================
 
-#--- The Project Name
-#-------------------------------------------
+  # ------------------------------------------
+  # --- The Project Name
   ProjectName:
-    Description: Name of this Openvpn project.
-    ConstraintDescription: Specify name of the project.
+    Description: "Name of this Openvpn project"
+    ConstraintDescription: "Specify name of the project"
     Type: String
     Default: "dh-openvpn"
     MinLength: 3
     MaxLength: 63
-    AllowedPattern: 
+    AllowedPattern:
       (?!^(\d{1,3}\.){3}\d{1,3}$)(^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$(?<!\-))
 
-#-------------------------------------------
-#--- AWS-Specific Parameter Type
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Public Subnet ID
   PublicSubnetIdA:
-    Description: Public Subnet ID AZ-A
-    Type: AWS::EC2::Subnet::Id
-#-------------------------------------------
+    Description: "Public Subnet ID AZ-A"
+    Type: "AWS::EC2::Subnet::Id"
+
+  # ------------------------------------------
+  # --- Public Subnet ID
   PublicSubnetIdB:
-    Description: Public Subnet ID AZ-B
-    Type: AWS::EC2::Subnet::Id
-#-------------------------------------------
+    Description: "Public Subnet ID AZ-B"
+    Type: "AWS::EC2::Subnet::Id"
+
+  # ------------------------------------------
+  # --- Network Loadbalancer Target Grp ARN
   TargetGroupArnNLB:
-    Description: Network Loadbalancer Target Group ARN
+    Description: "Network Loadbalancer Target Group ARN"
     Type: String
-#-------------------------------------------
 
 
+# ==========================================
 Conditions: {}
+# Conditions:
 
 
+# ==========================================
 Resources:
-#===========================================
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #     NETWORK LOAD BALANCER DEFINITIONS
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# NETWORK LOAD BALANCER DEFINITIONS
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-#--- Load Balancer Definition
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Load Balancer Definition
   OpenvpnLoadBalancer:
     Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
-#.............................
+    # .............................
     Properties:
-#.............................
+      # .............................
       Name: !Sub "${ProjectName}-nlb"
-#.............................
+      # .............................
       Tags:
-        - 
+        -
           Key: "Name"
           Value: "OpenvpnLoadBalancer"
-#.............................
+      # .............................
       Type: "network"
       Scheme: "internet-facing"
       IpAddressType: "ipv4"
-#.............................
+      # .............................
       Subnets:
         - !Ref PublicSubnetIdA
         - !Ref PublicSubnetIdB
-#.............................
-      LoadBalancerAttributes: 
-        - 
+      # .............................
+      LoadBalancerAttributes:
+        -
           Key: "access_logs.s3.enabled"
           Value: "false"
-        - 
+        -
           Key: "load_balancing.cross_zone.enabled"
           Value: "true"
-        - 
+        -
           Key: "deletion_protection.enabled"
           Value: "false"
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
-#--- Load Balancer Listener Definition
-#-------------------------------------------
+  # ------------------------------------------
+  # --- Load Balancer Listener Definition
   OpenvpnLoadBalancerListener:
     Type: "AWS::ElasticLoadBalancingV2::Listener"
-#.............................
+    # .............................
     Properties:
-#.............................
+      # .............................
       Protocol: "TCP_UDP"
       Port: 1194
       LoadBalancerArn: !Ref OpenvpnLoadBalancer
-#.............................
-      DefaultActions: 
-        - 
+      # .............................
+      DefaultActions:
+        -
           TargetGroupArn: !Ref TargetGroupArnNLB
           Type: "forward"
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
-#-------------------------------------------
-
-
-
-#Outputs: {}
+# ==========================================
+# Outputs: {}
 Outputs:
-#===========================================
 
-
-#--- EC2 Load Balancer ARN
-#-------------------------------------------
+  # ------------------------------------------
+  # --- EC2 Load Balancer ARN
   OpenvpnLoadBalancerARN:
     Description: Network Loadbalancer ARN
     Value: !Ref OpenvpnLoadBalancer
-#-------------------------------------------
 
-#--- EC2 Load Balancer DNS
-#-------------------------------------------
+  # ------------------------------------------
+  # --- EC2 Load Balancer DNS
   OpenvpnLoadBalancerDNS:
     Description: Network Loadbalancer DNS
     Value: !GetAtt OpenvpnLoadBalancer.DNSName
-#-------------------------------------------
 
-#--- EC2 Load Balancer Hosted Zone ID
-#-------------------------------------------
+  # ------------------------------------------
+  # --- EC2 Load Balancer Hosted Zone ID
   OpenvpnLoadBalancerZoneId:
     Description: Network Loadbalancer Hosted Zone ID
     Value: !GetAtt OpenvpnLoadBalancer.CanonicalHostedZoneID
-#-------------------------------------------
-
-#--- EC2 Load Balancer Name
-#-------------------------------------------
-#  OpenvpnLoadBalancerName:
-#    Description: Network Loadbalancer Name
-#    Value: !GetAtt OpenvpnLoadBalancer.LoadBalancerName
-#-------------------------------------------
-
