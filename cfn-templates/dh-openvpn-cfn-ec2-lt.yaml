@@ -79,6 +79,11 @@ Resources:
         IamInstanceProfile:
           Name: !Sub "${ProjectName}-lt-iam-ec2-${AWS::Region}"
         # .............................
+        MetadataOptions:
+          HttpEndpoint: "enabled"
+          HttpTokens: "required"
+          HttpPutResponseHopLimit: 1
+        # .............................
         UserData:
           Fn::Base64:
             !Sub |
