@@ -94,7 +94,7 @@ Resources:
       Tags:
         -
           Key: "Name"
-          Value: "openvpn-public"
+          Value: !Sub "${ProjectName}-ovpn-pub"
       # .............................
       AvailabilityZone:
         'Fn::Select':

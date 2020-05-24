@@ -25,7 +25,7 @@ echo "The Time Stamp ................................: $TIME_STAMP_PROJ"
 #-----------------------------
 # Name Given to Cloudformation Entire Project
 # Must be compatible with s3bucket name restrictions
-PROJECT_NAME="dh-openvpn-test3"
+PROJECT_NAME="dh-openvpn-test1"
 [[ ! "$PROJECT_NAME" =~ (^[a-z0-9]([a-z0-9-]*(\.[a-z0-9])?)*$) ]] \
     && { echo "Invalid Project Name!"; exit 1; } \
     || { echo "The Project Name ..............................: $PROJECT_NAME"; }
@@ -72,7 +72,26 @@ AMI_LATEST=$(aws ssm get-parameters --output text                         \
 echo "The lastest Amazon Linux 2 AMI ................: $AMI_LATEST"
 #.............................
 
-
+#-----------------------------
+# Request Email Address
+USER_EMAIL="dh.info@posteo.net"
+while true
+do
+  # -e : stdin from terminal
+  # -r : backslash not an escape character
+  # -p : prompt on stderr
+  # -i : use default buffer val
+  read -er -i "$USER_EMAIL" -p "Enter Email Address for SNS Notification ......: " USER_INPUT
+  if [[ "${USER_INPUT:=$USER_EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]
+  then
+    echo "Email address is valid ........................: $USER_INPUT"
+    USER_EMAIL=$USER_INPUT
+    break
+  else
+    echo "Error! Entered Email address is invalid .......: $USER_INPUT"
+  fi
+done
+#.............................
 
 #-----------------------------
 # Request Cert Auth Private Key Passphrase
@@ -81,16 +100,20 @@ USER_INPUT2="true"
 # Validate! While user input is different or empty...
 while [[ "$USER_INPUT1" != "$USER_INPUT2" ]] || [[ "$USER_INPUT1" == '' ]] 
 do
-  read -srep $'Enter PKI Cert Auth Private Key Passphrase ....:\n' USER_INPUT1
+  # -s : silent mode
+  # -r : backslash not an escape character
+  # -e : stdin from terminal
+  # -p : prompt on stderr
+  read -srep "Enter PKI Cert Auth Private Key Passphrase ....: " USER_INPUT1
   if [[ -z "$USER_INPUT1" ]]; then
-    printf '%s\n' "Error. No Input Entered !"
+    printf '\n%s\n' "Error. No Input Entered !"
     continue
   else
-    read -srep $'Repeat PKI Cert Auth Private Key Passphrase ...:\n' USER_INPUT2
+    read -srep $'\nRepeat PKI Cert Auth Private Key Passphrase ...: ' USER_INPUT2
     if [[ "$USER_INPUT1" != "$USER_INPUT2" ]]; then
-      printf '%s\n' "Error. Passphrase Mismatch !"
+      printf '\n%s\n' "Error. Passphrase Mismatch !"
     else
-      printf '%s\n' "Passphrase Match....... Continue ..............:"
+      printf '\n%s\n' "Passphrase Match....... Continue ..............:"
       CERT_AUTH_PASS="$USER_INPUT2"
     fi
   fi
@@ -146,6 +169,7 @@ ASSUME_ROLE_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/assume-role-policy.js
 PRIV_SSM_EC2_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/${PROJECT_NAME}-priv-ssm-access-policy.json)
 PRIV_S3_EC2_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/${PROJECT_NAME}-priv-s3-access-policy.json)
 PUB_S3_EC2_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/${PROJECT_NAME}-pub-s3-access-policy.json)
+LT_S3_EC2_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/${PROJECT_NAME}-lt-s3-access-policy.json)
 # similar method using jq (preservers whitespace)
 # jq '.' policy.json | jq -sR '.'
 
@@ -178,26 +202,28 @@ for PREFIX in PRIV PUB LT; do
   POLICY_DOC=$(find ./policies/s3-buckets/${PROJECT_NAME}* -type f)
   jq --arg var_role_id "${!VAR_ROLE_ID}:*" '.Statement[].Condition.StringNotLike[] += [ $var_role_id ]' < "$POLICY_DOC" > "${POLICY_DOC}".tmp 
   mv "${POLICY_DOC}".tmp "$POLICY_DOC"
-  # Attach relevant resource policies
+  # Embedd resource inline policy documents in IAM roles
+  EC2_ROLE_SSM_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-ec2-ssm-"${AWS_REGION}"
+  EC2_ROLE_S3_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-ec2-s3-"${AWS_REGION}"
   if [[ $PREFIX == "PRIV" ]]; then
-      # Embedd SSM inline policy document in IAM role
-      EC2_ROLE_SSM_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-ec2-ssm-"${AWS_REGION}"
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
           --policy-name "$EC2_ROLE_SSM_NAME"                 \
           --policy-document "$PRIV_SSM_EC2_POLICY"
       echo "SSM Access Policy Attached to IAM Role ........: ${EC2_ROLE_SSM_NAME}"
-      # Embedd S3 inline policy document in IAM role
-      EC2_ROLE_S3_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-ec2-s3-"${AWS_REGION}"
+      # ...
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
           --policy-name "$EC2_ROLE_S3_NAME"                 \
           --policy-document "$PRIV_S3_EC2_POLICY"
       echo "S3 Access Policy Attached to IAM Role .........: ${EC2_ROLE_S3_NAME}"
-  else
-      # Embedd S3 inline policy document in IAM role
-      EC2_ROLE_S3_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-ec2-s3-"${AWS_REGION}"
+  elif [[ $PREFIX == "PUB" ]]; then
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
           --policy-name "$EC2_ROLE_S3_NAME"                 \
           --policy-document "$PUB_S3_EC2_POLICY"
+      echo "S3 Access Policy Attached to IAM Role .........: ${EC2_ROLE_S3_NAME}"
+  else 
+      aws iam put-role-policy --role-name "${!VAR_NAME}"  \
+          --policy-name "$EC2_ROLE_S3_NAME"                 \
+          --policy-document "$LT_S3_EC2_POLICY"
       echo "S3 Access Policy Attached to IAM Role .........: ${EC2_ROLE_S3_NAME}"
   fi
 done
@@ -317,6 +343,7 @@ STACK_ID=$(aws cloudformation create-stack --stack-name "$STACK_NAME" --paramete
                 ParameterKey=DomainHostedZoneId,ParameterValue="$HOSTED_ZONE_ID"    \
                 ParameterKey=SshAccessCIDR,ParameterValue="$SSH_ACCESS_CIDR"        \
                 ParameterKey=CurrentAmi,ParameterValue="$AMI_LATEST"                \
+                ParameterKey=EmailAddrSNS,ParameterValue="$USER_EMAIL"              \
                 --tags Key=Name,Value=openvpn-stage1                                \
                 --stack-policy-url $STACK_POLICY_URL --template-url $TEMPLATE_URL   \
                 --on-failure DO_NOTHING --capabilities CAPABILITY_NAMED_IAM --output text)
@@ -369,6 +396,7 @@ aws cloudformation update-stack --stack-name "$STACK_ID" --parameters          \
       ParameterKey=DomainHostedZoneId,UsePreviousValue=true                    \
       ParameterKey=SshAccessCIDR,UsePreviousValue=true                         \
       ParameterKey=CurrentAmi,UsePreviousValue=true                            \
+      ParameterKey=EmailAddrSNS,UsePreviousValue=true                          \
       --stack-policy-url $STACK_POLICY_URL --capabilities CAPABILITY_NAMED_IAM \
       --tags Key=Name,Value=openvpn-stage2 --use-previous-template > /dev/null
 #-----------------------------
@@ -425,16 +453,19 @@ P2=$!
 wait $P1 $P2
 echo "Public Instance State .........................: Ok"
 echo "Private Instance State ........................: Ok"
+#.............................
 
 
 #-----------------------------
 # Create IMAGE AMIs
 #AMI_IMAGE_PUB=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PUB" --name $(echo "openvpn-pub-$INSTANCE_ID_PUB") --description "openvpn-pub-ami" --output text)
-AMI_IMAGE_PUB=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PUB" --name "openvpn-pub-${INSTANCE_ID_PUB}" --description "openvpn-pub-ami" --output text)
+AMI_IMAGE_PUB=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PUB" --name "${PROJECT_NAME}-openvpn-pub" --description "${PROJECT_NAME}-openvpn-pub-ami" --output text)
 echo "Public AMI Creation Initiated .................: "
 #AMI_IMAGE_PRIV=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PRIV" --name $(echo "openvpn-priv-$INSTANCE_ID_PRIV") --description "openvpn-priv-ami" --output text)
-AMI_IMAGE_PRIV=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PRIV" --name "openvpn-priv-${INSTANCE_ID_PRIV}" --description "openvpn-priv-ami" --output text)
+AMI_IMAGE_PRIV=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PRIV" --name "${PROJECT_NAME}-openvpn-priv" --description "${PROJECT_NAME}-openvpn-priv-ami" --output text)
 echo "Private AMI Creation Initiated ................: "
+#.............................
+
 
 # Wait for new AMIs to become available
 aws ec2 wait image-available --image-ids "$AMI_IMAGE_PUB" &
@@ -444,6 +475,14 @@ P2=$!
 wait $P1 $P2
 echo "Public AMI is now available ...................: $AMI_IMAGE_PUB "
 echo "Private AMI Now Available .....................: $AMI_IMAGE_PRIV"
+#.............................
+
+
+#-----------------------------
+# Give AMIs a Name Tag
+aws ec2 create-tags --resources "$AMI_IMAGE_PUB" --tags Key=Name,Value="${PROJECT_NAME}-openvpn-pub"
+aws ec2 create-tags --resources "$AMI_IMAGE_PRIV" --tags Key=Name,Value="${PROJECT_NAME}-openvpn-priv"
+#.............................
 
 
 # Terminate the instances - no longer needed.
@@ -467,6 +506,7 @@ aws cloudformation update-stack --stack-name "$STACK_ID" --parameters \
       ParameterKey=DomainName,UsePreviousValue=true                   \
       ParameterKey=DomainHostedZoneId,UsePreviousValue=true           \
       ParameterKey=SshAccessCIDR,UsePreviousValue=true                \
+      ParameterKey=EmailAddrSNS,UsePreviousValue=true                 \
       --stack-policy-url $STACK_POLICY_URL --use-previous-template    \
       --tags Key=Name,Value=openvpn-stage3 > /dev/null    
 #-----------------------------

@@ -29,7 +29,7 @@ Parameters:
 
   # ------------------------------------------
   # --- Email Endpoint Notifications
-  OpenvpnSubsEmailSNS:
+  EmailAddrSNS:
     Description: "Openvpn SNS Email Endpoint"
     Type: String
 
@@ -69,7 +69,7 @@ Resources:
     # .............................
     Properties:
       TopicArn: !Ref OpenvpnTopicSNS
-      Endpoint: !Ref OpenvpnSubsEmailSNS
+      Endpoint: !Ref EmailAddrSNS
       Protocol: "email"
       Region: !Ref AWS::Region
 

@@ -100,7 +100,7 @@ Parameters:
 
   # ------------------------------------------
   # --- SNS Email Notifications
-  OpenvpnSubsEmailSNS:
+  EmailAddrSNS:
     Description: "Openvpn SNS Email Endpoint"
     ConstraintDescription: "Must be a valid email address"
     Type: String
@@ -273,8 +273,8 @@ Resources:
       Parameters:
         ProjectName:
           !Ref ProjectName
-        OpenvpnSubsEmailSNS:
-          !Ref OpenvpnSubsEmailSNS
+        EmailAddrSNS:
+          !Ref EmailAddrSNS
       TimeoutInMinutes: 5
 
 
