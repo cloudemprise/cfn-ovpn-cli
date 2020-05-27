@@ -1,4 +1,4 @@
-![](images/dh-openvpn-sys-overview.png)
+![](images/dh-openvpn-sys-overview.jpg)
 
 # A Cloud-based Virtual Private Network Application.
 
