@@ -1,5 +1,13 @@
-# dh.cform.openvpn
+![](images/dh-openvpn-sys-overview.png)
 
-cloudformation template openvpn server
+# A Cloud-based Virtual Private Network Application.
 
-This is a cloudformation template Progression. It details the structural formation of a standalone multi-AZ, Network Load-Balanced, OpenVPN Server VM, including an Auto Scaling Group.
+> Orchestrating AWS Infrastructure via the AWS Command Line Interface and Cloudformation.
+
+A highly available, OS hardened, multi-client, dual protocol OpenVPN web service appliation accompanied by an isolated Public Key Infrastructure certification authority.
+
+![Linux](https://img.shields.io/badge/-Linux-grey?logo=linux)
+![Bash](https://img.shields.io/badge/Bash->=v4.0-green?logo=GNU%20bash)
+[![jq](https://img.shields.io/badge/jq-v1.6-green.svg)](https://github.com/stedolan/jq)
+[![awscli](https://img.shields.io/badge/awscli->=v2.0-green.svg)](https://github.com/aws/aws-cli)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
