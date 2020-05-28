@@ -1,6 +1,6 @@
 #!/bin/bash -e
 # debug options include -v -x
-# dh-openvpn-cfn.sh 
+# cfn-ovpn-cli.sh 
 # A hardened, hightly available, multi-protocol, multi-client openvpn 
 # server cloudformation template composition.
 
@@ -23,7 +23,7 @@ echo "The Time Stamp ................................: $TIME_STAMP_PROJ"
 
 #-----------------------------
 # Request Project Name
-PROJECT_NAME="dh-openvpn"
+PROJECT_NAME="cfn-ovpn-cli"
 while true
 do
   # -e : stdin from terminal
@@ -305,8 +305,8 @@ find ./cfn-templates -type f -name "*.yaml" ! -path "*/scratch/*" -print0 |
 
 #-----------------------------
 # Upload easy-rsa pki keygen configs to S3
-S3_LOCATION="$PROJECT_BUCKET/easy-rsa/dh-openvpn-vars"
-if [[ $(tar -zcf - easy-rsa/dh-openvpn-vars/vars* | aws s3 cp - ${S3_LOCATION}/dh-openvpn-easyrsa-vars.tar.gz) -ne 0 ]]
+S3_LOCATION="$PROJECT_BUCKET/easy-rsa/cfn-ovpn-cli-vars"
+if [[ $(tar -zcf - easy-rsa/cfn-ovpn-cli-vars/vars* | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-easyrsa-vars.tar.gz) -ne 0 ]]
 then
   echo "easy-rsa Configs Failed to Uploaded to S3 .....: $S3_LOCATION"
   exit 1
@@ -318,8 +318,8 @@ fi
 #-----------------------------
 #Compress & Upload public iptables scripts to S3
 S3_LOCATION="$PROJECT_BUCKET/iptables"
-if [[ $(tar -zcf - iptables/dh-openvpn-ec2-pub-iptables.sh  | aws s3 cp - ${S3_LOCATION}/dh-openvpn-ec2-pub-iptables.sh.tar.gz) -ne 0 ]] || \
-   [[ $(tar -zcf - iptables/dh-openvpn-ec2-priv-iptables.sh | aws s3 cp - ${S3_LOCATION}/dh-openvpn-ec2-priv-iptables.sh.tar.gz) -ne 0 ]]
+if [[ $(tar -zcf - iptables/cfn-ovpn-cli-ec2-pub-iptables.sh  | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-pub-iptables.sh.tar.gz) -ne 0 ]] || \
+   [[ $(tar -zcf - iptables/cfn-ovpn-cli-ec2-priv-iptables.sh | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-priv-iptables.sh.tar.gz) -ne 0 ]]
 then
   echo "iptables Configs Failed to Uploaded to S3 .....: ${S3_LOCATION}"
   exit 1
@@ -347,8 +347,8 @@ find ./openvpn/client/ovpn/template*.ovpn -type f -print0 |
 #Compress & Upload openvpn server configs to S3
 # Remove hierarchy from archives for more flexible extraction options.
 S3_LOCATION="$PROJECT_BUCKET/openvpn"
-if [[ $(tar -zcf - -C ./openvpn/server/conf/ . | aws s3 cp - ${S3_LOCATION}/server/conf/dh-openvpn-server-1194.conf.tar.gz) -ne 0 ]] || \
-   [[ $(gzip -c ./openvpn/client/ovpn/*.tar | aws s3 cp - ${S3_LOCATION}/client/ovpn/dh-openvpn-client-1194.ovpn.tar.gz) -ne 0 ]]
+if [[ $(tar -zcf - -C ./openvpn/server/conf/ . | aws s3 cp - ${S3_LOCATION}/server/conf/cfn-ovpn-cli-server-1194.conf.tar.gz) -ne 0 ]] || \
+   [[ $(gzip -c ./openvpn/client/ovpn/*.tar | aws s3 cp - ${S3_LOCATION}/client/ovpn/cfn-ovpn-cli-client-1194.ovpn.tar.gz) -ne 0 ]]
 then
   echo "Openvpn Configs Failed to Uploaded to S3 ......: ${S3_LOCATION}"
   exit 1
@@ -362,7 +362,7 @@ fi
 #-----------------------------
 #Compress & Upload sshd hardening script to S3
 S3_LOCATION="$PROJECT_BUCKET/ssh"
-if [[ $(tar -zcf - ssh/dh-openvpn-ec2-harden-ssh.sh | aws s3 cp - ${S3_LOCATION}/dh-openvpn-ec2-harden-ssh.sh.tar.gz) -ne 0 ]]
+if [[ $(tar -zcf - ssh/cfn-ovpn-cli-ec2-harden-ssh.sh | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-harden-ssh.sh.tar.gz) -ne 0 ]]
 then
   echo "Harden SSH Configs Failed to Uploaded to S3 ...: ${S3_LOCATION}"
   exit 1
@@ -379,7 +379,7 @@ fi
 BUILD_COUNTER="stage1"
 echo "Cloudformation Stack Creation Initiated .......: $BUILD_COUNTER"
 STACK_POLICY_URL="https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/policies/cfn-stacks/${PROJECT_NAME}-${BUILD_COUNTER}-cfn-stack-policy.json"
-TEMPLATE_URL="https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/cfn-templates/dh-openvpn-cfn.yaml"
+TEMPLATE_URL="https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/cfn-templates/cfn-ovpn-cli.yaml"
 TIME_START_STACK=$(date +%s)
 #-----------------------------
 STACK_ID=$(aws cloudformation create-stack --stack-name "$STACK_NAME" --parameters  \

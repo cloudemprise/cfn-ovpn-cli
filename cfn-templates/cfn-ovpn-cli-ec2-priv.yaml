@@ -1,8 +1,8 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  An AWS virtual server offering Bastion Host and Virtual Private Network
-  services.
+  An AWS virtual server offering Public Key Infrastructure Certification
+  Authority services.
 
   An EC2 Instance is declared with an associated CreationPolicy attribute for OS
   configuration activities.
@@ -10,18 +10,18 @@ Description: >
   cfn-init helper script authenticated by a least-privileged IAM role identity
   grant containing customer managed inline policies.
 
-  Network Loadbalancer Health Checks are facilitated by a small local Webserver.
+  The private key of the Cetification Authority is encrypted with a passphrase
+  pulled down from AWS Systems Manager Parameter Store.
 
   Notable segments of the metadata configuration tasks include:
     1) Persistent syslog reporting on all important system and application
       services.
     2) Configure repository priorities and automatic OS security patching.
-    3) Harden and configure the following outward facing services: ssh, http and
-      openvpn.
+    3) Hardening of the ssh service.
     4) Harden local network interfaces and configure a restrictive and
       redundant statefull firewall, i.e. iptables.
-    5) Setup and configure a Public Key Infrastructure for openvpn key-based
-      authentication.
+    5) Setup and configure a Public Key Infrastructure for Certification
+      Authority services.
 
 # ------------------------------------------
 
@@ -41,7 +41,7 @@ Parameters:
     Description: "Name of this Openvpn project"
     ConstraintDescription: "Specify name of the project"
     Type: String
-    Default: "dh-openvpn"
+    Default: "cfn-ovpn-cli"
     MinLength: 3
     MaxLength: 63
     AllowedPattern:
@@ -49,20 +49,20 @@ Parameters:
 
   # ------------------------------------------
   # --- AMI for EC2 instance
-  PublicAmiId:
-    Description: "Public AMI ID"
+  PrivateAmiId:
+    Description: "Private AMI ID"
     Type: "AWS::EC2::Image::Id"
 
   # ------------------------------------------
-  # --- Public Subnet ID
-  PublicSubnetIdA:
-    Description: "Public Subnet ID AZ-A"
+  # --- Private Subnet ID
+  PrivateSubnetIdA:
+    Description: "Private Subnet ID AZ-A"
     Type: "AWS::EC2::Subnet::Id"
 
   # ------------------------------------------
-  # --- Public Security Group Resource ID
-  PublicSgResourceId:
-    Description: "Public Security Group ID AZ-A"
+  # --- Private Security Group Resource ID
+  PrivateSgResourceId:
+    Description: "Private Security Group ID AZ-A"
     Type: "AWS::EC2::SecurityGroup::Id"
 
 
@@ -75,13 +75,13 @@ Conditions: {}
 Resources:
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #         PUBLIC EC2 DEFINITION
+  #         PRIVATE EC2 DEFINITION
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
   # ------------------------------------------
-  # --- Public EC2 Instance
-  PublicEC2Instance:
+  # --- Private EC2 Instance
+  PrivateEC2Instance:
     Type: "AWS::EC2::Instance"
     # .............................
     CreationPolicy:
@@ -94,7 +94,7 @@ Resources:
       Tags:
         -
           Key: "Name"
-          Value: !Sub "${ProjectName}-ovpn-pub"
+          Value: !Sub "${ProjectName}-ovpn-priv"
       # .............................
       AvailabilityZone:
         'Fn::Select':
@@ -103,8 +103,8 @@ Resources:
               Ref: 'AWS::Region'
       # .............................
       DisableApiTermination: false
-      IamInstanceProfile: !Sub "${ProjectName}-pub-iam-ec2-${AWS::Region}"
-      ImageId: !Ref PublicAmiId
+      IamInstanceProfile: !Sub "${ProjectName}-priv-iam-ec2-${AWS::Region}"
+      ImageId: !Ref PrivateAmiId
       InstanceType: "t2.nano"
       KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
       Monitoring: false
@@ -120,13 +120,13 @@ Resources:
       # .............................
       NetworkInterfaces:
         -
-          Description: "Primary Public NIC"
+          Description: "Primary Private NIC"
           DeleteOnTermination: true
           DeviceIndex: "0"
-          PrivateIpAddress: "10.0.128.10"
-          SubnetId: !Ref PublicSubnetIdA
+          PrivateIpAddress: "10.0.0.10"
+          SubnetId: !Ref PrivateSubnetIdA
           GroupSet:
-            - !Ref PublicSgResourceId
+            - !Ref PrivateSgResourceId
       # .............................
       UserData:
         Fn::Base64:
@@ -137,21 +137,21 @@ Resources:
             # Fix openssl error (easy-rsa) : random seed file
             export RANDFILE=/tmp/.rnd
             # Start cfn-init
-            /opt/aws/bin/cfn-init -v --configsets Step1 --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
+            /opt/aws/bin/cfn-init -v --configsets Step1 --stack ${AWS::StackId} --resource PrivateEC2Instance --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
             # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
             #/opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
             # All done so signal success
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PublicEC2Instance --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource PrivateEC2Instance --region ${AWS::Region}
     # .............................
     Metadata:
-      Comment: "Configuring an EC2 Instance offering Bastion Host and Virtual Private Network services."
+      Comment: "Configuring an EC2 Instance offering Public Key Infrastructure Certification Authority services."
       # .............................
       AWS::CloudFormation::Authentication:
         rolebased:
           type: "S3"
           buckets:
             - !Ref ProjectName
-          roleName: !Sub "${ProjectName}-pub-iam-ec2-${AWS::Region}"
+          roleName: !Sub "${ProjectName}-priv-iam-ec2-${AWS::Region}"
       # .............................
       AWS::CloudFormation::Init:
         configSets:
@@ -162,7 +162,6 @@ Resources:
             - configHardenSsh
             - configIPtables
             - configLogs
-            - configWebServer
             - configEasyRSA
             - configOpenvpn
         # / / / / / / / / / / / / / / /
@@ -235,7 +234,7 @@ Resources:
                 - ".s3."
                 - !Ref "AWS::Region"
                 - ".amazonaws.com/"
-                - "ssh/dh-openvpn-ec2-harden-ssh.sh.tar.gz"
+                - "ssh/cfn-ovpn-cli-ec2-harden-ssh.sh.tar.gz"
           files:
             "/etc/fail2ban/jail.local":
               content: |
@@ -251,12 +250,12 @@ Resources:
               owner: "root"
               group: "root"
           commands:
-            HardenF2B:
+            fail2ban:
               cwd: "/etc/fail2ban/jail.d"
               command: "mv 00-firewalld.conf 00-firewalld.disable"
             HardenSsh:
               cwd: "/tmp/ssh"
-              command: "./dh-openvpn-ec2-harden-ssh.sh"
+              command: "./cfn-ovpn-cli-ec2-harden-ssh.sh"
           services:
             sysvinit:
               # .............................
@@ -264,13 +263,13 @@ Resources:
                 ensureRunning: "false"
                 enabled: "false"
               # .............................
-              fail2ban:
+              fail2ban: 
                 enabled: "true"
                 ensureRunning: "true"
                 files:
                   - "/etc/fail2ban/jail.local"
-                commands:
-                  - "HardenF2B"
+                commands: 
+                  - "fail2ban"
               # .............................
               sshd:
                 enabled: "true"
@@ -291,11 +290,11 @@ Resources:
                 - ".s3."
                 - !Ref "AWS::Region"
                 - ".amazonaws.com/"
-                - "iptables/dh-openvpn-ec2-pub-iptables.sh.tar.gz"
+                - "iptables/cfn-ovpn-cli-ec2-priv-iptables.sh.tar.gz"
           files:
-            "/etc/sysctl.d/30-dh-openvpn-iptables.conf":
+            "/etc/sysctl.d/30-cfn-ovpn-cli-iptables.conf":
               content: |
-                net.ipv4.ip_forward = 1
+                #net.ipv4.ip_forward = 1
                 net.ipv6.conf.default.disable_ipv6 = 1
                 net.ipv6.conf.all.disable_ipv6 = 1
                 kernel.randomize_va_space = 1
@@ -307,10 +306,10 @@ Resources:
               group: "root"
           commands:
             1_kernelParams:
-              command: "sysctl -p /etc/sysctl.d/30-dh-openvpn-iptables.conf"
+              command: "sysctl -p /etc/sysctl.d/30-cfn-ovpn-cli-iptables.conf"
             2_iptRules:
               cwd: "/tmp/iptables"
-              command: "./dh-openvpn-ec2-pub-iptables.sh"
+              command: "./cfn-ovpn-cli-ec2-priv-iptables.sh"
           services:
             sysvinit:
               iptables:
@@ -324,15 +323,15 @@ Resources:
             # .............................
             "/etc/rsyslog.d/30-iptables.conf":
               content: |
-                :msg, startswith, "IPTlog" -/var/log/dh-openvpn-server-iptables.log
+                :msg, startswith, "IPTlog" -/var/log/cfn-ovpn-cli-server-iptables.log
                 & stop
               mode: '000644'
               owner: "root"
               group: "root"
             # .............................
-            "/etc/logrotate.d/dh-openvpn-logs":
+            "/etc/logrotate.d/cfn-ovpn-cli-logs":
               content: |
-                /var/log/dh-openvpn-server-*.log
+                /var/log/cfn-ovpn-cli-server-*.log
                 {
                  notifempty
                  rotate 21
@@ -353,9 +352,9 @@ Resources:
               owner: "root"
               group: "root"
             # .............................
-            "/etc/cron.d/dh-openvpn-logs-schedule":
+            "/etc/cron.d/cfn-ovpn-cli-logs-schedule":
               content: |
-                */30 * * * * root /sbin/logrotate /etc/logrotate.d/dh-openvpn-logs
+                */30 * * * * root /sbin/logrotate /etc/logrotate.d/cfn-ovpn-cli-logs
               mode: '000644'
               owner: "root"
               group: "root"
@@ -368,28 +367,6 @@ Resources:
                 files:
                   - "/etc/rsyslog.d/30-iptables.conf"
         # / / / / / / / / / / / / / / /
-        # For use: Network LoadBalancer HealthChecks.
-        # systemd service is only enabled within the
-        # Autoscale Launch Template so as to validate
-        # the success/failure of Launch Template
-        # UserData script.
-        configWebServer:
-          packages:
-            yum:
-              httpd: []
-          files:
-            "/var/www/html/index.html":
-              content: !Sub |
-                <h1>Hello from ${AWS::StackId}<h1>
-              mode: '000644'
-              owner: "root"
-              group: "root"
-          services:
-            sysvinit:
-              httpd:
-                enabled: "false"
-                ensureRunning: "false"
-        # / / / / / / / / / / / / / / /
         configEasyRSA:
           packages:
             yum:
@@ -397,7 +374,7 @@ Resources:
           files:
             "/usr/local/easy-rsa/vars":
               content: |
-                set_var EASYRSA_REQ_CN "none"
+                set_var EASYRSA_REQ_CN "cfn-ovpn-cli-server-cert-auth"
                 set_var EASYRSA_BATCH "yes"
                 set_var EASYRSA_ALGO ec
                 set_var EASYRSA_CURVE secp521r1
@@ -407,7 +384,7 @@ Resources:
               owner: "root"
               group: "root"
           sources:
-            /usr/local:
+            /tmp/sign-reqs:
               !Join
               - ""
               - - "https://"
@@ -415,103 +392,54 @@ Resources:
                 - ".s3."
                 - !Ref "AWS::Region"
                 - ".amazonaws.com/"
-                - "easy-rsa/dh-openvpn-vars/dh-openvpn-easyrsa-vars.tar.gz"
+                - "easy-rsa/sign-reqs/cfn-ovpn-cli-easyrsa-sign-reqs.tar.gz"
           commands:
             1a_initPKI:
               command: "mkdir -p /usr/local/easy-rsa && cp -r /usr/share/easy-rsa/3/* $_"
             1b_initPKI:
               cwd: "/usr/local/easy-rsa"
               command: "./easyrsa init-pki"
-            2a_genSVR:
+            2a_buildCA:
               cwd: "/usr/local/easy-rsa"
-              command: "cp ./dh-openvpn-vars/vars_dh-openvpn-server ./vars"
-            2b_genSVR:
+              command: "touch pki-cert-auth.txt && chmod 600 $_"
+            2b_buildCA:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req dh-openvpn-server nopass"
-            3a_genClient1:
+              command: !Sub 'aws ssm get-parameters --names "/${ProjectName}/pki-cert-auth" --with-decryption --query "Parameters[].Value" --output text > pki-cert-auth.txt; echo $_ >> pki-cert-auth.txt'
+            2y_buildCA:
               cwd: "/usr/local/easy-rsa"
-              command: "cp ./dh-openvpn-vars/vars_pfSense-bmetal-client ./vars"
-            3b_genClient1:
+              command: "./easyrsa --passin=file:pki-cert-auth.txt --passout=file:pki-cert-auth.txt build-ca"
+            2z_buildCA:
+              cwd: "/usr/local/easy-rsa/pki"
+              command: "cp ca.crt issued/"
+            3_importReqs:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req pfSense-bmetal-client nopass"
-            4a_genClient2:
+              command: "for REQUEST in /tmp/sign-reqs/*; do ./easyrsa import-req $REQUEST $(basename $REQUEST .req); done"
+            4a_signReqs:
               cwd: "/usr/local/easy-rsa"
-              command: "cp ./dh-openvpn-vars/vars_pfSense-virt-client ./vars"
-            4b_genClient2:
+              command: "for REQUEST in /usr/local/easy-rsa/pki/reqs/*; do EntityName=$(basename $REQUEST .req); ./easyrsa --passin=file:pki-cert-auth.txt sign-req ${EntityName##*-} $EntityName; done"
+            4b_signReqs:
               cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req pfSense-virt-client nopass"
-            5a_genClient3:
-              cwd: "/usr/local/easy-rsa"
-              command: "cp ./dh-openvpn-vars/vars_android-bmetal-client ./vars"
-            5b_genClient3:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req android-bmetal-client nopass"
-            6a_genClient3:
-              cwd: "/usr/local/easy-rsa"
-              command: "cp ./dh-openvpn-vars/vars_android-virt-client ./vars"
-            6b_genClient3:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-req android-virt-client nopass"
-            7a_genDH:
-              cwd: "/usr/local/easy-rsa"
-              command: "cp ./dh-openvpn-vars/vars_gen-dh ./vars"
-            7b_genDH:
-              cwd: "/usr/local/easy-rsa"
-              command: "./easyrsa gen-dh"
-            8a_mvKeys:
-              cwd: "/usr/local/easy-rsa/pki/private"
+              command: "rm -f pki-cert-auth.txt"
+            4c_signReqs:
+              cwd: "/usr/local/easy-rsa/pki/issued"
               command:
-                !Sub "tar -zcf - *client.key | aws s3 cp - s3://${ProjectName}/openvpn/client/key/dh-openvpn-client-key.tar.gz"
-            9a_mvReqs:
-              cwd: "/usr/local/easy-rsa/pki/reqs"
+                !Sub "tar -czf - ca.crt *server.crt | aws s3 cp - s3://${ProjectName}/openvpn/server/crt/cfn-ovpn-cli-server-crt.tar.gz"
+            4d_signReqs:
+              cwd: "/usr/local/easy-rsa/pki/issued"
               command:
-                !Sub "tar -zcf - *.req | aws s3 cp - s3://${ProjectName}/easy-rsa/sign-reqs/dh-openvpn-easyrsa-sign-reqs.tar.gz"
+                !Sub "tar -czf - ca.crt *client.crt | aws s3 cp - s3://${ProjectName}/openvpn/client/crt/cfn-ovpn-cli-client-crt.tar.gz"
         # / / / / / / / / / / / / / / /
         configOpenvpn:
-          packages:
-            yum:
-              openvpn: []
-          sources:
-            /etc/openvpn/server:
-              !Join
-              - ""
-              - - "https://"
-                - !Ref ProjectName
-                - ".s3."
-                - !Ref "AWS::Region"
-                - ".amazonaws.com/"
-                - "openvpn/server/conf/dh-openvpn-server-1194.conf.tar.gz"
-          files:
-            "/usr/local/bin/vpn-server-status":
-              content: |
-                #!/bin/bash
-                systemctl status openvpn-server@dh-openvpn-server-udp1194
-                systemctl status openvpn-server@dh-openvpn-server-tcp1194
-                journalctl -u openvpn-server@dh-openvpn-server-udp1194
-                journalctl -u openvpn-server@dh-openvpn-server-tcp1194
-              mode: '000755'
-              owner: "ec2-user"
-              group: "ec2-user"
           commands:
-            1a_gen-HMAC:
-              cwd: "/etc/openvpn/server"
-              command: "openvpn --genkey --secret hmac-sig.key"
-            1b_gen-HMAC:
-              cwd: "/etc/openvpn/server"
-              command:
-                !Sub "tar -czf - hmac-sig.key | aws s3 cp - s3://${ProjectName}/openvpn/client/dh-openvpn-client-hmac.tar.gz"
-            2a_cpSvrDH:
-              cwd: "/usr/local/easy-rsa/pki"
-              command: "cp dh.pem /etc/openvpn/server/"
-            2b_cpSvrKey:
-              cwd: "/usr/local/easy-rsa/pki/private"
-              command: "cp dh-openvpn-server.key /etc/openvpn/server/"
-            3_enableLogTimestamps:
-              cwd: "/usr/lib/systemd/system"
-              command: "cp openvpn-server@.service openvpn-server@.service.bak;sed -i 's/ --suppress-timestamps//g' openvpn-server@.service"
-            4_addPATH:
-              command: |
-                printf '\nPATH="/usr/local/bin:$PATH"\n' >> /home/ec2-user/.bashrc
+            1_cmd:
+              cwd: "/tmp"
+              command: "mkdir openvpn-client-files"
+            2_cmd:
+              cwd: "/tmp/openvpn-client-files"
+              command: "cp /usr/local/easy-rsa/pki/ca.crt ."
+            3_cmd:
+              cwd: "/tmp/openvpn-client-files"
+              command: "cp /usr/local/easy-rsa/pki/issued/*client.crt ."
 
 
 # ==========================================
@@ -519,7 +447,7 @@ Resources:
 Outputs:
 
   # ------------------------------------------
-  # --- Public Instance ID
-  PubEC2InstanceId:
-    Description: "Public Instance ID"
-    Value: !Ref PublicEC2Instance
+  # --- Private Instance ID
+  PrivEC2InstanceId:
+    Description: "PKI Cert Auth Private Instance ID"
+    Value: !Ref PrivateEC2Instance

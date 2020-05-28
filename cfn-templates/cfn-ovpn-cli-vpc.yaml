@@ -38,7 +38,7 @@ Parameters:
     Description: "Name of this Openvpn project"
     ConstraintDescription: "Specify name of the project"
     Type: String
-    Default: "dh-openvpn"
+    Default: "cfn-ovpn-cli"
     MinLength: 3
     MaxLength: 63
     AllowedPattern:

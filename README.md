@@ -4,7 +4,7 @@
 
 > Orchestrating AWS Infrastructure via the AWS Command Line Interface and Cloudformation.
 
-A highly available, OS hardened, multi-client, dual protocol OpenVPN web service appliation accompanied by an isolated Public Key Infrastructure certification authority.
+A highly available, OS hardened, multi-client, dual protocol OpenVPN application server accompanied by an isolated Public Key Infrastructure certification authority.
 
 ![Linux](https://img.shields.io/badge/-Linux-grey?logo=linux)
 ![Bash](https://img.shields.io/badge/Bash->=v4.0-green?logo=GNU%20bash)

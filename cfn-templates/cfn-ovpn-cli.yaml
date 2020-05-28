@@ -42,7 +42,7 @@ Parameters:
     Description: "Name of this Openvpn project"
     ConstraintDescription: "Specify name of the project"
     Type: String
-    Default: "dh-openvpn"
+    Default: "cfn-ovpn-cli"
     MinLength: 3
     MaxLength: 63
     AllowedPattern:
@@ -131,7 +131,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-vpc.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-vpc.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -147,7 +147,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-vpc-nacl.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-vpc-nacl.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -171,7 +171,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-vpc-sg.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-vpc-sg.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -190,7 +190,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-pub.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-ec2-pub.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -212,7 +212,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-priv.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-ec2-priv.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -233,7 +233,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-lt.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-ec2-lt.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -252,7 +252,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-tg.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-ec2-tg.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -269,7 +269,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-sns.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-sns.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -286,7 +286,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-asg.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-ec2-asg.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -312,7 +312,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-ec2-nlb.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-ec2-nlb.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -336,7 +336,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-cw.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-cw.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
@@ -353,7 +353,7 @@ Resources:
     # .............................
     Properties:
       TemplateURL:
-        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/dh-openvpn-cfn-r53.yaml"
+        !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/cfn-templates/cfn-ovpn-cli-r53.yaml"
       Parameters:
         ProjectName:
           !Ref ProjectName
