@@ -136,22 +136,6 @@ aws ssm put-parameter --name "$CERT_AUTH_PASS_NAME" --value "$CERT_AUTH_PASS" \
 #.............................
 
 #----------------------------------------------
-# Create Cloudformation Stack Policies from local templates
-find ./policies/cfn-stacks/template* -type f -print0 |
-  while IFS= read -r -d '' TEMPLATE
-  do
-    if [[ ! -s "$TEMPLATE" ]]; then
-      echo "Invalid Template Stack Policy .................: $TEMPLATE"
-      exit 1
-    else
-      # Copy/Rename template via parameter expansion
-      cp "$TEMPLATE" "${TEMPLATE//template/$PROJECT_NAME}"
-      echo "Creating Cloudformation Stack Policy ..........: $_"
-    fi
-  done
-#.............................
-
-#----------------------------------------------
 # Create S3 Bucket Policies from local templates
 find ./policies/s3-buckets/template* -type f -print0 |
   while IFS= read -r -d '' TEMPLATE
@@ -171,6 +155,21 @@ find ./policies/s3-buckets/template* -type f -print0 |
   done
 #.............................
 
+#----------------------------------------------
+# Create Cloudformation Stack Policies from local templates
+find ./policies/cfn-stacks/template* -type f -print0 |
+  while IFS= read -r -d '' TEMPLATE
+  do
+    if [[ ! -s "$TEMPLATE" ]]; then
+      echo "Invalid Template Stack Policy .................: $TEMPLATE"
+      exit 1
+    else
+      # Copy/Rename template via parameter expansion
+      cp "$TEMPLATE" "${TEMPLATE//template/$PROJECT_NAME}"
+      echo "Creating Cloudformation Stack Policy ..........: $_"
+    fi
+  done
+#.............................
 
 #----------------------------------------------
 # Create IAM inline Resource Policies from local templates
