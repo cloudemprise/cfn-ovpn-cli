@@ -12,4 +12,4 @@ A hardened and highly available, multi-client, dual protocol, VPN appliance, acc
 [![awscli](https://img.shields.io/badge/awscli->=v2.0-green.svg)](https://github.com/aws/aws-cli)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-![RealTerminalRun](docs/images/cfn-ovpn-cli-terminal.svg)
+![RealTerminalRun](https://cloudemprise.github.io/cfn-ovpn-cli/docs/images/cfn-ovpn-cli-terminal.svg)
