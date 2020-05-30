@@ -12,4 +12,10 @@ A hardened and highly available, multi-client, dual protocol, VPN appliance, acc
 [![awscli](https://img.shields.io/badge/awscli->=v2.0-green.svg)](https://github.com/aws/aws-cli)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-![](./docs/images/cfn-ovpn-cli-terminal.svg)
+**Sample CLI Output:**
+
+![](./docs/images/cfn-ovpn-cli-terminal-sample.svg)
+
+## Introduction
+
+cfn-ovpn-cli is a shell script that creates a cloud-based Virtual Private Network (VPN) application together with a isolated Public Key Infrastructure (PKI) Certification Authority, that provides for a secure mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is used to provision and configure various AWS Resources through an assortment of API calls and AWS Cloudformation templates. The templates compose a monolithic hierarchical tree structure of nested stacks and orchestration is achieved in a three-phase stack creation/update process that is promoted via a counter variable.

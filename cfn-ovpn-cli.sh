@@ -377,6 +377,9 @@ fi
 # Stage1 Stack Creation Code Block
 BUILD_COUNTER="stage1"
 echo "Cloudformation Stack Creation Initiated .......: $BUILD_COUNTER"
+
+
+
 STACK_POLICY_URL="https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/policies/cfn-stacks/${PROJECT_NAME}-${BUILD_COUNTER}-cfn-stack-policy.json"
 TEMPLATE_URL="https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/cfn-templates/cfn-ovpn-cli.yaml"
 TIME_START_STACK=$(date +%s)
