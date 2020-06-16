@@ -275,11 +275,22 @@ Resources:
           packages:
             yum:
               iptables-services: []
+          files:
+            "/etc/sysctl.d/30-dh.iptables.conf":
+              content: |
+                net.ipv4.ip_forward = 1
+                net.ipv6.conf.default.disable_ipv6 = 1
+                net.ipv6.conf.all.disable_ipv6 = 1
+              mode: '000644'
+              owner: root
+              group: root
           sources:
             /tmp:
               !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/iptables/cfn-ovpn-cli-ec2-pub-iptables.sh.tar.gz"
           commands:
-            iptRules:
+            1_kernelParams:
+              command: "sysctl -p /etc/sysctl.d/30-dh.iptables.conf"
+            2_iptRules:
               cwd: "/tmp/iptables"
               command: "./cfn-ovpn-cli-ec2-pub-iptables.sh"
           services:
@@ -288,7 +299,7 @@ Resources:
                 ensureRunning: "true"
                 enabled: "true"
                 commands:
-                  - "iptRules"
+                  - "2_iptRules"
         # / / / / / / / / / / / / / / /
         configLogs:
           packages:
