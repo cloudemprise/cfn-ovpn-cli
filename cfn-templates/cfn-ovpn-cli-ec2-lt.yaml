@@ -69,7 +69,7 @@ Resources:
       LaunchTemplateName: !Sub "${ProjectName}-launch-template"
       LaunchTemplateData:
         ImageId: !Ref PublicLtAmiId
-        InstanceType: "t2.nano"
+        InstanceType: "t2.micro"
         KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
         Monitoring:
           Enabled: false
@@ -101,6 +101,8 @@ Resources:
               # Health Checks facilitated by httpd Port 80
               systemctl enable httpd
               systemctl start httpd
+              # Start CW Agent
+              /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/${ProjectName}-amzn-cw-agent.json -s
         # .............................
         TagSpecifications:
           -

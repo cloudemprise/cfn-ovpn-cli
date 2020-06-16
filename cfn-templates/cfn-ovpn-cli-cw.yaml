@@ -77,7 +77,7 @@ Resources:
       Dimensions:
         -
           Name: "AutoScalingGroupName"
-          Value: "openvpn-autoscaling-group"
+          Value: !Sub "${ProjectName}-autoscale-group"
 
   # ------------------------------------------
   # --- CloudWatch Alarm In Service Definition
@@ -107,7 +107,7 @@ Resources:
       Dimensions:
         -
           Name: "AutoScalingGroupName"
-          Value: "openvpn-autoscaling-group"
+          Value: !Sub "${ProjectName}-autoscale-group"
 
 
 # ==========================================

@@ -100,15 +100,15 @@ iptables -A FORWARD -s $VPN_CIDR -p tcp --syn --sport 1024:65535 --dport 53 -m c
 iptables -A IPTlogPASSfrwDNS -j LOG --log-prefix "IPTlogPASSfrw_:_DNS____:"
 iptables -A IPTlogPASSfrwDNS -j ACCEPT
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# allow http requests from any local sources (nlb health checks)
+# allow http requests from any LOCAL sources (nlb health checks)
 iptables -N IPTlogPASSinNLB
 iptables -A INPUT -s $PUB_CIDR -d $PUB_CIDR -p tcp --syn --sport 1024:65535 --dport http -m conntrack --ctstate NEW -i "$NIC" -j IPTlogPASSinNLB
 #iptables -A IPTlogPASSinNLB -j LOG --log-prefix "IPTlogPASSin__:_NLB____:"
 iptables -A IPTlogPASSinNLB -j ACCEPT
-# allow Instance Metadata Service from local subnets only
+# allow Instance Metadata Service from LOCAL subnets only
 iptables -N IPTlogPASSoutIMDS
 iptables -A OUTPUT -s $PUB_CIDR -d ${META_DATA}/32 -p tcp --syn --sport 1024:65535 --dport http  -m conntrack --ctstate NEW -o "$NIC" -j IPTlogPASSoutIMDS
-iptables -A IPTlogPASSoutIMDS -j LOG --log-prefix "IPTlogPASSout_:_IMDS___:"
+#iptables -A IPTlogPASSoutIMDS -j LOG --log-prefix "IPTlogPASSout_:_IMDS___:"
 iptables -A IPTlogPASSoutIMDS -j ACCEPT
 # allow output local http/s traffic
 iptables -N IPTlogPASSoutHTTPS
@@ -132,7 +132,7 @@ iptables -A IPTlogDROPfrwHTTPS -j DROP
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # allow incoming ssh traffic from any source
 iptables -N IPTlogPASSinSSH
-iptables -A INPUT -d $PUB_CIDR -p tcp --syn --sport 1024:65535 --dport 22 -m conntrack --ctstate NEW -i "$NIC" -j IPTlogPASSinSSH
+iptables -A INPUT -d $PUB_CIDR -p tcp --syn --sport 1024:65535 --dport 22 -m conntrack --ctstate NEW -i "$NIC" -m limit --limit 3/min --limit-burst 2 -j IPTlogPASSinSSH
 iptables -A IPTlogPASSinSSH -j LOG --log-prefix "IPTlogPASSin__:_SSH____:"
 iptables -A IPTlogPASSinSSH -j ACCEPT
 # allow outgoing ssh traffic only within VPC

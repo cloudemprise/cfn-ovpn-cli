@@ -202,6 +202,7 @@ LT_S3_EC2_POLICY=$(tr -d " \t\n\r" < ./policies/ec2-role/${PROJECT_NAME}-lt-s3-a
 #-----------------------------
 # Create EC2 Instance Profiles & IAM Role Polices for 
 # Public, Private & Launch Templates
+#-----------------------------
 for PREFIX in PRIV PUB LT; do
   # --- Create (variable) IAM Role Name = Instance Profile Name
   declare "$PREFIX"_EC2_IAM_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-iam-ec2-"${AWS_REGION}"
@@ -234,24 +235,30 @@ for PREFIX in PRIV PUB LT; do
   EC2_ROLE_S3_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-ec2-s3-"${AWS_REGION}"
   if [[ $PREFIX == "PRIV" ]]; then
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
-          --policy-name "$EC2_ROLE_SSM_NAME"                 \
+          --policy-name "$EC2_ROLE_SSM_NAME"              \
           --policy-document "$PRIV_SSM_EC2_POLICY"
       echo "The IAM Role is affixed with SSM Access Policy : ${EC2_ROLE_SSM_NAME}"
       # ...
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
-          --policy-name "$EC2_ROLE_S3_NAME"                 \
+          --policy-name "$EC2_ROLE_S3_NAME"               \
           --policy-document "$PRIV_S3_EC2_POLICY"
       echo "The IAM Role is affixed with S3 Access Policy .: ${EC2_ROLE_S3_NAME}"
   elif [[ $PREFIX == "PUB" ]]; then
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
-          --policy-name "$EC2_ROLE_S3_NAME"                 \
+          --policy-name "$EC2_ROLE_S3_NAME"               \
           --policy-document "$PUB_S3_EC2_POLICY"
       echo "The IAM Role is affixed with S3 Access Policy .: ${EC2_ROLE_S3_NAME}"
   else 
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
-          --policy-name "$EC2_ROLE_S3_NAME"                 \
+          --policy-name "$EC2_ROLE_S3_NAME"               \
           --policy-document "$LT_S3_EC2_POLICY"
       echo "The IAM Role is affixed with S3 Access Policy .: ${EC2_ROLE_S3_NAME}"
+      # ...
+      # Cloudwatch Agent Managed Policy
+      EC2_ROLE_CW_ARN="arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+      aws iam attach-role-policy --role-name "${!VAR_NAME}" \
+        --policy-arn "$EC2_ROLE_CW_ARN"
+      echo "The IAM Role is affixed with Managed Policy ...: ${EC2_ROLE_CW_ARN}"
   fi
 done
 #.............................
@@ -324,6 +331,36 @@ then
   exit 1
 else
   echo "iptables Configs Uploaded to S3 Location ......: ${S3_LOCATION}"
+fi
+#.............................
+
+#-----------------------------
+# Create CloudWatch Agent config from template
+find ./logs/template*.json -type f -print0 |
+  while IFS= read -r -d '' TEMPLATE
+  do
+    # Copy/Rename template via parameter expansion
+    cp "$TEMPLATE" "${TEMPLATE//template/$PROJECT_NAME}"
+    # Update FQDN of vpn record set
+    sed -i "s/ProjectName/$PROJECT_NAME/g" "$_"
+    # Create archive of client configs
+    tar -rf "$(dirname "$_")/${PROJECT_NAME}-amzn-cw-agent.json.tar" --remove-files -C "$(dirname "$_")" "$(basename "$_")"
+    echo "Creating CloudWatch Agent Configuration .......: $_"
+  done
+#.............................
+
+#-----------------------------
+#Compress & Upload CloudWatch Agent config to S3
+# Remove hierarchy from archives for more flexible extraction options.
+S3_LOCATION="$PROJECT_BUCKET/logs"
+if [[ $(gzip -c ./logs/*.tar | aws s3 cp - ${S3_LOCATION}/${PROJECT_NAME}-amzn-cw-agent.json.tar.gz) -ne 0 ]]
+then
+  echo "CW Agent Config Failed to Uploaded to S3 ......: ${S3_LOCATION}"
+  exit 1
+else
+  echo "CW Agent Config Uploaded to S3 Location .......: ${S3_LOCATION}"
+  # archive no longer needed
+  rm ./logs/${PROJECT_NAME}*.tar
 fi
 #.............................
 
