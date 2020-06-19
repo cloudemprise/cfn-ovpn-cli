@@ -20,17 +20,16 @@ cost efficient
 [![awscli](https://img.shields.io/badge/awscli->=v2.0-green.svg)](https://github.com/aws/aws-cli)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-**Full Demo CLI Output can be found Here**
-
-
 <details>  
-  <summary>Click to View Sample CLI Output:</summary>
+  <summary><b>Click to View Sample CLI Output:</b></summary>
 
-<p align="center">
-  <img src="./docs/images/cfn-ovpn-cli-terminal-sample.svg">
-</p>
+  <p align="center">
+    <img src="./docs/images/cfn-ovpn-cli-terminal-sample.svg">
+  </p>
 
-</details>
+</details><br/>
+
+**Full Demo CLI Output can be found Here**
 
 ## Prerequisites
 
@@ -58,31 +57,30 @@ Table of Contents
   * [AWS IAM Instance Roles](#aws-iam-instance-roles)
   * [AWS Instance Metadata Service](#aws-instance-metadata-service)
   * [Package Management](#package-management)
-- [Monitoring](#monitoring)
+- [Telemetry](#telemetry)
+  * [Amazon CloudWatch Logs](#amazon-cloudwatch-logs)
   * [rsyslog](#rsyslog)
-  * [logrotate](#logrotate)
-  * [journald](#journald)
-  * [AWS CloudWatch](#aws-cloudwatch)
+- [Error Handling](#error-handling)
 - [Conclusion](#conclusion)
 - [To Do List](#to-do-list)
 
 ## Introduction
 
-cfn-ovpn-cli is a shell script that creates a cloud-based Virtual Private Network (VPN) application together with a isolated Public Key Infrastructure (PKI) Certification Authority, that provides for a secure mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is used to provision and configure various AWS Resources through an assortment of API calls and AWS Cloudformation templates.
+**cfn-ovpn-cli** is a shell script that creates a cloud-based Virtual Private Network (VPN) application together with a isolated Public Key Infrastructure (PKI) Certification Authority, that provides for a secure mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is used to provision and configure various AWS Resources through an assortment of API calls and AWS Cloudformation templates.
 Talk a little about bash script here.
 
 ## Cloudformation
 
 AWS Cloudformation is a service that provisions and configures cloud resources that are declared in a template file. The template defines a collection of elements as a single unit called a Stack, simplifying the management of cloud infrastructure.
 
-cfn-ovpn-cli templates compose a monolithic hierarchical tree structure of nested stacks and orchestration is achieved in a three-phase stack creation/update process that is promoted via a counter variable. The flowchart below illustrates the build process and resouce dependencies:
+**cfn-ovpn-cli** templates compose a monolithic hierarchical tree structure of nested stacks and orchestration is achieved in a three-phase stack creation/update process that is promoted via a counter variable. The flowchart below illustrates the build process and resouce dependencies:
 
 <details>  
   <summary>Click to View Flow Chart</summary>
 
   <p align="center">
-  <img src="./docs/images/cfn-flowchart.png">
-</p>
+    <img src="./docs/images/cfn-flowchart.png">
+  </p>
 
 </details>
 
@@ -92,9 +90,9 @@ OpenVPN is a popular VPN daemon that is remarkably flexible and relatively simpl
 
 OpenVPN operates by using a virtual network adapter as an interface between user-space and kernel-space and listens for client connections on both UDP and TCP. OpenVPN defines the concept of a control channel and a data channel, both of which are encrypted and secured separately but pass over the same protocol connection. The control channel is encrypted and secured using TLS while the data channel is encrypted using a stipulated block cipher.
 
-cfn-ovpn-cli is setup in the following fashion:
+**cfn-ovpn-cli** is setup in the following fashion:
 
-cfn-ovpn-cli uses the following parameters:
+**cfn-ovpn-cli** uses the following parameters:
 
 |   | Control Channel | Data Channel
 | :----: |:---: | :---: 
@@ -121,7 +119,7 @@ https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
 
 Section on how it is installed and configured and manintained Bla bla
-cfn-ovpn-cli configures OpenVPN as such: bla bla
+**cfn-ovpn-cli** configures OpenVPN as such: bla bla
 It is used in both protocols methods and configures four clients, i.e. bla bla
 
 
@@ -141,7 +139,7 @@ A system that uses key-based authentication requires a Public Key Infrastructure
 
 Conveniently, a awesome utility exist just for the purposes of making PKI management really easy, i.e. [Easy-RSA](https://github.com/OpenVPN/easy-rsa). Easy-RSA is a framework for managing X.509 PKI. It is based around the concept of a trusted root signing authority and the backend is comprised of the OpenSSL cryptographic library.
 
-cfn-ovpn-cli builds two interrelated PKIs on hardened virtual linux servers within a VPC in the AWS Cloud. A trusted root CA is created within the isolated private subnet, only accessible via a Bastion Host and used exclusively to sign certificate requests. A second PKI is created on the OpenVPN application server itself which resides within the public subnet of the VPC. Here the server as well as the client certificates and private keys are generated. Requests and signed certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. This is described in more detail in the Cloudformation section below but suffice to say, hinges around the calling of the ec2 create-image API. The CA is further constrained by a passphrase that is securely stored and retrived via the AWS System Manager Parameter Store secrets management protocol. The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
+**cfn-ovpn-cli** builds two interrelated PKIs on hardened virtual linux servers within a VPC in the AWS Cloud. A trusted root CA is created within the isolated private subnet, only accessible via a Bastion Host and used exclusively to sign certificate requests. A second PKI is created on the OpenVPN application server itself which resides within the public subnet of the VPC. Here the server as well as the client certificates and private keys are generated. Requests and signed certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. This is described in more detail in the Cloudformation section below but suffice to say, hinges around the calling of the ec2 create-image API. The CA is further constrained by a passphrase that is securely stored and retrived via the AWS System Manager Parameter Store secrets management protocol. The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
 
 export RANDFILE=/tmp/.rnd
 
@@ -153,7 +151,7 @@ Defense in depth is adopted to provide redundancy.
 
 Amazon VPC offers a network access control list (NACL) element that provides for an optional layer of security in the form of a stateless firewall, acting at the subnet layer. 
 
-cfn-ovpn-cli assembles an ordered set of rules for its public as well as its private subnets. These two NACLs grant only the necessary inbound source or outbound destination routes for their respective privileged or unprivileged ports. All other traffic is denied from even entering the virtual network itself. 
+**cfn-ovpn-cli** assembles an ordered set of rules for its public as well as its private subnets. These two NACLs grant only the necessary inbound source or outbound destination routes for their respective privileged or unprivileged ports. All other traffic is denied from even entering the virtual network itself. 
 
 ### AWS Security Groups
 
@@ -161,13 +159,13 @@ While NACLs operate at the network subnet level, security groups act at the inst
 
 A collection of unordered rules decide whether to allow traffic to reach the computation unit or not. An interesting feature of security groups is that they can reference other security groups as their end-point, exhibiting object like characteristics that simplifying rule creation and management.
 
-cfn-ovpn-cli constructs two security groups, a Public Security Group for instances residing on public subnets and similarly, a Private Security Group for instances residing on private subnets. Restrictive rules are applied to ensure only expected traffic is allowed to pass through to the operating system.
+**cfn-ovpn-cli** constructs two security groups, a Public Security Group for instances residing on public subnets and similarly, a Private Security Group for instances residing on private subnets. Restrictive rules are applied to ensure only expected traffic is allowed to pass through to the operating system.
 
 ### The Linux Kernel Packet Filter
 
 iptables is a user-space utility program that can configure the Linux kernel packet filtering framework as well as NAT and other packet mangling tasks. Various modules can be side-loaded to extend its complex filtering capabilities. 
 
-During Stage-2 of the Cloudformation Stack build process, cfn-ovpn-cli installs and configures iptables in a statefull posture within the Public and Private Virtual Linux Servers. Strict rules delineate distinct traffic domains for localhost services, the AWS instance metadata service (IMDS) and forwarded NAT VPN client traffic. As a precautionary measure VPN clients are denied routes to the local LAN.
+During Stage-2 of the Cloudformation Stack build process, **cfn-ovpn-cli** installs and configures iptables in a statefull posture within the Public and Private Virtual Linux Servers. Strict rules delineate distinct traffic domains for localhost services, the AWS instance metadata service (IMDS) and forwarded NAT VPN client traffic. As a precautionary measure VPN clients are denied routes to the local LAN.
 
 * input pings are open to the world but rate limited
 * input ssh is also rate limited
@@ -176,15 +174,15 @@ During Stage-2 of the Cloudformation Stack build process, cfn-ovpn-cli installs 
 ### Intrusion Prevention
 
 fail2ban is an intrusion prevention system that safeguards against network brute-force attacks. It operates in conjunction with 
-the Linux kernel packet filter, i.e. iptables and monitors log files for selected entries to block offending hosts. cfn-ovpn-cli configures a standard filter for sshd on port 22 in aggressive mode.
+the Linux kernel packet filter, i.e. iptables and monitors log files for selected entries to block offending hosts. **cfn-ovpn-cli** configures a standard filter for sshd on port 22 in aggressive mode.
 
 To Do : OpenVPN filter.
 
 ### sshd Hardening
 
-cfn-ovpn-cli not only utilizes an external-facing public EC2 instance as a VPN server but also as a bastion host, specifically providing access to the PKI residing within its private network. Because of its exposure to potential attacks, the onus is to minimize any chance of penetration, increase the defense of the system and reduce any potential risks from zero day exploits.
+**cfn-ovpn-cli** not only utilizes an external-facing public EC2 instance as a VPN server but also as a Bastion Host, specifically providing access to the PKI residing within its private network. Because of its exposure to potential attacks, the onus is to minimize any chance of penetration, increase the defense of the system and reduce any potential risks from zero day exploits.
 
-Pertaining to the Amazon Linux 2 AMI, only non-default settings are discussed here.
+Pertaining to the the golden image _Amazon Linux 2_, only non-default settings are discussed here.
 
 - The following straightforward changes are made to the default configuration:
 
@@ -192,7 +190,7 @@ Pertaining to the Amazon Linux 2 AMI, only non-default settings are discussed he
 | :---- | :--- |
 | `X11Forwarding no` | X11 forwarding is an insecure feature and thus disabled. |
 | `PermitRootLogin no` | Root login is denied. |
-| `AllowUsers ec2-user` | The default linux system user account enable only. |
+| `AllowUsers ec2-user` | The default linux system user account enabled only. |
 | `LogLevel VERBOSE` | Comprehensive logging enabled. |
 
 - The following settings combined, explicitly deny all forms of authentication except for Public Key:
@@ -211,13 +209,13 @@ Pertaining to the Amazon Linux 2 AMI, only non-default settings are discussed he
 
 - Automatic security updates are routinely applied as discussed in the section on [Package Management](#package-management).
 - Pursuant to [RFC8270](https://tools.ietf.org/html/rfc8270) and other endorsed infosec [recommendations](https://infosec.mozilla.org/guidelines/openssh), Diffie-Hellman moduli of less than 3072 bits are not recommended. As such short moduli are deactivated. 
-- cfn-ovpn-cli does not require sftp support, therefore it is disabled.
+- **cfn-ovpn-cli** does not require sftp support, therefore it is disabled.
 
 ## System Hardening
 
 * Encrypted EBS-volume
 
-* Chosen OS Amazon Linux 2 / Centos 7 knock-off / Custom Image
+* Chosen OS _Amazon Linux 2_ / Centos 7 knock-off / Custom Image
 
 * chrony only local (iptables allows only ntp to IMDS)
 
@@ -234,41 +232,39 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 
 ### Package Management
 
-https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/managing-software.html
+Keeping **cfn-ovpn-cli** up-to-date is important because it improves the overall stabiltity of the system by ensuring that critical patches to security holes are applied in a timely manner. It also ensures that bugs are fixed and outdated features are regularly removed, making the nature of the offered service more beneficial.
 
-* List default repos configured by Amazon : Amazon Linux 2 core repository
-* Extra Packages for Enterprise Linux 7 - x86_64
-* Extra Packages for Enterprise Linux (EPEL) is used to pull-down OpenVPN
-* yum-plugin-priorities installed by default on Amazon Linux 2
-* Security patches automatically applied : yum-cron , set to auto patch Security.
+By default, _Amazon Linux 2_ instances launch with the following repositories enabled:
 
-## Monitoring
+| Repository | Description |
+| :----: | :---: |
+| `amzn2-core` | Amazon Linux 2 core repo |
+| `amzn2extra-docker` | Amazon Extras repo for docker |
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+`amzn2extra-docker` is not required and thus disabled.
+
+The Extra Packages for Enterprise Linux (`epel`) repository is a non-standard but popular archive managed by the Fedora Project. It is compatible with _Amazon Linux 2_ and contains the various auxillary packages required by **cfn-ovpn-cli**.
+
+Due to packages perhaps being held by more than one repository, `yum-plugin-priorities` is used to enforce ordered protection between conflicting repositories. `epel` is thus set at a lower priority to `amzn2-core`.
+
+The `yum-cron` service is configured to automatically keep the system up-to-date.
+
+## Telemetry
+
+The _Amazon Linux 2_ golden image uses _systemd-journald_ as well as _rsyslog_ for event logging. Important log streams are configured, collated and dispatched to _Amazon CloudWatch Logs_ and the _systemd_ journal is made persistent across reboots. To restrict the volume of local log data, the utility _logrotate_ is configured to compress and rotate the relevant streams.
+
+### Amazon CloudWatch Logs
+
+Amazon CloudWatch Logs is a web service that provides aggregation and analysis tools for distributed message logging systems. **cfn-ovpn-cli** utilizes _Cloudformation_ to install and configure a _Unified CloudWatch Agent_ that facilitates the collection and retention of operational log events. The Agent is authorized by the IAM _CloudWatchAgentServerPolicy_ managed policy.
 
 ### rsyslog
-Message Logging in Amazon Linux 2 is facilitated by rsyslog.
-cfn-ovpn-cli configures a custom log stream that collects iptables log messages
-By default iptables logs messages to 
-For easy analysis and better parsing, iptables log messages are diverted to a separate log file for further processing and sending to Cloudwatch.
-iptables is configured to output a log prefix and as such rsyslog is setup to divert those messages to  a custom log file for further processing.
-* Openvpn logs are also handled by rsyslog
-* journald is also configured persistent across boots
-* logging improved by keeping journalctl logs after reboot
 
-### logrotate
+For improved parsing and assisted analysis, **cfn-ovpn-cli** configures custom log-streams for the linux kernel packet filter (`iptables`) as well the for both the VPN daemon protocol activities. These are diverted to a separate log facility for forwarding to _Amazon Cloudwatch Logs_.
 
-To restrict the volume of the log data, logs are compressed and rotated via cron.
+## Error Handling
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Talk about health-checks etc.
 
-### journald
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-### AWS CloudWatch
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
 ## Conclusion
 

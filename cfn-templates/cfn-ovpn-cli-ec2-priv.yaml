@@ -203,6 +203,8 @@ Resources:
               command: "yum-config-manager --enable epel"
             1b_epel:
               command: 'sed -i "/\[epel\]/a priority=20" /etc/yum.repos.d/epel.repo'
+            2a_repo:
+              command: "yum-config-manager --disable amzn2extra-docker"
         # / / / / / / / / / / / / / / /
         configYum:
           packages:
