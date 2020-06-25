@@ -54,7 +54,7 @@ Table of Contents
   * [Intrusion Prevention](#intrusion-prevention)
   * [sshd Hardening](#sshd-hardening)
 - [System Hardening](#system-hardening)
-  * [AWS IAM Instance Roles](#aws-iam-instance-roles)
+  * [Access Management](#access-management)
   * [AWS Instance Metadata Service](#aws-instance-metadata-service)
   * [Package Management](#package-management)
 - [Telemetry](#telemetry)
@@ -222,9 +222,37 @@ Pertaining to the the golden image _Amazon Linux 2_, only non-default settings a
 Ancillary: As is discussed else where, Security Groups, iptables also offer lines of defense.
 Include bash function aliases to authorize my ip.
 
-### IAM Instance Roles
+### Access Management
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+AWS IAM (_Identity and Access Management_) is an authentication and authorization web service that is tightly integrated into every facet of the AWS Cloud. It allows for the central management of Access Controls to all AWS services and resources. At its crux is what is called a Policy Document that defines permissions. It is associated with either an identity or a resource and stipulates what actions are allowed, or not allowed by that identity or resource.
+
+Of particular note, is a special identity refered to as an IAM Role. It is intended to be assumed by an entity (user, application or service), granting temporary security credentials to perform some limited task. When that entity is an EC2 Instance it is refered to as an Instance Profile.
+
+As illustrated below, templates are used to create three project-specific policy document types that implement the best practice of Least Privilege:
+
+```bash
+
+policies/
+├── s3-buckets
+│   └── template-s3-bucket-policy.json
+├── ec2-role
+│   ├── template-pub-s3-access-policy.json
+│   ├── template-priv-ssm-access-policy.json
+│   ├── template-priv-s3-access-policy.json
+│   └── template-lt-s3-access-policy.json
+└── cfn-stacks
+    ├── template-stage3-cfn-stack-policy.json
+    ├── template-stage2-cfn-stack-policy.json
+    └── template-stage1-cfn-stack-policy.json
+
+```
+
+| Policy Document  | Type | Description
+| :----: | :---: | :---
+| S3 Bucket | Resource based | Grants the calling script access permissions to a remote storage container and the objects within.
+| IAM Role | Identity based | Attached to Instance Profiles to delineate what actions can or can not be perform by the EC2 instance itself. 
+| Cloudformation Stack | Special case | A Fail-safe mechanism that defines protected resources from unintentional updates during a stack update procedure.
+
 
 ### Instance Metadata Service
 
@@ -251,7 +279,7 @@ The `yum-cron` service is configured to automatically keep the system up-to-date
 
 ## Telemetry
 
-The _Amazon Linux 2_ golden image uses _systemd-journald_ as well as _rsyslog_ for event logging. Important log streams are configured, collated and dispatched to _Amazon CloudWatch Logs_ and the _systemd_ journal is made persistent across reboots. To restrict the volume of local log data, the utility _logrotate_ is configured to compress and rotate the relevant streams.
+The _Amazon Linux 2_ golden image uses _systemd-journald_ as well as _rsyslog_ for event logging. Important log streams are configured, collated and dispatched to _Amazon CloudWatch Logs_ and the _systemd_ journal is made persistent across reboots. To restrict the volume of local log data, the utility _logrotate_ is configured to compress, rotate and eventually truncate the relevant streams.
 
 ### Amazon CloudWatch Logs
 
