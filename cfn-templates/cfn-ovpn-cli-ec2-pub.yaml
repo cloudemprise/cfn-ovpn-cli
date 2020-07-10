@@ -134,6 +134,8 @@ Resources:
             #!/bin/bash -xe
             # Update Packages, inc. aws-cfn-bootstrap
             yum update -y
+            # Retrive IMDSv2 token - valid 15mins
+            export TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 900")
             # Fix openssl error (easy-rsa) : random seed file
             export RANDFILE=/tmp/.rnd
             # Start cfn-init
@@ -196,16 +198,15 @@ Resources:
                   - "3_persistLogs"
         # / / / / / / / / / / / / / / /
         configRepo:
-          packages:
-            rpm:
-              epel: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
           commands:
             1a_epel:
-              command: "yum-config-manager --enable epel"
+              command: "amazon-linux-extras install epel"
             1b_epel:
               command: 'sed -i "/\[epel\]/a priority=20" /etc/yum.repos.d/epel.repo'
             2a_repo:
               command: "yum-config-manager --disable amzn2extra-docker"
+            3a_repo:
+              command: "yum update -y"
         # / / / / / / / / / / / / / / /
         configYum:
           packages:

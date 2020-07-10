@@ -67,13 +67,19 @@ Table of Contents
 ## Introduction
 
 **cfn-ovpn-cli** is a shell script that creates a cloud-based Virtual Private Network (VPN) application together with a isolated Public Key Infrastructure (PKI) Certification Authority, that provides for a secure mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is used to provision and configure various AWS Resources through an assortment of API calls and AWS Cloudformation templates.
-Talk a little about bash script here.
+
+- Talk a little about bash script here.
+- Mention that we are making two Amazon Machine Images?
+
+The final product is two Amazon Machine Images (AMI), a private one for the PKI and a public one for the VPN application.
 
 ## Cloudformation
 
 AWS Cloudformation is a service that provisions and configures cloud resources that are declared in a template file. The template defines a collection of elements as a single unit called a Stack, simplifying the management of cloud infrastructure.
 
 **cfn-ovpn-cli** templates compose a monolithic hierarchical tree structure of nested stacks and orchestration is achieved in a three-phase stack creation/update process that is promoted via a counter variable. The flowchart below illustrates the build process and resouce dependencies:
+
+- Mention that we are making two Amazon Machine Images?
 
 <details>  
   <summary>Click to View Flow Chart</summary>
@@ -213,11 +219,15 @@ Pertaining to the the golden image _Amazon Linux 2_, only non-default settings a
 
 ## System Hardening
 
-* Encrypted EBS-volume
+The goal of systems hardening is to reduce security risk by eliminating potential attack vectors.
 
-* Chosen OS _Amazon Linux 2_ / Centos 7 knock-off / Custom Image
+**cfn-ovpn-cli** uses the _Amazon Linux 2_ operating system which is based on Red Hat Enterprise Linux (RHEL). It provides a secure, stable and highly performant execution environment as it has been specifically optimized for cloud computing. It is associated with a long-term security maintenance policy and is tightly integrated with many Amazon Web Services.
 
-* chrony only local (iptables allows only ntp to IMDS)
+Of particular importance, the Amazon EC2 service utilizes a distributed storgage scheme that has at hand various encryption services that secure data at rest and in transit, as well as encrypting snapshots and instances. As **cfn-ovpn-cli** makes use of encryption wherever possible, these capabilities are leveraged to improve the security posture of the system as a whole.
+
+_Amazon Linux 2_ uses `chrony` as its time synchronization service client. By default, `chrony` configures the _Network Time Protocol_ to use both the **Amazon Time Sync Service**, offered on the link local 169.254.169.123 IP address, as well as public servers accessible via the `pool.ntp.org` project. In the interest of attack surface reduction the public servers are disabled. Firewall routes are delineated accordingly.
+
+* IMDSv2
 
 Ancillary: As is discussed else where, Security Groups, iptables also offer lines of defense.
 Include bash function aliases to authorize my ip.
@@ -249,14 +259,17 @@ policies/
 
 | Policy Document  | Type | Description
 | :----: | :---: | :---
-| S3 Bucket | Resource based | Grants the calling script access permissions to a remote storage container and the objects within.
+| S3 Bucket | Resource based | Grants access permissions on a remote storage container and the objects within, to the calling script identity.
 | IAM Role | Identity based | Attached to Instance Profiles to delineate what actions can or can not be perform by the EC2 instance itself. 
 | Cloudformation Stack | Special case | A Fail-safe mechanism that defines protected resources from unintentional updates during a stack update procedure.
-
 
 ### Instance Metadata Service
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+- To require the use of IMDSv2 on all new instances launched by Auto Scaling groups, your Auto Scaling groups must use launch templates. When you create a launch template, configure the MetadataOptions parameters to require the use IMDSv2.
+
+- 
 
 ### Package Management
 

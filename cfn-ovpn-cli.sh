@@ -466,7 +466,6 @@ $(( TIME_DIFF_STACK / 3600 ))h $(( (TIME_DIFF_STACK / 60) % 60 ))m $(( TIME_DIFF
 #.............................
 
 
-
 #-----------------------------
 #-----------------------------
 # Stage2 Stack Creation Code Block
@@ -519,7 +518,6 @@ echo "$BUILD_COUNTER Finished Execution Time ................: \
 $(( TIME_DIFF_STACK / 3600 ))h $(( (TIME_DIFF_STACK / 60) % 60 ))m $(( TIME_DIFF_STACK % 60 ))s"
 #.............................
 #.............................
-
 
 
 #-----------------------------

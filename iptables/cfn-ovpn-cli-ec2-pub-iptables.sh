@@ -1,12 +1,16 @@
 #!/bin/bash
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 META_DATA="169.254.169.254"
 META_NTP="169.254.169.123/32"
+# Retrive IMDSv2 Token
+#TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
+# Retrive address of AWS PrivateLink DNS
 META_DNS="$(grep -m 1 nameserver /etc/resolv.conf | sed s/'nameserver '//)/32"
-#LOCAL_IPV4="$(curl -s http://${META_DATA}/latest/meta-data/local-ipv4)/32"
+#LOCAL_IPV4="$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://${META_DATA}/latest/meta-data/local-ipv4)/32"
 PUB_CIDR="10.0.128.0/18"
-MAC="$(curl -s http://${META_DATA}/latest/meta-data/network/interfaces/macs/)"
-VPC_CIDR="$(curl -s http://${META_DATA}/latest/meta-data/network/interfaces/macs/"$MAC"/vpc-ipv4-cidr-block)"
+MAC="$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://${META_DATA}/latest/meta-data/network/interfaces/macs/)"
+VPC_CIDR="$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://${META_DATA}/latest/meta-data/network/interfaces/macs/"$MAC"/vpc-ipv4-cidr-block)"
 VPN_CIDR_UDP="10.100.10.0/24"
 VPN_CIDR_TCP="10.100.20.0/24"
 VPN_CIDR="10.100.0.0/16"
