@@ -71,7 +71,7 @@ Table of Contents
 - Talk a little about bash script here.
 - Mention that we are making two Amazon Machine Images?
 
-The final product is two Amazon Machine Images (AMI), a private one for the PKI and a public one for the VPN application.
+The final product is two generic Amazon Machine Images (AMI), a private one for the PKI and a public one for the VPN application.
 
 ## Cloudformation
 
@@ -259,17 +259,52 @@ policies/
 
 | Policy Document  | Type | Description
 | :----: | :---: | :---
-| S3 Bucket | Resource based | Grants access permissions on a remote storage container and the objects within, to the calling script identity.
+| S3 Bucket | Resource based | Grants access permissions to the calling script identity for a remote storage container and the objects within.
 | IAM Role | Identity based | Attached to Instance Profiles to delineate what actions can or can not be perform by the EC2 instance itself. 
 | Cloudformation Stack | Special case | A Fail-safe mechanism that defines protected resources from unintentional updates during a stack update procedure.
 
-### Instance Metadata Service
+### AWS Instance Metadata Service
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+The AWS _Instance Metadata Service_ (IMDS) is a special link-local endpoint available on every EC2 instance where static as well as dynamic information related to the instance itself, as well as its network and its storage can be retrieved by any HTTP client. 
 
-- To require the use of IMDSv2 on all new instances launched by Auto Scaling groups, your Auto Scaling groups must use launch templates. When you create a launch template, configure the MetadataOptions parameters to require the use IMDSv2.
+Of crucial importance is the fact that this metadata also yields the security credentials associated with the IAM Instance Profile. For example:
 
-- 
+```
+$ curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance/
+{
+  ...
+  "AccessKeyId" : "ABCDEFGHIJKLMNOPQRST",
+  "SecretAccessKey" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCD",
+  "Token" : "...ABCDEFGHIJ...",
+  ...
+}
+```
+
+Notice how transparent the process is. 
+
+
+The IMDS is available in two versions that are cross compatible:
+
+
+| Version  | Method | Validation
+| :----: | :---: | :---
+| IMDSv1 | request/response | Unauthenticated. (default)
+| IMDSv2 | session-oriented | Authenticated.
+
+
+As per above, IMDSv1 is not protected by any authentication or cryptographic methods and as such, is completely open to any user or process running within the system. Four known vulnerabilities exist that could be exploited in an attempt to access the IMDS maliciously. These are as follows:
+
+1. Misconfigured-open website application firewalls.
+2. Misconfigured-open reverse proxies.
+3. Unpatched server-side request forgery vulnerabilities.
+4. Misconfigured-open layer-3 firewalls and network address translations.
+
+**cfn-ovpn-cli** is particularly concerned with number 4 above as the linux kernel packet filter, i.e. iptables is used extensively throughout this application. 
+
+IMDSv2 mitigates for these mentioned shortcomings by requiring, a cleaverly devised, authentication token to be submitted with every service call. A simple HTTP PUT request to IMDSv2 with a TTL hop of 1 will retrieve an ephemeral token.
+
+**cfn-ovpn-cli** disables, by way of its EC2 Auto Scaling Group Launch Template, the use of IMDSv1 and as a added protection, is futher restricted to only root processes accessing the IMDSv2 service through firewall rules. As a consequence and aside note, the functionality of the useful utility [EC2 Instance Connect](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Connect-using-EC2-Instance-Connect.html) is rendered invalid here because it operates without elevated privileges. 
+
 
 ### Package Management
 

@@ -42,12 +42,12 @@ iptables -A OUTPUT -o lo -j ACCEPT
 # drop and log incoming invalid packets 
 iptables -N IPTlogDROPinINVALID
 iptables -A INPUT -m conntrack --ctstate INVALID -j IPTlogDROPinINVALID
-iptables -A IPTlogDROPinINVALID -j LOG --log-prefix "IPTlogDROPin__:_INVALID:"
+iptables -A IPTlogDROPinINVALID -j LOG --log-prefix "IPTlogDROPin__:_INVALID:" 
 iptables -A IPTlogDROPinINVALID -j DROP
 # drop and log outgoing invalid packets 
 iptables -N IPTlogDROPoutINVALID
 iptables -A OUTPUT -m conntrack --ctstate INVALID -j IPTlogDROPoutINVALID
-iptables -A IPTlogDROPoutINVALID -j LOG --log-prefix "IPTlogDROPout_:_INVALID:"
+iptables -A IPTlogDROPoutINVALID -j LOG --log-prefix "IPTlogDROPout_:_INVALID:" --log-uid
 iptables -A IPTlogDROPoutINVALID -j DROP
 # drop and log forwarded invalid packets 
 iptables -N IPTlogDROPfrwINVALID
@@ -109,8 +109,9 @@ iptables -N IPTlogPASSinNLB
 iptables -A INPUT -s $PUB_CIDR -d $PUB_CIDR -p tcp --syn --sport 1024:65535 --dport http -m conntrack --ctstate NEW -i "$NIC" -j IPTlogPASSinNLB
 #iptables -A IPTlogPASSinNLB -j LOG --log-prefix "IPTlogPASSin__:_NLB____:"
 iptables -A IPTlogPASSinNLB -j ACCEPT
-# allow Instance Metadata Service from LOCAL subnets only
+# allow Instance Metadata Service - only root processes & LOCAL subnets
 iptables -N IPTlogPASSoutIMDS
+iptables -A OUTPUT -s $PUB_CIDR -d ${META_DATA}/32 -p tcp --syn --sport 1024:65535 --dport http  -m owner ! --uid-owner root -o "$NIC" -j IPTlogDROPoutINVALID
 iptables -A OUTPUT -s $PUB_CIDR -d ${META_DATA}/32 -p tcp --syn --sport 1024:65535 --dport http  -m conntrack --ctstate NEW -o "$NIC" -j IPTlogPASSoutIMDS
 #iptables -A IPTlogPASSoutIMDS -j LOG --log-prefix "IPTlogPASSout_:_IMDS___:"
 iptables -A IPTlogPASSoutIMDS -j ACCEPT
