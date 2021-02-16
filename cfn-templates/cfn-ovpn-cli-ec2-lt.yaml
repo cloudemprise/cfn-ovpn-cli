@@ -70,7 +70,7 @@ Resources:
       LaunchTemplateData:
         ImageId: !Ref PublicLtAmiId
         InstanceType: "t2.micro"
-        KeyName: !Sub "dh.ec2.ssh.admin.console_${AWS::Region}"
+        KeyName: !Sub "aws.dev.ec2.ssh.key.${AWS::Region}"
         Monitoring:
           Enabled: false
         SecurityGroupIds:

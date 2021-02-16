@@ -92,9 +92,25 @@ AWS Cloudformation is a service that provisions and configures cloud resources t
 
 ## OpenVPN
 
-OpenVPN is a popular VPN daemon that is remarkably flexible and relatively simple to setup. It is particularly suitable for small deployments and uses the TLS protocol to secure its tunnels.  It derives its cryptographic capabilities from the OpenSSL library but can also be compiled with [Mbed TLS](https://tls.mbed.org) as its cryptographic backend. This is supposed to ensure the independence of the underlying encryption libraries. 
+OpenVPN is a popular VPN daemon that is remarkably flexible and relatively simple to setup. It is particularly suitable for small deployments and uses the TLS protocol to secure its tunnels. It derives its cryptographic capabilities from the OpenSSL library.
 
-OpenVPN operates by using a virtual network adapter as an interface between user-space and kernel-space and listens for client connections on both UDP and TCP. OpenVPN defines the concept of a control channel and a data channel, both of which are encrypted and secured separately but pass over the same protocol connection. The control channel is encrypted and secured using TLS while the data channel is encrypted using a stipulated block cipher.
+OpenVPN operates at the backend of a virtual network adapter that acts as an interface between user-space and kernel-space and can function as either a point-to-point adapter (tun-style) for IP-only traffic, or as a fully virtualized Ethernet adapter (tap-style) for all types of traffic. **cfn-ovpn-cli** is configured in tun-style (tun0) mode conceptually as follows:
+
+<p align="center">
+  <img src="./docs/images/openvpn-virtual-adapter.png">
+</p>
+
+
+processing incoming and outgoing network traffic.
+
+
+and listens for client connections on both the UDP and TCP protocols. 
+
+OpenVPN defines the concept of a control channel and a data channel, both of which are encrypted and secured differently but pass over the same protocol connection. The control channel is encrypted and secured using TLS while the data channel is encrypted using a (stipulated) negotiated block cipher.
+
+As an aside note, OpenVPN can also be compiled with [Mbed TLS](https://www.trustedfirmware.org/projects/mbed-tls/) as its cryptographic backend for small code footprint requirements, i.e. embedded systems. This is supposed to ensure the independence of the underlying encryption libraries.
+
+Give an overview here of the handshake and tunnel protocols.
 
 **cfn-ovpn-cli** is setup in the following fashion:
 
@@ -340,6 +356,7 @@ For improved parsing and assisted analysis, **cfn-ovpn-cli** configures custom l
 ## Error Handling
 
 Talk about health-checks etc.
+Health checks are done via the load  balancer and unfortunately I had to install a webserver in order to do health checks. Because vpn port ignores unmatch HMACs is it possible to install cert on load balancer so that health can be determined from the actual vpn app itself?
 
 
 ## Conclusion

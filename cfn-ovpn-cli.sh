@@ -21,6 +21,9 @@ TIME_STAMP_PROJ=$(date "+%Y-%m-%d %Hh%Mm%Ss")
 echo "The Time Stamp ................................: $TIME_STAMP_PROJ"
 #.............................
 
+AWS_PROFILE="usr.prog.pwr3"
+AWS_REGION="eu-central-1"
+
 #-----------------------------
 # Request Project Name
 PROJECT_NAME="cfn-ovpn-cli"
@@ -44,12 +47,14 @@ do
 done
 #.............................
 
+#$!$!$!$!$!$!$!$!$!$!$!$!$!$!$
 #-----------------------------
 # Get Route 53 Domain hosted zone ID
-AWS_DOMAIN_NAME="cloudemprise.net"
+AWS_DOMAIN_NAME="cloudemprise.org"
 echo "The IP Domain Name ............................: $AWS_DOMAIN_NAME"
 echo "The Openvpn Server FQDN .......................: ${PROJECT_NAME}.${AWS_DOMAIN_NAME}:1194"
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name "$AWS_DOMAIN_NAME" \
+    --profile "$AWS_PROFILE" --region "$AWS_REGION" \
     --query "HostedZones[].Id" --output text | awk -F "/" '{print $3}')
 [[ -z "$HOSTED_ZONE_ID" ]] \
     && { echo "Invalid Hosted Zone!"; exit 1; } \
@@ -65,19 +70,20 @@ echo "The Script Caller IP CIDR  ....................: $SSH_ACCESS_CIDR"
 # Name given to Cloudformation Stack
 STACK_NAME="cfn-stack-$PROJECT_NAME"
 echo "The Stack Name ................................: $STACK_NAME"
+#$!$!$!$!$!$!$!$!$
 # Region to deploy
-AWS_REGION=$(aws configure get region)
+#AWS_REGION=$(aws configure get region)
 echo "The Deploy Region .............................: $AWS_REGION"
 # Get Account(ROOT) ID
-AWS_ACC_ID=$(aws sts get-caller-identity --query Account --output text)
+AWS_ACC_ID=$(aws sts get-caller-identity --query Account --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
 echo "The Root Account ID ...........................: $AWS_ACC_ID"
 # CLI profile userid
-AWS_CLI_ID=$(aws sts get-caller-identity --query UserId --output text)
+AWS_CLI_ID=$(aws sts get-caller-identity --query UserId --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
 echo "The Script Caller userid ......................: $AWS_CLI_ID"
 # Grab the latest Amazon_Linux_2 AMI
 AMI_LATEST=$(aws ssm get-parameters --output text                         \
     --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 \
-    --query 'Parameters[0].[Value]')
+    --query 'Parameters[0].[Value]' --profile "$AWS_PROFILE" --region "$AWS_REGION")
 echo "The lastest Amazon Linux 2 AMI ................: $AMI_LATEST"
 #.............................
 
@@ -131,7 +137,7 @@ done
 CERT_AUTH_PASS_NAME="/${PROJECT_NAME}/pki-cert-auth"
 echo "Adding Passphrase to AWS Parameter Store ......: $CERT_AUTH_PASS_NAME"
 aws ssm put-parameter --name "$CERT_AUTH_PASS_NAME" --value "$CERT_AUTH_PASS" \
-        --type SecureString --overwrite \
+        --type SecureString --overwrite --profile "$AWS_PROFILE" --region "$AWS_REGION" \
         --description "Openvpn PKI Certificate Authority Private Key Passphrase" > /dev/null
 #.............................
 
@@ -212,23 +218,23 @@ for PREFIX in PRIV PUB LT; do
   #--- Create EC2 Instance Profile
   declare "$PREFIX"_EC2_PROFILE_ID="$(aws iam create-instance-profile --output text \
       --instance-profile-name "${!VAR_NAME}"                                        \
-      --query 'InstanceProfile.InstanceProfileId')"
+      --query 'InstanceProfile.InstanceProfileId' --profile "$AWS_PROFILE" --region "$AWS_REGION")"
   VAR_PROFILE_ID="$PREFIX"_EC2_PROFILE_ID
   echo "The EC2 Instance Profile userid ...............: ${!VAR_PROFILE_ID}"
   # --- Create IAM Role
   echo "Creating Complementary EC2 IAM Role ...........: ${!VAR_NAME}"
   declare "$PREFIX"_EC2_ROLE_ID="$(aws iam create-role --role-name "${!VAR_NAME}" \
       --assume-role-policy-document "$ASSUME_ROLE_POLICY"                         \
-      --output text --query 'Role.RoleId')"
+      --output text --query 'Role.RoleId' --profile "$AWS_PROFILE" --region "$AWS_REGION")"
   VAR_ROLE_ID="$PREFIX"_EC2_ROLE_ID
   echo "The IAM Role userid ...........................: ${!VAR_ROLE_ID}"
   # --- Attaching IAM Role to Instance Profile
   aws iam add-role-to-instance-profile --instance-profile-name "${!VAR_NAME}" \
-      --role-name "${!VAR_NAME}"
+      --role-name "${!VAR_NAME}" --profile "$AWS_PROFILE" --region "$AWS_REGION"
   echo "Attaching IAM Role to Instance Profile ........: ${!VAR_NAME}"
   # Add new json element to Project S3 Bucket Policy for EC2 RoleId
   POLICY_DOC=$(find ./policies/s3-buckets/${PROJECT_NAME}* -type f)
-  jq --arg var_role_id "${!VAR_ROLE_ID}:*" '.Statement[].Condition.StringNotLike[] += [ $var_role_id ]' < "$POLICY_DOC" > "${POLICY_DOC}".tmp 
+  jq --arg var_role_id "${!VAR_ROLE_ID}:*" '.Statement[].Condition.StringNotLike[] += [ $var_role_id ]' < "${POLICY_DOC}" > "${POLICY_DOC}".tmp 
   mv "${POLICY_DOC}".tmp "$POLICY_DOC"
   # Embedd resource inline policy documents in IAM roles
   EC2_ROLE_SSM_NAME="${PROJECT_NAME}"-"${PREFIX,,}"-ec2-ssm-"${AWS_REGION}"
@@ -236,28 +242,28 @@ for PREFIX in PRIV PUB LT; do
   if [[ $PREFIX == "PRIV" ]]; then
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
           --policy-name "$EC2_ROLE_SSM_NAME"              \
-          --policy-document "$PRIV_SSM_EC2_POLICY"
+          --policy-document "$PRIV_SSM_EC2_POLICY" --profile "$AWS_PROFILE" --region "$AWS_REGION"
       echo "The IAM Role is affixed with SSM Access Policy : ${EC2_ROLE_SSM_NAME}"
       # ...
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
           --policy-name "$EC2_ROLE_S3_NAME"               \
-          --policy-document "$PRIV_S3_EC2_POLICY"
+          --policy-document "$PRIV_S3_EC2_POLICY" --profile "$AWS_PROFILE" --region "$AWS_REGION"
       echo "The IAM Role is affixed with S3 Access Policy .: ${EC2_ROLE_S3_NAME}"
   elif [[ $PREFIX == "PUB" ]]; then
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
           --policy-name "$EC2_ROLE_S3_NAME"               \
-          --policy-document "$PUB_S3_EC2_POLICY"
+          --policy-document "$PUB_S3_EC2_POLICY" --profile "$AWS_PROFILE" --region "$AWS_REGION"
       echo "The IAM Role is affixed with S3 Access Policy .: ${EC2_ROLE_S3_NAME}"
   else 
       aws iam put-role-policy --role-name "${!VAR_NAME}"  \
           --policy-name "$EC2_ROLE_S3_NAME"               \
-          --policy-document "$LT_S3_EC2_POLICY"
+          --policy-document "$LT_S3_EC2_POLICY" --profile "$AWS_PROFILE" --region "$AWS_REGION"
       echo "The IAM Role is affixed with S3 Access Policy .: ${EC2_ROLE_S3_NAME}"
       # ...
       # Cloudwatch Agent Managed Policy
       EC2_ROLE_CW_ARN="arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
       aws iam attach-role-policy --role-name "${!VAR_NAME}" \
-        --policy-arn "$EC2_ROLE_CW_ARN"
+        --policy-arn "$EC2_ROLE_CW_ARN" --profile "$AWS_PROFILE" --region "$AWS_REGION"
       echo "The IAM Role is affixed with Managed Policy ...: ${EC2_ROLE_CW_ARN}"
   fi
 done
@@ -265,13 +271,15 @@ done
 
 #-----------------------------
 # Create S3 Project Bucket with Encryption & Policy
-if (aws s3 mb "$PROJECT_BUCKET" > /dev/null)
+if (aws s3 mb "$PROJECT_BUCKET" --profile "$AWS_PROFILE" --region "$AWS_REGION" > /dev/null)
 then 
   aws s3api put-bucket-encryption --bucket "$PROJECT_NAME"  \
       --server-side-encryption-configuration              \
-      '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
+      '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}' \
+      --profile "$AWS_PROFILE" --region "$AWS_REGION"
   aws s3api put-bucket-policy --bucket "$PROJECT_NAME"      \
-      --policy "file://policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json"
+      --policy "file://policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json" \
+      --profile "$AWS_PROFILE" --region "$AWS_REGION"
   echo "S3 Project Bucket Created .....................: $PROJECT_BUCKET"
 else
   echo "Failed to Create S3 Project Bucket !!!!!!!!!!!!: $PROJECT_BUCKET"
@@ -287,7 +295,7 @@ find ./policies -type f -name "${PROJECT_NAME}*.json" ! -path "*/scratch/*" -pri
     if [[ ! -s "$FILE" ]]; then
       echo "Invalid Template Policy Document ..............: $FILE"
       exit 1
-    elif (aws s3 mv "$FILE" "$PROJECT_BUCKET${FILE#.}" > /dev/null); then
+    elif (aws s3 mv "$FILE" "$PROJECT_BUCKET${FILE#.}" --profile "$AWS_PROFILE" --region "$AWS_REGION" > /dev/null); then
       echo "Uploading Policy Document to S3 Location ......: $PROJECT_BUCKET${FILE#.}"
     else continue
     fi
@@ -302,7 +310,7 @@ find ./cfn-templates -type f -name "*.yaml" ! -path "*/scratch/*" -print0 |
     if [[ ! -s "$FILE" ]]; then
       echo "Invalid Cloudformation Template Document ......: $FILE"
       exit 1
-    elif (aws s3 cp "$FILE" "$PROJECT_BUCKET${FILE#.}" > /dev/null); then
+    elif (aws s3 cp "$FILE" "$PROJECT_BUCKET${FILE#.}" --profile "$AWS_PROFILE" --region "$AWS_REGION" > /dev/null); then
       echo "Uploading Cloudformation Template to S3 .......: $PROJECT_BUCKET${FILE#.}"
     else continue
     fi
@@ -312,7 +320,7 @@ find ./cfn-templates -type f -name "*.yaml" ! -path "*/scratch/*" -print0 |
 #-----------------------------
 # Upload easy-rsa pki keygen configs to S3
 S3_LOCATION="$PROJECT_BUCKET/easy-rsa/cfn-ovpn-cli-vars"
-if [[ $(tar -zcf - easy-rsa/cfn-ovpn-cli-vars/vars* | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-easyrsa-vars.tar.gz) -ne 0 ]]
+if [[ $(tar -zcf - easy-rsa/cfn-ovpn-cli-vars/vars* | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-easyrsa-vars.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
 then
   echo "easy-rsa Configs Failed to Uploaded to S3 .....: $S3_LOCATION"
   exit 1
@@ -324,8 +332,8 @@ fi
 #-----------------------------
 #Compress & Upload public iptables scripts to S3
 S3_LOCATION="$PROJECT_BUCKET/iptables"
-if [[ $(tar -zcf - iptables/cfn-ovpn-cli-ec2-pub-iptables.sh  | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-pub-iptables.sh.tar.gz) -ne 0 ]] || \
-   [[ $(tar -zcf - iptables/cfn-ovpn-cli-ec2-priv-iptables.sh | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-priv-iptables.sh.tar.gz) -ne 0 ]]
+if [[ $(tar -zcf - iptables/cfn-ovpn-cli-ec2-pub-iptables.sh  | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-pub-iptables.sh.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]] || \
+   [[ $(tar -zcf - iptables/cfn-ovpn-cli-ec2-priv-iptables.sh | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-priv-iptables.sh.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
 then
   echo "iptables Configs Failed to Uploaded to S3 .....: ${S3_LOCATION}"
   exit 1
@@ -353,7 +361,7 @@ find ./logs/template*.json -type f -print0 |
 #Compress & Upload CloudWatch Agent config to S3
 # Remove hierarchy from archives for more flexible extraction options.
 S3_LOCATION="$PROJECT_BUCKET/logs"
-if [[ $(gzip -c ./logs/*.tar | aws s3 cp - ${S3_LOCATION}/${PROJECT_NAME}-amzn-cw-agent.json.tar.gz) -ne 0 ]]
+if [[ $(gzip -c ./logs/*.tar | aws s3 cp - ${S3_LOCATION}/${PROJECT_NAME}-amzn-cw-agent.json.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
 then
   echo "CW Agent Config Failed to Uploaded to S3 ......: ${S3_LOCATION}"
   exit 1
@@ -383,8 +391,8 @@ find ./openvpn/client/ovpn/template*.ovpn -type f -print0 |
 #Compress & Upload openvpn server configs to S3
 # Remove hierarchy from archives for more flexible extraction options.
 S3_LOCATION="$PROJECT_BUCKET/openvpn"
-if [[ $(tar -zcf - -C ./openvpn/server/conf/ . | aws s3 cp - ${S3_LOCATION}/server/conf/cfn-ovpn-cli-server-1194.conf.tar.gz) -ne 0 ]] || \
-   [[ $(gzip -c ./openvpn/client/ovpn/*.tar | aws s3 cp - ${S3_LOCATION}/client/ovpn/cfn-ovpn-cli-client-1194.ovpn.tar.gz) -ne 0 ]]
+if [[ $(tar -zcf - -C ./openvpn/server/conf/ . | aws s3 cp - ${S3_LOCATION}/server/conf/cfn-ovpn-cli-server-1194.conf.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]] || \
+   [[ $(gzip -c ./openvpn/client/ovpn/*.tar | aws s3 cp - ${S3_LOCATION}/client/ovpn/cfn-ovpn-cli-client-1194.ovpn.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
 then
   echo "Openvpn Configs Failed to Uploaded to S3 ......: ${S3_LOCATION}"
   exit 1
@@ -398,7 +406,7 @@ fi
 #-----------------------------
 #Compress & Upload sshd hardening script to S3
 S3_LOCATION="$PROJECT_BUCKET/ssh"
-if [[ $(tar -zcf - ssh/cfn-ovpn-cli-ec2-harden-ssh.sh | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-harden-ssh.sh.tar.gz) -ne 0 ]]
+if [[ $(tar -zcf - ssh/cfn-ovpn-cli-ec2-harden-ssh.sh | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-harden-ssh.sh.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
 then
   echo "Harden SSH Configs Failed to Uploaded to S3 ...: ${S3_LOCATION}"
   exit 1
@@ -406,7 +414,6 @@ else
   echo "Harden SSH Configs Uploaded to S3 Location ....: ${S3_LOCATION}"
 fi
 #.............................
-
 
 
 #-----------------------------
@@ -421,34 +428,35 @@ STACK_POLICY_URL="https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/policies
 TEMPLATE_URL="https://${PROJECT_NAME}.s3.eu-central-1.amazonaws.com/cfn-templates/cfn-ovpn-cli.yaml"
 TIME_START_STACK=$(date +%s)
 #-----------------------------
-STACK_ID=$(aws cloudformation create-stack --stack-name "$STACK_NAME" --parameters  \
-                ParameterKey=ProjectName,ParameterValue="$PROJECT_NAME"             \
-                ParameterKey=BuildStep,ParameterValue="$BUILD_COUNTER"              \
-                ParameterKey=DomainName,ParameterValue="$AWS_DOMAIN_NAME"           \
-                ParameterKey=DomainHostedZoneId,ParameterValue="$HOSTED_ZONE_ID"    \
-                ParameterKey=SshAccessCIDR,ParameterValue="$SSH_ACCESS_CIDR"        \
-                ParameterKey=CurrentAmi,ParameterValue="$AMI_LATEST"                \
-                ParameterKey=EmailAddrSNS,ParameterValue="$USER_EMAIL"              \
-                --tags Key=Name,Value=openvpn-stage1                                \
-                --stack-policy-url $STACK_POLICY_URL --template-url $TEMPLATE_URL   \
+STACK_ID=$(aws cloudformation create-stack --stack-name "$STACK_NAME" --parameters      \
+                ParameterKey=ProjectName,ParameterValue="$PROJECT_NAME"                 \
+                ParameterKey=BuildStep,ParameterValue="$BUILD_COUNTER"                  \
+                ParameterKey=DomainName,ParameterValue="$AWS_DOMAIN_NAME"               \
+                ParameterKey=DomainHostedZoneId,ParameterValue="$HOSTED_ZONE_ID"        \
+                ParameterKey=SshAccessCIDR,ParameterValue="$SSH_ACCESS_CIDR"            \
+                ParameterKey=CurrentAmi,ParameterValue="$AMI_LATEST"                    \
+                ParameterKey=EmailAddrSNS,ParameterValue="$USER_EMAIL"                  \
+                --tags Key=Name,Value="$PROJECT_NAME"                                   \
+                --stack-policy-url "$STACK_POLICY_URL" --template-url "$TEMPLATE_URL"   \
+                --profile "$AWS_PROFILE" --region "$AWS_REGION"                         \
                 --on-failure DO_NOTHING --capabilities CAPABILITY_NAMED_IAM --output text)
 #-----------------------------
 if [[ $? -eq 0 ]]; then
   # Wait for stack creation to complete
   echo "Cloudformation Stack Creation Process Wait.....: $BUILD_COUNTER"
-  CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text)
+  CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
   while [[ $CREATE_STACK_STATUS == "REVIEW_IN_PROGRESS" ]] || [[ $CREATE_STACK_STATUS == "CREATE_IN_PROGRESS" ]]
   do
       # Wait 1 seconds and then check stack status again
       sleep 1
       printf '.'
-      CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text)
+      CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
   done
   printf '\n'
 fi
 #-----------------------------
 # Validate stack creation has not failed
-if (aws cloudformation wait stack-create-complete --stack-name "$STACK_ID")
+if (aws cloudformation wait stack-create-complete --stack-name "$STACK_ID" --profile "$AWS_PROFILE" --region "$AWS_REGION")
 then 
   echo "Cloudformation Stack Create Process Complete ..: $BUILD_COUNTER"
 else 
@@ -481,26 +489,27 @@ aws cloudformation update-stack --stack-name "$STACK_ID" --parameters          \
       ParameterKey=SshAccessCIDR,UsePreviousValue=true                         \
       ParameterKey=CurrentAmi,UsePreviousValue=true                            \
       ParameterKey=EmailAddrSNS,UsePreviousValue=true                          \
-      --stack-policy-url $STACK_POLICY_URL --capabilities CAPABILITY_NAMED_IAM \
-      --tags Key=Name,Value=openvpn-stage2 --use-previous-template > /dev/null
+      --profile "$AWS_PROFILE" --region "$AWS_REGION"                          \
+      --stack-policy-url "$STACK_POLICY_URL" --capabilities CAPABILITY_NAMED_IAM \
+      --tags Key=Name,Value="$PROJECT_NAME" --use-previous-template > /dev/null
 #-----------------------------
 if [[ $? -eq 0 ]]; then
   # Wait for stack creation to complete
   echo "Cloudformation Stack Update Process Wait.......: $BUILD_COUNTER"
-  CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text)
+  CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
   while [[ $CREATE_STACK_STATUS == "UPDATE_IN_PROGRESS" ]] || [[ $CREATE_STACK_STATUS == "CREATE_IN_PROGRESS" ]]
   do
       # Wait 1 seconds and then check stack status again
       sleep 1
       printf '.'
-      CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text)
+      CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
   done
   printf '\n'
 fi
 
 #-----------------------------
 # Validate stack creation has not failed
-if (aws cloudformation wait stack-update-complete --stack-name "$STACK_ID")
+if (aws cloudformation wait stack-update-complete --stack-name "$STACK_ID" --profile "$AWS_PROFILE" --region "$AWS_REGION")
 then 
   echo "Cloudformation Stack Update Process Complete ..: $BUILD_COUNTER"
   printf 'Stack ID: \n%s\n' "$STACK_ID"
@@ -522,16 +531,16 @@ $(( TIME_DIFF_STACK / 3600 ))h $(( (TIME_DIFF_STACK / 60) % 60 ))m $(( TIME_DIFF
 
 #-----------------------------
 # Grab the IDs of the ec2 instances for further processing
-INSTANCE_ID_PUB=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic'].OutputValue")
+INSTANCE_ID_PUB=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic'].OutputValue" --profile "$AWS_PROFILE" --region "$AWS_REGION")
 echo "Public Subnet EC2 Instance ID .................: $INSTANCE_ID_PUB"
-INSTANCE_ID_PRIV=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPrivate'].OutputValue")
+INSTANCE_ID_PRIV=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --output text --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPrivate'].OutputValue" --profile "$AWS_PROFILE" --region "$AWS_REGION")
 echo "Private Subnet EC2 Instance ID ................: $INSTANCE_ID_PRIV"
 
 #-----------------------------
 # Validity Check. Wait for instance status ok before moving on.
-aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID_PUB" &
+aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID_PUB" --profile "$AWS_PROFILE" --region "$AWS_REGION" &
 P1=$!
-aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID_PRIV" &
+aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID_PRIV" --profile "$AWS_PROFILE" --region "$AWS_REGION" &
 P2=$!
 wait $P1 $P2
 echo "Public Subnet EC2 Instance State ..............: Ok"
@@ -541,18 +550,18 @@ echo "Private Subnet EC2 Instance State .............: Ok"
 #-----------------------------
 # Create IMAGE AMIs
 #AMI_IMAGE_PUB=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PUB" --name $(echo "openvpn-pub-$INSTANCE_ID_PUB") --description "openvpn-pub-ami" --output text)
-AMI_IMAGE_PUB=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PUB" --name "${PROJECT_NAME}-openvpn-pub" --description "${PROJECT_NAME}-openvpn-pub-ami" --output text)
+AMI_IMAGE_PUB=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PUB" --name "${PROJECT_NAME}-openvpn-pub" --description "${PROJECT_NAME}-openvpn-pub-ami" --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
 echo "Public Subnet EC2 AMI Creation Initiated ......: "
 #AMI_IMAGE_PRIV=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PRIV" --name $(echo "openvpn-priv-$INSTANCE_ID_PRIV") --description "openvpn-priv-ami" --output text)
-AMI_IMAGE_PRIV=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PRIV" --name "${PROJECT_NAME}-openvpn-priv" --description "${PROJECT_NAME}-openvpn-priv-ami" --output text)
+AMI_IMAGE_PRIV=$(aws ec2 create-image --instance-id "$INSTANCE_ID_PRIV" --name "${PROJECT_NAME}-openvpn-priv" --description "${PROJECT_NAME}-openvpn-priv-ami" --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
 echo "Private Subnet EC2 AMI Creation Initiated .....: "
 #.............................
 
 #-----------------------------
 # Wait for new AMIs to become available
-aws ec2 wait image-available --image-ids "$AMI_IMAGE_PUB" &
+aws ec2 wait image-available --image-ids "$AMI_IMAGE_PUB" --profile "$AWS_PROFILE" --region "$AWS_REGION" &
 P1=$!
-aws ec2 wait image-available --image-ids "$AMI_IMAGE_PRIV" &
+aws ec2 wait image-available --image-ids "$AMI_IMAGE_PRIV" --profile "$AWS_PROFILE" --region "$AWS_REGION" &
 P2=$!
 wait $P1 $P2
 echo "Public Subnet EC2 AMI Image is Now Available ..: $AMI_IMAGE_PUB "
@@ -561,16 +570,15 @@ echo "Private Subnet EC2 AMI Image is Now Available .: $AMI_IMAGE_PRIV"
 
 #-----------------------------
 # Give AMIs a Name Tag
-aws ec2 create-tags --resources "$AMI_IMAGE_PUB" --tags Key=Name,Value="${PROJECT_NAME}-openvpn-pub"
-aws ec2 create-tags --resources "$AMI_IMAGE_PRIV" --tags Key=Name,Value="${PROJECT_NAME}-openvpn-priv"
+aws ec2 create-tags --resources "$AMI_IMAGE_PUB" --tags Key=Name,Value="${PROJECT_NAME}-openvpn-pub" --profile "$AWS_PROFILE" --region "$AWS_REGION"
+aws ec2 create-tags --resources "$AMI_IMAGE_PRIV" --tags Key=Name,Value="${PROJECT_NAME}-openvpn-priv" --profile "$AWS_PROFILE" --region "$AWS_REGION"
 #.............................
 
 #-----------------------------
 # Terminate the instances - no longer needed.
-aws ec2 terminate-instances --instance-ids "$INSTANCE_ID_PUB" "$INSTANCE_ID_PRIV" > /dev/null
+aws ec2 terminate-instances --instance-ids "$INSTANCE_ID_PUB" "$INSTANCE_ID_PRIV" --profile "$AWS_PROFILE" --region "$AWS_REGION" > /dev/null
 echo "$BUILD_COUNTER Instances Terminated ...................:"
 #.............................
-
 
 
 #-----------------------------
@@ -588,19 +596,20 @@ aws cloudformation update-stack --stack-name "$STACK_ID" --parameters \
       ParameterKey=DomainHostedZoneId,UsePreviousValue=true           \
       ParameterKey=SshAccessCIDR,UsePreviousValue=true                \
       ParameterKey=EmailAddrSNS,UsePreviousValue=true                 \
-      --stack-policy-url $STACK_POLICY_URL --use-previous-template    \
-      --tags Key=Name,Value=openvpn-stage3 > /dev/null    
+      --stack-policy-url "$STACK_POLICY_URL" --use-previous-template  \
+      --profile "$AWS_PROFILE" --region "$AWS_REGION"                 \
+      --tags Key=Name,Value="$PROJECT_NAME" > /dev/null    
 #-----------------------------
 if [[ $? -eq 0 ]]; then
   # Wait for stack creation to complete
   echo "Cloudformation Stack Update Process Wait.......: $BUILD_COUNTER"
-  CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text)
+  CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
   while [[ $CREATE_STACK_STATUS == "UPDATE_IN_PROGRESS" ]] || [[ $CREATE_STACK_STATUS == "CREATE_IN_PROGRESS" ]]
   do
       # Wait 1 seconds and then check stack status again
       sleep 1
       printf '.'
-      CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text)
+      CREATE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --query 'Stacks[0].StackStatus' --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
   done
   printf '\n'
 fi
@@ -608,7 +617,7 @@ fi
 
 #-----------------------------
 # Validate stack creation has not failed
-if (aws cloudformation wait stack-update-complete --stack-name "$STACK_ID")
+if (aws cloudformation wait stack-update-complete --stack-name "$STACK_ID" --profile "$AWS_PROFILE" --region "$AWS_REGION")
 then 
   echo "Cloudformation Stack Update Process Complete ..: $BUILD_COUNTER"
   printf 'Stack ID: \n%s\n' "$STACK_ID"
@@ -633,6 +642,7 @@ $(( TIME_DIFF_STACK / 3600 ))h $(( (TIME_DIFF_STACK / 60) % 60 ))m $(( TIME_DIFF
 #-----------------------------
 # Grab the IDs of the ec2 instances for further processing
 INSTANCE_ID_PUB=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --output text \
+    --profile "$AWS_PROFILE" --region "$AWS_REGION"                                         \
     --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic'].OutputValue")
 echo "Openvpn Server EC2 Instance ID ................: $INSTANCE_ID_PRIV"
 #.............................
@@ -650,7 +660,7 @@ echo "Temporary working directory....................: $TMP_DIR"
 # --
 # Download client archives to temp dir
 echo "Processing Client Configuration Files .........: "
-aws s3 sync ${PROJECT_BUCKET}/openvpn/client/ $TMP_DIR  --exclude "*" --include "*.tar.gz" > /dev/null
+aws s3 sync ${PROJECT_BUCKET}/openvpn/client/ $TMP_DIR  --exclude "*" --include "*.tar.gz" --profile "$AWS_PROFILE" --region "$AWS_REGION" > /dev/null
 # --
 # Extract then remove archives
 find $TMP_DIR -type f -name '*.tar.gz' -print0 |
@@ -719,3 +729,4 @@ TIME_DIFF=$((TIME_END_PROJ - TIME_START_PROJ))
 echo "Total Finished Execution Time .................: \
 $(( TIME_DIFF / 3600 ))h $(( (TIME_DIFF / 60) % 60 ))m $(( TIME_DIFF % 60 ))s"
 #.............................
+
