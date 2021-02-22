@@ -21,8 +21,47 @@ TIME_STAMP_PROJ=$(date "+%Y-%m-%d %Hh%Mm%Ss")
 echo "The Time Stamp ................................: $TIME_STAMP_PROJ"
 #.............................
 
-AWS_PROFILE="usr.prog.pwr3"
-AWS_REGION="eu-central-1"
+#-----------------------------
+# Request Named Profile
+AWS_PROFILE="default"
+while true
+do
+  # -e : stdin from terminal
+  # -r : backslash not an escape character
+  # -p : prompt on stderr
+  # -i : use default buffer val
+  read -er -i "$AWS_PROFILE" -p "Enter Project AWS CLI Named Profile ...........: " USER_INPUT
+  if aws configure list-profiles 2>/dev/null | fgrep -qw "$USER_INPUT"
+  then
+    echo "Project AWS CLI Named Profile is valid ........: $USER_INPUT"
+    AWS_PROFILE=$USER_INPUT
+    break
+  else
+    echo "Error! Project AWS CLI Named Profile invalid ..: $USER_INPUT"
+  fi
+done
+#.............................
+
+#-----------------------------
+# Request Region
+AWS_REGION=$(aws configure get region --profile "$AWS_PROFILE")
+while true
+do
+  # -e : stdin from terminal
+  # -r : backslash not an escape character
+  # -p : prompt on stderr
+  # -i : use default buffer val
+  read -er -i "$AWS_REGION" -p "Enter Project AWS CLI Region ..................: " USER_INPUT
+  if aws ec2 describe-regions --profile "$AWS_PROFILE" --query 'Regions[].RegionName' --output text 2>/dev/null | fgrep -qw "$USER_INPUT"
+  then
+    echo "Project AWS CLI Region is valid ...............: $USER_INPUT"
+    AWS_REGION=$USER_INPUT
+    break
+  else
+    echo "Error! Project AWS CLI Region is invalid ......: $USER_INPUT"
+  fi
+done
+#.............................
 
 #-----------------------------
 # Request Project Name
@@ -47,19 +86,52 @@ do
 done
 #.............................
 
-#$!$!$!$!$!$!$!$!$!$!$!$!$!$!$
+
+
+
 #-----------------------------
-# Get Route 53 Domain hosted zone ID
+# Request Domain Name
 AWS_DOMAIN_NAME="cloudemprise.org"
-echo "The IP Domain Name ............................: $AWS_DOMAIN_NAME"
-echo "The Openvpn Server FQDN .......................: ${PROJECT_NAME}.${AWS_DOMAIN_NAME}:1194"
+while true
+do
+  # -e : stdin from terminal
+  # -r : backslash not an escape character
+  # -p : prompt on stderr
+  # -i : use default buffer val
+  read -er -i "$AWS_DOMAIN_NAME" -p "Enter Project Domain Base URL .................: " USER_INPUT
+  if [[ "${USER_INPUT:=$AWS_DOMAIN_NAME}" =~ (^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6}$) ]]
+  then
+    echo "Check: Project Domain Base URL is valid .......: $USER_INPUT"
+    AWS_DOMAIN_NAME=$USER_INPUT
+    echo "The Project Domain Base URL set to ............: $AWS_DOMAIN_NAME"
+    break
+  else
+    echo "Error: Project Domain Base URL must be valid ..: $USER_INPUT"
+  fi
+done
+#.............................
+
+#-----------------------------
+# Get Route 53 Hosted Zone ID
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name "$AWS_DOMAIN_NAME" \
     --profile "$AWS_PROFILE" --region "$AWS_REGION" \
     --query "HostedZones[].Id" --output text | awk -F "/" '{print $3}')
-[[ -z "$HOSTED_ZONE_ID" ]] \
-    && { echo "Invalid Hosted Zone!"; exit 1; } \
-    || { echo "Route53 Hosted Zone ID ........................: $HOSTED_ZONE_ID"; }
+# Check is valid
+[[ -z "$HOSTED_ZONE_ID" ]] && { echo "Error: No Predefined Hosted Zone. Try again ...:"; exit 1; } \
+    || { echo "Route53 Hosted Zone ID is set .................: $HOSTED_ZONE_ID"; }
 #.............................
+
+#-----------------------------
+# Stipulate fully qualified domain name 
+echo "FQDN Openvpn Server ...........................: ${PROJECT_NAME}.${AWS_DOMAIN_NAME}:1194"
+#.............................
+
+
+
+
+
+
+
 
 #-----------------------------
 # Variable Creation
@@ -68,18 +140,24 @@ HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name "$AWS_DOMAIN_N
 SSH_ACCESS_CIDR="$(curl -s https://checkip.amazonaws.com/)/32"
 echo "The Script Caller IP CIDR  ....................: $SSH_ACCESS_CIDR"
 # Name given to Cloudformation Stack
-STACK_NAME="cfn-stack-$PROJECT_NAME"
+STACK_NAME="$PROJECT_NAME-cfnstack"
 echo "The Stack Name ................................: $STACK_NAME"
-#$!$!$!$!$!$!$!$!$
-# Region to deploy
-#AWS_REGION=$(aws configure get region)
-echo "The Deploy Region .............................: $AWS_REGION"
+
+
 # Get Account(ROOT) ID
 AWS_ACC_ID=$(aws sts get-caller-identity --query Account --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
 echo "The Root Account ID ...........................: $AWS_ACC_ID"
+# Console Admin profile userid
+#AWS_USER_ADMIN="user.admin.console"
+AWS_USER_ADMIN="usr.console.admin"
+AWS_USERID_ADMIN=$(aws iam get-user --user-name "$AWS_USER_ADMIN" --query User.UserId --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
+echo "The Console Admin userid ......................: $AWS_USERID_ADMIN"
 # CLI profile userid
-AWS_CLI_ID=$(aws sts get-caller-identity --query UserId --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
-echo "The Script Caller userid ......................: $AWS_CLI_ID"
+AWS_USERID_CLI=$(aws sts get-caller-identity --query UserId --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")
+echo "The Script Caller userid ......................: $AWS_USERID_CLI"
+
+
+
 # Grab the latest Amazon_Linux_2 AMI
 AMI_LATEST=$(aws ssm get-parameters --output text                         \
     --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 \
@@ -143,7 +221,8 @@ aws ssm put-parameter --name "$CERT_AUTH_PASS_NAME" --value "$CERT_AUTH_PASS" \
 
 #----------------------------------------------
 # Create S3 Bucket Policies from local templates
-find ./policies/s3-buckets/template* -type f -print0 |
+find -L ./policies/s3-buckets/template-proj* -type f -print0 |
+# -L : Follow symbolic links
   while IFS= read -r -d '' TEMPLATE
   do
     if [[ ! -s "$TEMPLATE" ]]; then
@@ -155,15 +234,23 @@ find ./policies/s3-buckets/template* -type f -print0 |
       # Replace appropriate variables
       sed -i "s/ProjectName/$PROJECT_NAME/" "$_"
       sed -i "s/RootAccount/$AWS_ACC_ID/" "$_"
-      sed -i "s/ScriptCallerUserId/$AWS_CLI_ID/" "$_"
+      sed -i "s/ConsoleAdmin/$AWS_USERID_ADMIN/" "$_"
+      sed -i "s/ScriptCallerUserId/$AWS_USERID_CLI/" "$_"
       echo "Creating S3 Bucket Policy .....................: $_"
     fi
   done
 #.............................
 
+
+
+
+
+
+
 #----------------------------------------------
 # Create Cloudformation Stack Policies from local templates
-find ./policies/cfn-stacks/template* -type f -print0 |
+find -L ./policies/cfn-stacks/template* -type f -print0 |
+# -L : Follow symbolic links
   while IFS= read -r -d '' TEMPLATE
   do
     if [[ ! -s "$TEMPLATE" ]]; then
@@ -179,7 +266,8 @@ find ./policies/cfn-stacks/template* -type f -print0 |
 
 #----------------------------------------------
 # Create IAM inline Resource Policies from local templates
-find ./policies/ec2-role/template* -type f -print0 |
+find -L ./policies/ec2-role/template* -type f -print0 |
+# -L : Follow symbolic links
   while IFS= read -r -d '' TEMPLATE
   do
     if [[ ! -s "$TEMPLATE" ]]; then
@@ -278,7 +366,7 @@ then
       '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}' \
       --profile "$AWS_PROFILE" --region "$AWS_REGION"
   aws s3api put-bucket-policy --bucket "$PROJECT_NAME"      \
-      --policy "file://policies/s3-buckets/${PROJECT_NAME}-s3-bucket-policy.json" \
+      --policy "file://policies/s3-buckets/${PROJECT_NAME}-proj-s3-policy.json" \
       --profile "$AWS_PROFILE" --region "$AWS_REGION"
   echo "S3 Project Bucket Created .....................: $PROJECT_BUCKET"
 else
@@ -304,7 +392,8 @@ find ./policies -type f -name "${PROJECT_NAME}*.json" ! -path "*/scratch/*" -pri
 
 #----------------------------------------------
 # Upload Cloudformation Templates to S3
-find ./cfn-templates -type f -name "*.yaml" ! -path "*/scratch/*" -print0 |
+find -L ./cfn-templates -type f -name "*.yaml" ! -path "*/scratch/*" -print0 |
+# -L : Follow symbolic links
   while IFS= read -r -d '' FILE
   do
     if [[ ! -s "$FILE" ]]; then
@@ -320,7 +409,11 @@ find ./cfn-templates -type f -name "*.yaml" ! -path "*/scratch/*" -print0 |
 #-----------------------------
 # Upload easy-rsa pki keygen configs to S3
 S3_LOCATION="$PROJECT_BUCKET/easy-rsa/cfn-ovpn-cli-vars"
-if [[ $(tar -zcf - easy-rsa/cfn-ovpn-cli-vars/vars* | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-easyrsa-vars.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
+if [[ $(tar -zchf - easy-rsa/cfn-ovpn-cli-vars/vars* | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-easyrsa-vars.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
+# tar -z : Filter the archive through gzip
+# tar -c : Create a new archive
+# tar -f : Use  archive file
+# tar -h : Follow symlinks
 then
   echo "easy-rsa Configs Failed to Uploaded to S3 .....: $S3_LOCATION"
   exit 1
@@ -332,8 +425,12 @@ fi
 #-----------------------------
 #Compress & Upload public iptables scripts to S3
 S3_LOCATION="$PROJECT_BUCKET/iptables"
-if [[ $(tar -zcf - iptables/cfn-ovpn-cli-ec2-pub-iptables.sh  | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-pub-iptables.sh.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]] || \
-   [[ $(tar -zcf - iptables/cfn-ovpn-cli-ec2-priv-iptables.sh | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-priv-iptables.sh.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
+if [[ $(tar -zchf - iptables/cfn-ovpn-cli-ec2-pub-iptables.sh  | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-pub-iptables.sh.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]] || \
+   [[ $(tar -zchf - iptables/cfn-ovpn-cli-ec2-priv-iptables.sh | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-priv-iptables.sh.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
+# tar -z : Filter the archive through gzip
+# tar -c : Create a new archive
+# tar -f : Use  archive file
+# tar -h : Follow symlinks 
 then
   echo "iptables Configs Failed to Uploaded to S3 .....: ${S3_LOCATION}"
   exit 1
@@ -344,7 +441,8 @@ fi
 
 #-----------------------------
 # Create CloudWatch Agent config from template
-find ./logs/template*.json -type f -print0 |
+find -L ./logs/template*.json -type f -print0 |
+# -L : Follow symbolic links
   while IFS= read -r -d '' TEMPLATE
   do
     # Copy/Rename template via parameter expansion
@@ -374,7 +472,8 @@ fi
 
 #-----------------------------
 # Create client ovpn configs from template
-find ./openvpn/client/ovpn/template*.ovpn -type f -print0 |
+find -L ./openvpn/client/ovpn/template*.ovpn -type f -print0 |
+# -L : Follow symbolic links
   while IFS= read -r -d '' TEMPLATE
   do
     # Copy/Rename template via parameter expansion
@@ -391,8 +490,12 @@ find ./openvpn/client/ovpn/template*.ovpn -type f -print0 |
 #Compress & Upload openvpn server configs to S3
 # Remove hierarchy from archives for more flexible extraction options.
 S3_LOCATION="$PROJECT_BUCKET/openvpn"
-if [[ $(tar -zcf - -C ./openvpn/server/conf/ . | aws s3 cp - ${S3_LOCATION}/server/conf/cfn-ovpn-cli-server-1194.conf.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]] || \
+if [[ $(tar -zchf - -C ./openvpn/server/conf/ . | aws s3 cp - ${S3_LOCATION}/server/conf/cfn-ovpn-cli-server-1194.conf.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]] || \
    [[ $(gzip -c ./openvpn/client/ovpn/*.tar | aws s3 cp - ${S3_LOCATION}/client/ovpn/cfn-ovpn-cli-client-1194.ovpn.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
+# tar -z : Filter the archive through gzip
+# tar -c : Create a new archive
+# tar -f : Use  archive file
+# tar -h : Follow symlinks 
 then
   echo "Openvpn Configs Failed to Uploaded to S3 ......: ${S3_LOCATION}"
   exit 1
@@ -406,7 +509,11 @@ fi
 #-----------------------------
 #Compress & Upload sshd hardening script to S3
 S3_LOCATION="$PROJECT_BUCKET/ssh"
-if [[ $(tar -zcf - ssh/cfn-ovpn-cli-ec2-harden-ssh.sh | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-harden-ssh.sh.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
+if [[ $(tar -zchf - ssh/cfn-ovpn-cli-ec2-harden-ssh.sh | aws s3 cp - ${S3_LOCATION}/cfn-ovpn-cli-ec2-harden-ssh.sh.tar.gz --profile "$AWS_PROFILE" --region "$AWS_REGION") -ne 0 ]]
+# tar -z : Filter the archive through gzip
+# tar -c : Create a new archive
+# tar -f : Use  archive file
+# tar -h : Follow symlinks  
 then
   echo "Harden SSH Configs Failed to Uploaded to S3 ...: ${S3_LOCATION}"
   exit 1
@@ -472,6 +579,11 @@ echo "$BUILD_COUNTER Finished Execution Time ................: \
 $(( TIME_DIFF_STACK / 3600 ))h $(( (TIME_DIFF_STACK / 60) % 60 ))m $(( TIME_DIFF_STACK % 60 ))s"
 #.............................
 #.............................
+
+
+
+
+
 
 
 #-----------------------------
@@ -729,4 +841,5 @@ TIME_DIFF=$((TIME_END_PROJ - TIME_START_PROJ))
 echo "Total Finished Execution Time .................: \
 $(( TIME_DIFF / 3600 ))h $(( (TIME_DIFF / 60) % 60 ))m $(( TIME_DIFF % 60 ))s"
 #.............................
+
 

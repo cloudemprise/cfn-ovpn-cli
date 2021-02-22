@@ -13,8 +13,8 @@
       "Condition": {
         "StringNotLike": {
           "aws:userId": [
-            "AIDAYNCYQ2G2GG6A5MATD",
             "RootAccount",
+            "ConsoleAdmin",
             "ScriptCallerUserId"
           ]
         }
