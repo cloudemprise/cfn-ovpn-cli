@@ -152,7 +152,7 @@ Resources:
         rolebased:
           type: "S3"
           buckets:
-            - !Ref ProjectName
+            - !Sub "proj-${ProjectName}"
           roleName: !Sub "${ProjectName}-priv-iam-ec2-${AWS::Region}"
       # .............................
       AWS::CloudFormation::Init:
@@ -230,7 +230,7 @@ Resources:
               fail2ban: []
           sources:
             /tmp:
-              !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/ssh/cfn-ovpn-cli-ec2-harden-ssh.sh.tar.gz"
+              !Sub "https://proj-${ProjectName}.s3.${AWS::Region}.amazonaws.com/ssh/cfn-ovpn-cli-ec2-harden-ssh.sh.tar.gz"
           files:
             "/etc/fail2ban/jail.local":
               content: |
@@ -279,7 +279,7 @@ Resources:
               iptables-services: []
           sources:
             /tmp:
-              !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/iptables/cfn-ovpn-cli-ec2-priv-iptables.sh.tar.gz"
+              !Sub "https://proj-${ProjectName}.s3.${AWS::Region}.amazonaws.com/iptables/cfn-ovpn-cli-ec2-priv-iptables.sh.tar.gz"
           commands:
             iptRules:
               cwd: "/tmp/iptables"
@@ -359,7 +359,7 @@ Resources:
               group: "root"
           sources:
             /tmp/sign-reqs:
-              !Sub "https://${ProjectName}.s3.${AWS::Region}.amazonaws.com/easy-rsa/sign-reqs/cfn-ovpn-cli-easyrsa-sign-reqs.tar.gz"
+              !Sub "https://proj-${ProjectName}.s3.${AWS::Region}.amazonaws.com/easy-rsa/sign-reqs/cfn-ovpn-cli-easyrsa-sign-reqs.tar.gz"
           commands:
             1a_initPKI:
               command: "mkdir -p /usr/local/easy-rsa && cp -r /usr/share/easy-rsa/3/* $_"
@@ -390,11 +390,11 @@ Resources:
             4c_signReqs:
               cwd: "/usr/local/easy-rsa/pki/issued"
               command:
-                !Sub "tar -czf - ca.crt *server.crt | aws s3 cp - s3://${ProjectName}/openvpn/server/crt/cfn-ovpn-cli-server-crt.tar.gz"
+                !Sub "tar -czf - ca.crt *server.crt | aws s3 cp - s3://proj-${ProjectName}/openvpn/server/crt/cfn-ovpn-cli-server-crt.tar.gz"
             4d_signReqs:
               cwd: "/usr/local/easy-rsa/pki/issued"
               command:
-                !Sub "tar -czf - ca.crt *client.crt | aws s3 cp - s3://${ProjectName}/openvpn/client/crt/cfn-ovpn-cli-client-crt.tar.gz"
+                !Sub "tar -czf - ca.crt *client.crt | aws s3 cp - s3://proj-${ProjectName}/openvpn/client/crt/cfn-ovpn-cli-client-crt.tar.gz"
         # / / / / / / / / / / / / / / /
         configOpenvpn:
           commands:

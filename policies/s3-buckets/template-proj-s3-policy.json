@@ -2,13 +2,13 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "Instance-role/UserId/Root access to S3 Bucket only",
+      "Sid": "ProjectArtifactsLimitedAccess Root/ConsoleAdmin/ScriptCaller/InstanceRoles",
       "Effect": "Deny",
       "Principal": "*",
       "Action": "s3:*",
       "Resource": [
-        "arn:aws:s3:::ProjectName",
-        "arn:aws:s3:::ProjectName/*"
+        "arn:aws:s3:::ProjectBucket",
+        "arn:aws:s3:::ProjectBucket/*"
       ],
       "Condition": {
         "StringNotLike": {

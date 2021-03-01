@@ -89,9 +89,9 @@ Resources:
             !Sub |
               #!/bin/bash -xe
               # https://github.com/aws/aws-cli/issues/1588 bug with --exclude & set -e below
-              # aws s3 sync s3://${ProjectName}/openvpn/server/crt/ /tmp --exclude "*" --include "*server-crt.tar.gz"
+              # aws s3 sync s3://proj-${ProjectName}/openvpn/server/crt/ /tmp --exclude "*" --include "*server-crt.tar.gz"
               # Download Server Certs & start Openvpn dual-protocol service
-              aws s3 cp s3://${ProjectName}/openvpn/server/crt/cfn-ovpn-cli-server-crt.tar.gz /tmp
+              aws s3 cp s3://proj-${ProjectName}/openvpn/server/crt/cfn-ovpn-cli-server-crt.tar.gz /tmp
               tar -xzf /tmp/*server-crt.tar.gz -C /etc/openvpn/server/
               rm /tmp/*server-crt.tar.gz
               systemctl enable openvpn-server@cfn-ovpn-cli-server-udp1194

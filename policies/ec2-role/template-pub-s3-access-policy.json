@@ -2,21 +2,21 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "ProjectBucketListObjects",
+      "Sid": "ProjectArtifactsListObjects",
       "Effect": "Allow",
       "Action": [
         "s3:ListBucket"
       ],
-      "Resource": "arn:aws:s3:::ProjectName"
+      "Resource": "arn:aws:s3:::ProjectBucket"
     },
     {
-      "Sid": "ProjectBucketSendRecieveObjects",
+      "Sid": "ProjectArtifactsSendRecieveObjects",
       "Effect":"Allow",
       "Action": [
         "s3:PutObject",
         "s3:GetObject"
       ],
-      "Resource": "arn:aws:s3:::ProjectName/*"
+      "Resource": "arn:aws:s3:::ProjectBucket/*"
     }  
   ]
 }
