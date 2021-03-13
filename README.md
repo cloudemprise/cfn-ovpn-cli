@@ -66,7 +66,7 @@ Table of Contents
 
 At the start, the shell script requests an assortment of parameters from the script caller pertaining to the project prerequisites and other program environment variables. Before any further processing or API calls are made some rudimentary error checking and validation is performed on the project environment to pick up on any silly mistakes or obvious errors.
 
-The script then builds a mix of IAM control access policies and EC2 Instance Roles as well as operating system, utility and client configuration files. These artefacts and other significant project documents are then uploaded into cloud storage as reference material for further operational activities as well as an archive of record.
+The script then builds a mix of IAM control access policies and EC2 Instance Profiles as well as operating system, utility and client configuration files. These artefacts and other significant project documents are then uploaded into cloud storage as reference material for further operational activities as well as an archive of record.
 
 The cloud infrastructure provisioning process can now commence and takes the form of a three stage AWS CloudFormation stack creation and update procedure. The first stage involves the provisioning of the idempotent architectural elements while the second stage comprises the creation of two custom configured interrelated golden Amazon Machine Image (AMI) snapshots. Each of which represents either the public or private component of the system; namely the internet facing OpenVPN server and the isolated PKI framework element respectively. The final piece of the puzzle is the creation of a fault-tolerant, auto-scaling, load-balanced server appliance based off of the preconfigured public golden AMI snapshot. 
 
@@ -105,7 +105,7 @@ and listens for client connections on both the UDP and TCP protocols.
 
 OpenVPN defines the concept of a control channel and a data channel, both of which are encrypted and secured differently but pass over the same protocol connection. The control channel is encrypted and secured using TLS while the data channel is encrypted using a (stipulated) negotiated block cipher.
 
-As an aside note, OpenVPN can also be compiled with [Mbed TLS](https://www.trustedfirmware.org/projects/mbed-tls/) as its cryptographic backend for small code footprint requirements, i.e. embedded systems. This is supposed to ensure the independence of the underlying encryption libraries.
+As an aside note, OpenVPN can also be compiled with [Mbed TLS](https://www.trustedfirmware.org/projects/mbed-tls/) as its cryptographic backend for small code footprint requirements, i.e. embedded systems. This is purported to ensure the independence of the underlying encryption libraries.
 
 Give an overview here of the handshake and tunnel protocols.
 
@@ -148,7 +148,7 @@ A secure VPN requires authentication and this here involves two components:
 
 1. Client/Server Authentication. This ensures that the server and clients are indeed communicating with authorized known entities and not some spoofed fake user/host.
 
-2. A method of hashing each data packet within the system is also established. By authenticating each data packet, the system avoids wasting cpu cycles on decrypting packets that don't meet the authentication rules. Thus preventing many types of attack vectors.
+2. A method of hashing each data packet within the system is also established. By authenticating each data packet, the system avoids wasting cpu cycles on decrypting packets that do not meet the authentication rules. Thus preventing many types of attack vectors.
 
 A system that uses key-based authentication requires a Public Key Infrastructure (PKI). Simply put, a PKI consists of the following:
 
@@ -156,9 +156,9 @@ A system that uses key-based authentication requires a Public Key Infrastructure
 * A separate public certificate and private key pair for the server.
 * A separate public certificate and private key pair for each client.
 
-Conveniently, a awesome utility exist just for the purposes of making PKI management really easy, i.e. [Easy-RSA](https://github.com/OpenVPN/easy-rsa). Easy-RSA is a framework for managing X.509 PKI. It is based around the concept of a trusted root signing authority and the backend is comprised of the OpenSSL cryptographic library.
+Conveniently, a awesome utility exist just for the purposes of making PKI management really easy, namely [Easy-RSA](https://github.com/OpenVPN/easy-rsa). Easy-RSA is a framework for managing X.509 PKI. It is based around the concept of a trusted root signing authority and the backend is comprised of the OpenSSL cryptographic library.
 
-**cfn-ovpn-cli** builds two interrelated PKIs on hardened virtual linux servers within a VPC in the AWS Cloud. A trusted root CA is created within the isolated private subnet, only accessible via a Bastion Host and used exclusively to sign certificate requests. A second PKI is created on the OpenVPN application server itself which resides within the public subnet of the VPC. Here the server as well as the client certificates and private keys are generated. Requests and signed certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. This is described in more detail in the Cloudformation section below but suffice to say, hinges around the calling of the ec2 create-image API. The CA is further constrained by a passphrase that is securely stored and retrived via the AWS System Manager Parameter Store secrets management protocol. The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
+**cfn-ovpn-cli** builds two interrelated PKIs on hardened virtual linux servers within a VPC in the AWS Cloud. A trusted root CA is created within the isolated private subnet, only accessible via a Bastion Host and used exclusively to sign certificate requests. A second PKI is created on the OpenVPN application server itself which resides within the public subnet of the VPC. Here the server as well as the client certificates and private keys are generated. Requests and signed certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. This is described in more detail in the Cloudformation section withinthrough to the operating system but suffice to say, hinges around the calling of the ec2 create-image API. The CA is further constrained by a passphrase that is securely stored and retrived via the AWS System Manager Parameter Store secrets management protocol. The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
 
 export RANDFILE=/tmp/.rnd
 
@@ -178,7 +178,7 @@ While NACLs operate at the network subnet level, security groups act at the inst
 
 A collection of unordered rules decide whether to allow traffic to reach the computation unit or not. An interesting feature of security groups is that they can reference other security groups as their end-point, exhibiting object like characteristics that simplifying rule creation and management.
 
-**cfn-ovpn-cli** constructs two security groups, a Public Security Group for instances residing on public subnets and similarly, a Private Security Group for instances residing on private subnets. Restrictive rules are applied to ensure only expected traffic is allowed to pass through to the operating system.
+**cfn-ovpn-cli** constructs two security groups, a Public Security Group for instances residing on public subnets and similarly, a Private Security Group for instances residing on private subnets. Restrictive rules are applied to ensure only expected traffic is allowed to pass through the computational units.
 
 ### The Linux Kernel Packet Filter
 
@@ -340,7 +340,7 @@ The `yum-cron` service is configured to automatically keep the system up-to-date
 
 ## Telemetry
 
-The _Amazon Linux 2_ golden image uses _systemd-journald_ as well as _rsyslog_ for event logging. Important log streams are configured, collated and dispatched to _Amazon CloudWatch Logs_ and the _systemd_ journal is made persistent across reboots. To restrict the volume of local log data, the utility _logrotate_ is configured to compress, rotate and eventually truncate the relevant streams.
+The _Amazon Linux 2_ golden image uses _systemd-journald_ as well as _rsyslog_ for event logging. Important log streams are configured, assembled and dispatched to _Amazon CloudWatch Logs_ and the _systemd_ journal is made persistent across reboots. To restrict the volume of local log data, the utility _logrotate_ is configured to compress, rotate and eventually truncate the relevant streams.
 
 ### Amazon CloudWatch Logs
 
