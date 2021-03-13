@@ -6,13 +6,7 @@
   <img src="./docs/images/cfn-ovpn-cli-sys-overview.png">
 </p>
 
-A hardened and highly available, multi-client, dual protocol, VPN appliance, accompanied by an isolated Public Key Infrastructure framework, orchestrated in Cloudformation via the AWS command line interface.
-
-highly available
-fault tolerant
-scalable
-elastic
-cost efficient
+A hardened, fault-tolerant and highly-available, multi-client, dual-protocol, cloud-based VPN appliance; accompanied by an isolated Public Key Infrastructure framework; orchestrated in Cloudformation via the AWS Command Line Interface.
 
 [![Linux](https://img.shields.io/badge/OS-Linux-blue?logo=linux)](https://github.com/cloudemprise/cfn-ovpn-cli)
 ![Bash](https://img.shields.io/badge/Bash->=v4.0-green?logo=GNU%20bash)
@@ -66,20 +60,23 @@ Table of Contents
 
 ## Introduction
 
-**cfn-ovpn-cli** is a shell script that creates a cloud-based Virtual Private Network (VPN) application together with a isolated Public Key Infrastructure (PKI) Certification Authority, that provides for a secure mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is used to provision and configure various AWS Resources through an assortment of API calls and AWS Cloudformation templates.
+**cfn-ovpn-cli** is a shell script that creates a cloud-based Virtual Private Network (VPN) application as well as an isolated Public Key Infrastructure (PKI) Certification Authority. This provides for a secure personal mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is used to provision and configure various AWS Resources through an assortment of API calls and AWS Cloudformation templates.
 
-- Talk a little about bash script here.
-- Mention that we are making two Amazon Machine Images?
+##### An overview of the program structure:
 
-The final product is two generic Amazon Machine Images (AMI), a private one for the PKI and a public one for the VPN application.
+At the start, the shell script requests an assortment of parameters from the script caller pertaining to the project prerequisites and other program environment variables. Before any further processing or API calls are made some rudimentary error checking and validation is performed on the project environment to pick up on any silly mistakes or obvious errors.
+
+The script then builds a mix of IAM control access policies and EC2 Instance Roles as well as operating system, utility and client configuration files. These artefacts and other significant project documents are then uploaded into cloud storage as reference material for further operational activities as well as an archive of record.
+
+The cloud infrastructure provisioning process can now commence and takes the form of a three stage AWS CloudFormation stack creation and update procedure. The first stage involves the provisioning of the idempotent architectural elements while the second stage comprises the creation of two custom configured interrelated golden Amazon Machine Image (AMI) snapshots. Each of which represents either the public or private component of the system; namely the internet facing OpenVPN server and the isolated PKI framework element respectively. The final piece of the puzzle is the creation of a fault-tolerant, auto-scaling, load-balanced server appliance based off of the preconfigured public golden AMI snapshot. 
+
+Lastly, an assortment of OpenVPN client configuration archives are generated and collated locally for convenient manual distribution.
 
 ## Cloudformation
 
 AWS Cloudformation is a service that provisions and configures cloud resources that are declared in a template file. The template defines a collection of elements as a single unit called a Stack, simplifying the management of cloud infrastructure.
 
-**cfn-ovpn-cli** templates compose a monolithic hierarchical tree structure of nested stacks and orchestration is achieved in a three-phase stack creation/update process that is promoted via a counter variable. The flowchart below illustrates the build process and resouce dependencies:
-
-- Mention that we are making two Amazon Machine Images?
+**cfn-ovpn-cli** templates compose a monolithic hierarchical tree structure of nested stacks and orchestration is achieved in a three-phase stack creation/update process that is promoted via a counter variable. The crux of the mater is, as noted above, the creation of two custom preconfigured interrelated golden Amazon Machine Image (AMI) snapshots. The flowchart below illustrates the build process and resouce dependencies:
 
 <details>  
   <summary>Click to View Flow Chart</summary>
@@ -250,7 +247,7 @@ Include bash function aliases to authorize my ip.
 
 ### Access Management
 
-AWS IAM (_Identity and Access Management_) is an authentication and authorization web service that is tightly integrated into every facet of the AWS Cloud. It allows for the central management of Access Controls to all AWS services and resources. At its crux is what is called a Policy Document that defines permissions. It is associated with either an identity or a resource and stipulates what actions are allowed, or not allowed by that identity or resource.
+AWS IAM (_Identity and Access Management_) is an authentication and authorization web service that is tightly integrated into every facet of the AWS Cloud. It allows for the central management of Access Controls to all AWS services and resources. At the heart of the matter is what is called a Policy Document that defines permissions. It is associated with either an identity or a resource and stipulates what actions are allowed, or not allowed by that identity or resource.
 
 Of particular note, is a special identity refered to as an IAM Role. It is intended to be assumed by an entity (user, application or service), granting temporary security credentials to perform some limited task. When that entity is an EC2 Instance it is refered to as an Instance Profile.
 
