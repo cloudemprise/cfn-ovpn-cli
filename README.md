@@ -1,6 +1,6 @@
 # cfn-ovpn-cli
 
-> A virtual private network application in the cloud.
+> A virtual private network application in the AWS cloud.
 
 <p align="center">
   <img src="./docs/images/cfn-ovpn-cli-sys-overview.png">
@@ -33,6 +33,11 @@ A hardened, fault-tolerant and highly-available, multi-client, dual-protocol, cl
 - jq version 1.6
 - awscli version 2
 - bash > version 4
+
+ToDo List:
+- partition iptables logs to S3 Bucket for Athena/Glue Catalogue search.
+- fail2ban on port 1194
+- implement block on port scanners with iptables -m recent reference archlinux doc.
 
 Table of Contents
 =================
@@ -78,36 +83,60 @@ AWS Cloudformation is a service that provisions and configures cloud resources t
 
 **cfn-ovpn-cli** templates compose a monolithic hierarchical tree structure of nested stacks and orchestration is achieved in a three-phase stack creation/update process that is promoted via a counter variable. The crux of the mater is, as noted above, the creation of two custom preconfigured interrelated golden Amazon Machine Image (AMI) snapshots. The flowchart below illustrates the build process and resouce dependencies:
 
-<details>  
-  <summary>Click to View Flow Chart</summary>
-
   <p align="center">
-    <img src="./docs/images/cfn-flowchart.png">
+    <img src="./docs/images/cfn-flowchart.png" width="400">
   </p>
-
-</details>
 
 ## OpenVPN
 
-OpenVPN is a popular VPN daemon that is remarkably flexible and relatively simple to setup. It is particularly suitable for small deployments and uses the TLS protocol to secure its tunnels. It derives its cryptographic capabilities from the OpenSSL library.
+Headings
 
-OpenVPN operates at the backend of a virtual network adapter that acts as an interface between user-space and kernel-space and can function as either a point-to-point adapter (tun-style) for IP-only traffic, or as a fully virtualized Ethernet adapter (tap-style) for all types of traffic. **cfn-ovpn-cli** is configured in tun-style (tun0) mode conceptually as follows:
+
+Authentication
+Security
+Extensibility
+
+### Introduction
+
+[OpenVPN](https://openvpn.net) is a popular VPN daemon that is flexible and relatively simple to setup. 
+
+Because of its' multiclient-server architecture it is particularly well suited for small to mid-sized business deployments.
+
+OpenVPN acquires its cryptographic back-end capabilities from the [OpenSSL](https://en.wikipedia.org/wiki/OpenSSL) encryption library. It uses the [Transport Layer Security](https://en.wikipedia.org/wiki/Transport_Layer_Security) (TLS) cryptographic protocol to exchange keys and is able to pass through NAT gateways and firewalls with easy.
+
+Confidentiality Integrity Authentication
+
+### Encryption
+
+OpenVPN uses the OpenSSL library to provide encryption of both the data and control channels. It lets OpenSSL do all the encryption and authentication work, allowing OpenVPN to use all the ciphers available in the OpenSSL package. It can also use the HMAC packet authentication feature to add an additional layer of security to the connection (referred to as an "HMAC Firewall" by the creator). It can also use hardware acceleration to get better encryption performance.[14][15] Support for mbed TLS is available starting from version 2.3.[16]
+
+OpenVPN defines the concept of a control channel and a data channel, both of which are authenticated and encrypted separately but pass over the same protocol link. 
+
+The control channel is encrypted and secured using TLS negotiation while the data channel is encrypted using a prearranged block cipher.
+
+but can also be compiled with [Mbed TLS](https://www.trustedfirmware.org/projects/mbed-tls) for embedded systems that require small code footprints.
+
+AES is a block cypher.
+
+### Networking
+
+OpenVPN operates at the back-end of a so-called Virtual Network Adapter, acting as an interface between user-space and kernel-space. This coupling can function as either a fully virtualized Ethernet adapter (tap-style) for any type of Transport Layer?? protocol, or as a point-to-point adapter (tun-style) for IP-only hosts operating in client-server mode. **cfn-ovpn-cli** has been setup to operate in tun-style mode on both the UDP and TCP protocols. This concept can be illustrated as follows:
+
+Universal TUN/TAP Driver
+https://en.wikipedia.org/wiki/TUN/TAP
+
+secure point-to-point or site-to-site connections in routed or bridged configurations 
 
 <p align="center">
-  <img src="./docs/images/openvpn-virtual-adapter.png">
+  <img src="./docs/images/openvpn-virtual-adapter.png" width="400">
 </p>
 
 
-processing incoming and outgoing network traffic.
-
-
-and listens for client connections on both the UDP and TCP protocols. 
-
-OpenVPN defines the concept of a control channel and a data channel, both of which are encrypted and secured differently but pass over the same protocol connection. The control channel is encrypted and secured using TLS while the data channel is encrypted using a (stipulated) negotiated block cipher.
-
-As an aside note, OpenVPN can also be compiled with [Mbed TLS](https://www.trustedfirmware.org/projects/mbed-tls/) as its cryptographic backend for small code footprint requirements, i.e. embedded systems. This is purported to ensure the independence of the underlying encryption libraries.
 
 Give an overview here of the handshake and tunnel protocols.
+Question here from the Security Interview Questionair about TLS ... 
+
+OpenVPN allows peers to authenticate each other using pre-shared secret keys, certificates or username/password. When used in a multiclient-server configuration, it allows the server to release an authentication certificate for every client, using signatures and certificate authority. 
 
 **cfn-ovpn-cli** is setup in the following fashion:
 
@@ -141,8 +170,14 @@ Section on how it is installed and configured and manintained Bla bla
 **cfn-ovpn-cli** configures OpenVPN as such: bla bla
 It is used in both protocols methods and configures four clients, i.e. bla bla
 
+It can also use the HMAC packet authentication feature to add an additional layer of security to the connection (referred to as an "HMAC Firewall" by the creator).
+
+Note that when --tls-auth is used, all message types are protected with an HMAC signature, even the initial packets of the TLS handshake.  This makes it easy for OpenVPN to throw away bogus packets quickly, without wasting resources on attempting a TLS handshake which will ultimately fail.
+
 
 ## Public Key Infrastructure
+
+https://en.wikipedia.org/wiki/Pre-shared_key
 
 A secure VPN requires authentication and this here involves two components:
 
