@@ -98,13 +98,34 @@ Extensibility
 
 ### Introduction
 
-[OpenVPN](https://openvpn.net) is a popular VPN daemon that is flexible and relatively simple to setup. 
+[OpenVPN](https://openvpn.net) is a popular VPN daemon that is both flexible and relatively easy to setup. 
 
-Because of its' multiclient-server architecture it is particularly well suited for small to mid-sized business deployments.
+It employs a multiclient-server architecture that is particularly well suited for small to mid-sized business deployments.
 
 OpenVPN acquires its cryptographic back-end capabilities from the [OpenSSL](https://en.wikipedia.org/wiki/OpenSSL) encryption library. It uses the [Transport Layer Security](https://en.wikipedia.org/wiki/Transport_Layer_Security) (TLS) cryptographic protocol to exchange keys and is able to pass through NAT gateways and firewalls with easy.
 
 Confidentiality Integrity Authentication
+
+### Networking
+
+OpenVPN operates at the back-end of a software-defined network adapter refered to as the Universal TUN/TAP Driver, acting as an interface between user-space and kernel-space. This coupling can function as either a fully virtualized Ethernet adapter for any type of Layer 2 traffic (i.e. tap-style), or as a point-to-point connector operating in client-server mode for IP-only traffic (i.e. tun-style) operating at Layer 3. 
+
+**cfn-ovpn-cli** is configured for IP-only traffic in tun-style mode for both the TCP as well as the UDP protocols. Conceptually, the tun-style adapter can be illustrated as follows:
+
+<p align="center">
+  <img src="./docs/images/openvpn-virtual-adapter.png" width="400">
+</p>
+
+The flow of a packet is described as follows:
+
+- a user-space application off-loads a packet to the operating system (OS).
+- using nornal routing rules the OS decides the packet is destined for the VPN TUNnel.
+- the packet is then forwarded to the kernel tun device.
+- the kernel tun device then forwards the packet to the user-space OpenVPN process.
+- the OpenVPN process encrypts and signs the packet, fragments it if necessary, and then hands it back to the kernel to be sent to the address of the remote VPN endpoint.
+- the kernel picks up the encrypted packet and forwards it to the remote VPN endpoint, where the same process is reversed.
+
+A consequence of this back-and-forth packet-scuffle is a performance bottleneck, in terms of both bandwidth and latency, making speeds above 1GB/s impractical.
 
 ### Encryption
 
@@ -118,23 +139,13 @@ but can also be compiled with [Mbed TLS](https://www.trustedfirmware.org/project
 
 AES is a block cypher.
 
-### Networking
-
-OpenVPN operates at the back-end of a so-called Virtual Network Adapter, acting as an interface between user-space and kernel-space. This coupling can function as either a fully virtualized Ethernet adapter (tap-style) for any type of Transport Layer?? protocol, or as a point-to-point adapter (tun-style) for IP-only hosts operating in client-server mode. **cfn-ovpn-cli** has been setup to operate in tun-style mode on both the UDP and TCP protocols. This concept can be illustrated as follows:
-
-Universal TUN/TAP Driver
-https://en.wikipedia.org/wiki/TUN/TAP
-
-secure point-to-point or site-to-site connections in routed or bridged configurations 
-
-<p align="center">
-  <img src="./docs/images/openvpn-virtual-adapter.png" width="400">
-</p>
 
 
 
-Give an overview here of the handshake and tunnel protocols.
-Question here from the Security Interview Questionair about TLS ... 
+
+
+
+
 
 OpenVPN allows peers to authenticate each other using pre-shared secret keys, certificates or username/password. When used in a multiclient-server configuration, it allows the server to release an authentication certificate for every client, using signatures and certificate authority. 
 
@@ -165,6 +176,60 @@ encryption strength is directly related to the key size
 Elliptic Curve Digital Signature Algorithm (ECDSA)
 https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
+## -------------------------
+Cipher Suite:
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+ECDHE   : Key Exchange
+ECDSA   : Authentication
+Cipher  : AES_256_GCM
+  Algo : AES
+  Str  : 256
+  Mode : GCM
+MAC/PRF : SHA384
+## -------------------------
+
+ECDHE: Ephemeral Elliptic-curve Diffie–Hellman
+ECDSA: Elliptic Curve Digital Signature Algorithm
+## -------------------------
+
+3.2.  Galois Counter Mode-Based Cipher Suites
+
+   The second eight cipher suites use the same asymmetric algorithms as
+   those in the previous section but use the new authenticated
+   encryption modes defined in TLS 1.2 with AES in Galois Counter Mode
+   (GCM) [GCM]:
+
+     CipherSuite TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384  = {0xC0,0x2C};
+
+   These cipher suites use authenticated encryption with additional data
+   algorithms AEAD_AES_128_GCM and AEAD_AES_256_GCM described in
+   [RFC5116].  GCM is used as described in [RFC5288].
+
+   The PRFs SHALL be as follows:
+
+   o  For cipher suites ending with _SHA256, the PRF is the TLS PRF
+      [RFC5246] with SHA-256 as the hash function.
+
+   o  For cipher suites ending with _SHA384, the PRF is the TLS PRF
+      [RFC5246] with SHA-384 as the hash function.
+## -------------------------
+
+Advanced Encryption Standard (AES)
+in Galois/Counter Mode (GCM) as a Transport Layer Security (TLS)
+authenticated encryption operation.  GCM provides both
+confidentiality and data origin authentication, can be efficiently
+implemented in hardware for speeds of 10 gigabits per second and
+above, and is also well-suited to software implementations.  This
+memo defines TLS cipher suites that use AES-GCM with RSA, DSA, and
+Diffie-Hellman-based key exchange mechanisms.
+## -------------------------
+
+Authenticated suites combine authentication and encryption in the cipher, which means that integrity validation need not be forformed at the TLS level. GCM suites use the last segment to indicat the PRF instead of the MAC algorithm.
+TLS 1.2 is the only protocol that allows suites to define their PRFs. This means that for the suites defined before TLS 1.2 the negotiated protocol version deictates the PRF. For example , the TLS_RSA_WITH_AES_128_CBC_SHA suite uses a PRF based on HMAC-SHA256 when negotiated with TLS 1.2 but a PRF based on a HMAC-MD5/HMAC-SHA combination when used with TLS 1.0 . On the other hand , SHA384 GCM suites (which can be used only with TLS 1.2 and newer) will always use HMAC-SHA384 for the PRF.
+## -------------------------
+TLS 1.2 => authenticated encryption
+
+
 
 Section on how it is installed and configured and manintained Bla bla
 **cfn-ovpn-cli** configures OpenVPN as such: bla bla
@@ -173,6 +238,22 @@ It is used in both protocols methods and configures four clients, i.e. bla bla
 It can also use the HMAC packet authentication feature to add an additional layer of security to the connection (referred to as an "HMAC Firewall" by the creator).
 
 Note that when --tls-auth is used, all message types are protected with an HMAC signature, even the initial packets of the TLS handshake.  This makes it easy for OpenVPN to throw away bogus packets quickly, without wasting resources on attempting a TLS handshake which will ultimately fail.
+
+###...
+Some background on post-quantum TLS
+
+Today, all requests to AWS KMS use TLS with one of two key exchange schemes:
+
+Finite Field Diffie-Hellman Ephemeral (FFDHE)
+Elliptic Curve Diffie-Hellman Ephemeral (ECDHE)
+
+FFDHE and ECDHE are industry standards for secure key exchange. KMS uses only ephemeral keys for TLS key negotiation; this ensures every connection uses a unique key and the compromise of one connection does not affect the security of another connection. They are secure today against known cryptanalysis techniques which use classic computers; however, they’re not secure against known attacks which use a large-scale quantum computer.
+###...
+
+### Protocol
+
+Give an overview here of the handshake and tunnel protocols.
+Question here from the Security Interview Questionair about TLS ... 
 
 
 ## Public Key Infrastructure
