@@ -54,13 +54,13 @@ Resources:
     # .............................
     Properties:
       DisplayName: "OpenvpnNotice"
-      TopicName: !Sub "${ProjectName}-activity-notice-${AWS::Region}"
+      TopicName: !Sub "${ProjectName}-bulletin-${AWS::Region}"
       KmsMasterKeyId: "alias/aws/sns"
       # .............................
       Tags:
         -
           Key: "Name"
-          Value: "openvpn-activity-sns"
+          Value: !Sub "${ProjectName}-bulletin-${AWS::Region}"
 
   # ------------------------------------------
   # --- SNS Subscription Definition

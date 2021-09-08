@@ -31,7 +31,7 @@ do
   # -p : prompt on stderr
   # -i : use default buffer val
   read -er -i "$AWS_PROFILE" -p "Enter Project AWS CLI Named Profile ...........: " USER_INPUT
-  if aws configure list-profiles 2>/dev/null | fgrep -qw "$USER_INPUT"
+  if aws configure list-profiles 2>/dev/null | grep -qw -- "$USER_INPUT"
   then
     echo "Project AWS CLI Named Profile is valid ........: $USER_INPUT"
     AWS_PROFILE=$USER_INPUT
@@ -52,7 +52,7 @@ do
   # -p : prompt on stderr
   # -i : use default buffer val
   read -er -i "$AWS_REGION" -p "Enter Project AWS CLI Region ..................: " USER_INPUT
-  if aws ec2 describe-regions --profile "$AWS_PROFILE" --query 'Regions[].RegionName' --output text 2>/dev/null | fgrep -qw "$USER_INPUT"
+  if aws ec2 describe-regions --profile "$AWS_PROFILE" --query 'Regions[].RegionName' --output text 2>/dev/null | grep -qw -- "$USER_INPUT"
   then
     echo "Project AWS CLI Region is valid ...............: $USER_INPUT"
     AWS_REGION=$USER_INPUT
@@ -109,7 +109,7 @@ done
 
 #-----------------------------
 # Request Domain Name
-AWS_DOMAIN_NAME="cloudemprise.org"
+AWS_DOMAIN_NAME="cloudemprise.net"
 while true
 do
   # -e : stdin from terminal
@@ -510,7 +510,7 @@ fi
 #-----------------------------
 # Stage1 Stack Creation Code Block
 BUILD_COUNTER="stage1"
-TEMPLATE_URL="https://${PROJECT_BUCKET}.s3.${AWS_REGION}.amazonaws.com/cfn-templates/cfn-ovpn-cli.yaml"
+TEMPLATE_URL="https://${PROJECT_BUCKET}.s3.${AWS_REGION}.amazonaws.com/cfn-templates/${PROJECT_NAME}.yaml"
 STACK_POLICY_URL="https://${PROJECT_BUCKET}.s3.${AWS_REGION}.amazonaws.com/policies/cfn-stacks/${PROJECT_NAME}-${BUILD_COUNTER}-cfn-stack-policy.json"
 
 echo "Cloudformation Stack Creation Initiated .......: $TEMPLATE_URL"
@@ -730,10 +730,10 @@ $(( TIME_DIFF_STACK / 3600 ))h $(( (TIME_DIFF_STACK / 60) % 60 ))m $(( TIME_DIFF
 
 #-----------------------------
 # Grab the IDs of the ec2 instances for further processing
-INSTANCE_ID_PUB=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --output text \
-    --profile "$AWS_PROFILE" --region "$AWS_REGION"                                         \
-    --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic'].OutputValue")
-echo "Openvpn Server EC2 Instance ID ................: $INSTANCE_ID_PRIV"
+#INSTANCE_ID_PUB=$(aws cloudformation describe-stacks --stack-name "$STACK_ID" --output text \
+#    --profile "$AWS_PROFILE" --region "$AWS_REGION"                                         \
+#    --query "Stacks[].Outputs[?OutputKey == 'InstanceIdPublic'].OutputValue")
+#echo "Openvpn Server EC2 Instance ID ................: $INSTANCE_ID_PRIV"
 #.............................
 
 

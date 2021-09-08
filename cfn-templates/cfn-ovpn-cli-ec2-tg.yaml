@@ -55,17 +55,11 @@ Resources:
     # .............................
     Properties:
       Name: !Sub "${ProjectName}-target-group"
-      HealthCheckEnabled: true
-      HealthCheckIntervalSeconds: 30
-      HealthCheckPort: "80"
-      HealthCheckProtocol: "TCP"
-      HealthCheckTimeoutSeconds: 10
-      HealthyThresholdCount: 3
-      UnhealthyThresholdCount: 3
-      VpcId: !Ref VPCID
-      TargetType: "instance"
-      Port: 1194
-      Protocol: "TCP_UDP"
+      # .............................
+      Tags:
+        -
+          Key: "Name"
+          Value: "OpenvpnTargetGroup"
       # .............................
       TargetGroupAttributes:
         -
@@ -75,10 +69,19 @@ Resources:
           Key: "deregistration_delay.timeout_seconds"
           Value: "240"
       # .............................
-      Tags:
-        -
-          Key: "Name"
-          Value: "OpenvpnTargetGroup"
+      VpcId: !Ref VPCID
+      TargetType: "instance"
+      Port: 1194
+      Protocol: "TCP_UDP"
+      # .............................
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPort: "80"
+      HealthCheckProtocol: "TCP"
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+      # .............................
 
 
 # ==========================================

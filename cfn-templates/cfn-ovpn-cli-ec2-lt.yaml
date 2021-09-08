@@ -98,7 +98,8 @@ Resources:
               systemctl enable openvpn-server@cfn-ovpn-cli-server-tcp1194
               systemctl start openvpn-server@cfn-ovpn-cli-server-udp1194
               systemctl start openvpn-server@cfn-ovpn-cli-server-tcp1194
-              # Health Checks facilitated by httpd Port 80
+              # Health Checks facilitated by httpd Port 80, only works if script gets to this point
+              # in execution, i.e. OpenVPN server is started correctly -> else no health checks.
               systemctl enable httpd
               systemctl start httpd
               # Start CW Agent
