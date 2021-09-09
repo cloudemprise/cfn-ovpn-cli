@@ -54,9 +54,9 @@ Table of Contents
 =================
 
 - [Introduction](#introduction)
-- [Cloudformation](#cloudformation)
 - [OpenVPN](#openvpn)
 - [Pulic Key Infrastructure](#public-key-infrastructure)
+- [Cloudformation](#cloudformation)
 - [Network Security](#network-security)
   * [AWS Network ACLs](#aws-network-acls)
   * [AWS Security Groups](#aws-security-groups)
@@ -78,56 +78,35 @@ Table of Contents
 
 ## Introduction
 
-**cfn-ovpn-cli** is a shell script that creates a Cloud-based Virtual Private Network (VPN) application as well as an isolated Public Key Infrastructure (PKI) Certification Authority. This gives rise to a secure personal mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is employed to provision and configure various AWS Resources through an assortment of API calls and AWS Cloudformation templates.
+**cfn-ovpn-cli** is a shell script that creates a Cloud-based Virtual Private Network (VPN) application as well as an isolated Public Key Infrastructure (PKI) Certification Authority (CA). This gives rise to a secure personal mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is employed to provision and configure various AWS resources through an assortment of API calls and AWS Cloudformation templates.
 
-##### An overview of the program structure:
+##### What follows is an overview of the program structure:
 
-The first phase of the shell script requests an assortment of parameters from the Script-Caller; pertaining to the project prerequisites and other program environment variables. Before any further processing or API calls are made, some rudimentary error checking and validation is performed on the project environment to pick up on any silly mistakes or obvious errors.
+The first part of the shell script requests an assortment of parameters from the Script-Caller; pertaining to the project prerequisites and other program environment variables. Before any further processing or API calls are made, some rudimentary error checking and validation is performed on the project environment to pick up on any silly mistakes or obvious errors.
 
-The next phase of the script then builds a mix of Least-Privilege IAM Control Access Policies and EC2 Instance Profiles as well as operating system, utility and client configuration files. These artefacts and other significant project documents are then uploaded into Cloud storage as reference material for further operational activities as well as an archive of record.
+The next part of the script then builds a mix of IAM Control Access Policies and EC2 Instance Profiles of least privilege as well as operating system, utility and client configuration files. These artefacts and other significant project documents are then uploaded into Cloud Storage as reference material for further operational activities as well as an archive of record.
 
-The Cloud infrastructure provisioning process can now commence and takes the form of a three stage AWS CloudFormation Stack creation and update procedure. The first stage involves the provisioning of the idempotent architectural elements while the second stage comprises the creation of two custom configured interrelated golden Amazon Machine Image (AMI) snapshots. Each of which, represents either the public or private component of the system; namely the internet facing OpenVPN server and the isolated PKI framework element respectively. The final piece of the puzzle is the creation of a fault-tolerant, auto-scaling, load-balanced server appliance based off of the preconfigured public golden AMI snapshot. 
+The Cloud infrastructure provisioning process now commences and takes the form of a three stage AWS CloudFormation Stack creation and update procedure. The First-Stage involves the provisioning of the idempotent architectural elements while the Second-Stage comprises the creation of two custom configured interrelated Golden Amazon Machine Image (AMI) snapshots. Each of which, represents either the Public or Private component of the system; namely the internet facing OpenVPN Server and the isolated PKI framework element, respectively. The final piece of the puzzle, i.e. Third-Stage is the creation of a fault-tolerant, auto-scaling, load-balanced server appliance based off of the preconfigured Public Golden AMI snapshot. 
 
-Lastly, an assortment of OpenVPN client configuration archives are generated and collated locally for convenient manual distribution.
-
-**********
-
-## Cloudformation
-
-AWS Cloudformation is a service that provisions and configures Cloud resources that are declared in a template file. The template defines a collection of elements as a single unit called a Stack, simplifying the management of Cloud infrastructure.
-
-**cfn-ovpn-cli** composes a monolithic hierarchical tree structure of nested Cloudformation Stacks, the orchestration of which is achieved in a three-stage Stack creation/update process that is promoted via a counter variable. The crux of the mater is, as noted above, the creation of two custom preconfigured interrelated golden Amazon Machine Image (AMI) snapshots. The flowchart below illustrates the build process and resouce dependencies:
-
-  <p align="center">
-    <img src="./docs/images/cfn-flowchart.png" width="400">
-  </p>
-
-> To DO: Explain how: Requests and Signed Certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. 
+Lastly, the script generates and collates locally, an assortment of OpenVPN client configuration archives for convenient distribution.
 
 **********
 
 ## OpenVPN
 
-Headings
+#### Introduction
 
+[OpenVPN](https://openvpn.net) is a popular open source VPN daemon that is both flexible and relatively easy to setup. It employs a multiclient-server architecture that is particularly well suited for small to mid-sized business deployments and is able to pass through NAT gateways and firewalls with easy.
 
-Authentication
-Security
-Extensibility
+OpenVPN incorporates the concept of a control channel and a data channel, both of which are encrypted and secured differently but transverse over the same link. 
 
-### Introduction
+Furthermore, OpenVPN uses a virtual network adapter as an interface between the user-level OpenVPN software and the underlying operating system.
 
-[OpenVPN](https://openvpn.net) is a popular VPN daemon that is both flexible and relatively easy to setup. 
+> To do: Confidentiality Integrity Authentication
 
-It employs a multiclient-server architecture that is particularly well suited for small to mid-sized business deployments.
+#### Networking
 
-OpenVPN acquires its cryptographic back-end capabilities from the [OpenSSL](https://en.wikipedia.org/wiki/OpenSSL) encryption library. It uses the [Transport Layer Security](https://en.wikipedia.org/wiki/Transport_Layer_Security) (TLS) cryptographic protocol to exchange keys and is able to pass through NAT gateways and firewalls with easy.
-
-Confidentiality Integrity Authentication
-
-### Networking
-
-OpenVPN operates at the back-end of a software-defined network adapter refered to as the Universal TUN/TAP Driver, acting as an interface between user-space and kernel-space. This coupling can function as either a fully virtualized Ethernet adapter for any type of Layer 2 traffic (i.e. tap-style), or as a point-to-point connector operating in client-server mode for IP-only traffic (i.e. tun-style) operating at Layer 3. 
+Acting as an interface between user-space and kernel-space, OpenVPN operates at the back-end of a software-defined network adapter, refered to as the Universal TUN/TAP Driver. This coupling can function as either a fully virtualized Ethernet adapter for any type of Layer 2 traffic (i.e. tap-style), or as a point-to-point connector operating in client-server mode for IP-only traffic (i.e. tun-style) operating at Layer 3. 
 
 **cfn-ovpn-cli** is configured for IP-only traffic in tun-style mode for both the TCP as well as the UDP protocols. Conceptually, the tun-style adapter can be illustrated as follows:
 
@@ -135,144 +114,33 @@ OpenVPN operates at the back-end of a software-defined network adapter refered t
   <img src="./docs/images/openvpn-virtual-adapter.png" width="400">
 </p>
 
-The flow of a packet is described as follows:
+The flow of a single packet can be described succinctly as follows:
 
 - a user-space application off-loads a packet to the operating system (OS).
 - using nornal routing rules the OS decides the packet is destined for the VPN TUNnel.
 - the packet is then forwarded to the kernel tun device.
 - the kernel tun device then forwards the packet to the user-space OpenVPN process.
 - the OpenVPN process encrypts and signs the packet, fragments it if necessary, and then hands it back to the kernel to be sent to the address of the remote VPN endpoint.
-- the kernel picks up the encrypted packet and forwards it to the remote VPN endpoint, where the same process is reversed.
+- the kernel picks up the encrypted packet and forwards it to the remote VPN endpoint, where the same process is carried out in reverse.
 
 A consequence of this back-and-forth packet-scuffle is a performance bottleneck, in terms of both bandwidth and latency, making speeds above 1GB/s impractical.
 
-### Encryption
+#### Encryption
 
-OpenVPN uses the OpenSSL library to provide encryption of both the data and control channels. It lets OpenSSL do all the encryption and authentication work, allowing OpenVPN to use all the ciphers available in the OpenSSL package. It can also use the HMAC packet authentication feature to add an additional layer of security to the connection (referred to as an "HMAC Firewall" by the creator). It can also use hardware acceleration to get better encryption performance.[14][15] Support for mbed TLS is available starting from version 2.3.[16]
+To setup a secure connection OpenVPN uses the [Transport Layer Security](https://en.wikipedia.org/wiki/Transport_Layer_Security) (TLS) cryptographic protocol to exchange keys and acquires its cryptographic back-end capabilities from the [OpenSSL](https://en.wikipedia.org/wiki/OpenSSL) encryption library.
 
-OpenVPN defines the concept of a control channel and a data channel, both of which are authenticated and encrypted separately but pass over the same protocol link. 
+By using Hash-based Message Authentication Code (HMAC) computations OpenVPN is able to verify both the data integrity and the authentication of a message simultaneously.
 
-The control channel is encrypted and secured using TLS negotiation while the data channel is encrypted using a prearranged block cipher.
+OpenVPN uses the OpenSSL library to provide encryption of both the control and data channels. It lets OpenSSL do all the encryption and authentication work, allowing OpenVPN to use all the ciphers available in the OpenSSL package. It can also use the HMAC packet authentication feature to add an additional layer of security to the connection, referred to as an "HMAC Firewall". 
 
-but can also be compiled with [Mbed TLS](https://www.trustedfirmware.org/projects/mbed-tls) for embedded systems that require small code footprints.
-
-AES is a block cypher.
-
-
-
-
-
-
-
-
-
-OpenVPN allows peers to authenticate each other using pre-shared secret keys, certificates or username/password. When used in a multiclient-server configuration, it allows the server to release an authentication certificate for every client, using signatures and certificate authority. 
-
-**cfn-ovpn-cli** is setup in the following fashion:
-
-**cfn-ovpn-cli** uses the following parameters:
-
-|   | Control Channel | Data Channel
-| :----: |:---: | :---: 
-| Encryption | secp521r1 | AES-256-GCM
-| Authentication | sha512 | sha512
-
-the client presents a list of supported cipher suites (ciphers and hash functions).
-https://en.wikipedia.org/wiki/Transport_Layer_Security
-
-cipher AES-256-GCM
-auth SHA512
-tls-version-min 1.2
-tls-crypt hmac-sig.key
-tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
-
-ephemeral elliptic-curve Diffie–Hellman (TLS_ECDHE)
-Only TLS_DHE and TLS_ECDHE provide forward secrecy. 
-
-key size = robustness of the security
-encryption strength is directly related to the key size
-
-Elliptic Curve Digital Signature Algorithm (ECDSA)
-https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
-
-## -------------------------
-Cipher Suite:
-tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
-ECDHE   : Key Exchange
-ECDSA   : Authentication
-Cipher  : AES_256_GCM
-  Algo : AES
-  Str  : 256
-  Mode : GCM
-MAC/PRF : SHA384
-## -------------------------
-
-ECDHE: Ephemeral Elliptic-curve Diffie–Hellman
-ECDSA: Elliptic Curve Digital Signature Algorithm
-## -------------------------
-
-3.2.  Galois Counter Mode-Based Cipher Suites
-
-   The second eight cipher suites use the same asymmetric algorithms as
-   those in the previous section but use the new authenticated
-   encryption modes defined in TLS 1.2 with AES in Galois Counter Mode
-   (GCM) [GCM]:
-
-     CipherSuite TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384  = {0xC0,0x2C};
-
-   These cipher suites use authenticated encryption with additional data
-   algorithms AEAD_AES_128_GCM and AEAD_AES_256_GCM described in
-   [RFC5116].  GCM is used as described in [RFC5288].
-
-   The PRFs SHALL be as follows:
-
-   o  For cipher suites ending with _SHA256, the PRF is the TLS PRF
-      [RFC5246] with SHA-256 as the hash function.
-
-   o  For cipher suites ending with _SHA384, the PRF is the TLS PRF
-      [RFC5246] with SHA-384 as the hash function.
-## -------------------------
-
-Advanced Encryption Standard (AES)
-in Galois/Counter Mode (GCM) as a Transport Layer Security (TLS)
-authenticated encryption operation.  GCM provides both
-confidentiality and data origin authentication, can be efficiently
-implemented in hardware for speeds of 10 gigabits per second and
-above, and is also well-suited to software implementations.  This
-memo defines TLS cipher suites that use AES-GCM with RSA, DSA, and
-Diffie-Hellman-based key exchange mechanisms.
-## -------------------------
-
-Authenticated suites combine authentication and encryption in the cipher, which means that integrity validation need not be forformed at the TLS level. GCM suites use the last segment to indicat the PRF instead of the MAC algorithm.
-TLS 1.2 is the only protocol that allows suites to define their PRFs. This means that for the suites defined before TLS 1.2 the negotiated protocol version deictates the PRF. For example , the TLS_RSA_WITH_AES_128_CBC_SHA suite uses a PRF based on HMAC-SHA256 when negotiated with TLS 1.2 but a PRF based on a HMAC-MD5/HMAC-SHA combination when used with TLS 1.0 . On the other hand , SHA384 GCM suites (which can be used only with TLS 1.2 and newer) will always use HMAC-SHA384 for the PRF.
-## -------------------------
-TLS 1.2 => authenticated encryption
-
-
-
-Section on how it is installed and configured and manintained Bla bla
-**cfn-ovpn-cli** configures OpenVPN as such: bla bla
-It is used in both protocols methods and configures four clients, i.e. bla bla
-
-It can also use the HMAC packet authentication feature to add an additional layer of security to the connection (referred to as an "HMAC Firewall" by the creator).
-
-Note that when --tls-auth is used, all message types are protected with an HMAC signature, even the initial packets of the TLS handshake.  This makes it easy for OpenVPN to throw away bogus packets quickly, without wasting resources on attempting a TLS handshake which will ultimately fail.
-
-###...
-Some background on post-quantum TLS
-
-Today, all requests to AWS KMS use TLS with one of two key exchange schemes:
-
-Finite Field Diffie-Hellman Ephemeral (FFDHE)
-Elliptic Curve Diffie-Hellman Ephemeral (ECDHE)
-
-FFDHE and ECDHE are industry standards for secure key exchange. KMS uses only ephemeral keys for TLS key negotiation; this ensures every connection uses a unique key and the compromise of one connection does not affect the security of another connection. They are secure today against known cryptanalysis techniques which use classic computers; however, they’re not secure against known attacks which use a large-scale quantum computer.
-###...
-
-### Protocol
+#### Protocol
 
 Give an overview here of the handshake and tunnel protocols.
 Question here from the Security Interview Questionair about TLS ... 
+
+#### Authentication
+#### Security
+#### Extensibility
 
 **********
 
@@ -297,23 +165,37 @@ Conveniently, a awesome utility exist just for the purposes of making PKI manage
 **cfn-ovpn-cli** builds two interrelated PKIs on hardened virtual linux servers within a VPC in the AWS Cloud. A trusted root CA is created within the isolated private subnet instance, only accessible via a Bastion Host and used exclusively to sign certificate requests. A second PKI is created on the OpenVPN application server itself which resides within the public subnet of the VPC. Here the server as well as the client certificates and Private Keys are generated. Requests and Signed Certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. 
 
 
-This is described in more detail in the [Cloudformation](#cloudformation) section but suffice to say, it hinges around the calling of the ec2 create-image API. The CA is further constrained by a passphrase that is securely stored and retrived via the AWS System Manager Parameter Store secrets management protocol. The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
+This is described in more detail in the [Cloudformation](#cloudformation) section but suffice to say here, it hinges around the calling of the ec2 create-image API. The CA is further constrained by a passphrase that is securely stored and retrived via the AWS System Manager Parameter Store secrets management protocol. The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
 
-export RANDFILE=/tmp/.rnd
+> To do: Explain the issue surrounding <export RANDFILE=/tmp/.rnd>
+
+**********
+
+## Cloudformation
+
+AWS Cloudformation is a service that provisions and configures Cloud resources that are declared in a template file. The template defines a collection of elements as a single unit called a Stack, simplifying the management of Cloud infrastructure.
+
+**cfn-ovpn-cli** composes a monolithic hierarchical tree structure of nested Cloudformation Stacks, the orchestration of which is achieved in a three-stage Stack creation/update process that is promoted via a counter variable. The crux of the mater is, as noted above, the creation of two custom preconfigured interrelated Golden Amazon Machine Image (AMI) snapshots. The flowchart below illustrates the build process and resouce dependencies:
+
+  <p align="center">
+    <img src="./docs/images/cfn-flowchart.png" width="400">
+  </p>
+
+> To DO: Explain how: Requests and Signed Certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. 
 
 **********
 
 ## Network Security
 
-Defense in depth is adopted to provide redundancy.
+Defense in depth is adopted to provide redundancy and is discussed in more details under the following headings.
 
-### AWS Network ACLs
+#### AWS Network ACLs
 
 Amazon VPC offers a network access control list (NACL) element that provides for an optional layer of security in the form of a stateless firewall, acting at the subnet layer. 
 
 **cfn-ovpn-cli** assembles an ordered set of rules for its public as well as its private subnets. These two NACLs grant only the necessary inbound source or outbound destination routes for their respective privileged or unprivileged ports. All other traffic is denied from even entering the virtual network itself. 
 
-### AWS Security Groups
+#### AWS Security Groups
 
 While NACLs operate at the network subnet level, security groups act at the instance level. An instane is a unit of compute capacity, eg. virtual machine, container or database etc. Conceptually, a secutity group can be thought of as a virtual statefull firewall, surrounding some computational unit, i.e. instance. 
 
@@ -321,7 +203,7 @@ A collection of unordered rules decide whether to allow traffic to reach the com
 
 **cfn-ovpn-cli** constructs two security groups, a Public Security Group for instances residing on public subnets and similarly, a Private Security Group for instances residing on private subnets. Restrictive rules are applied to ensure only expected traffic is allowed to pass through the computational units.
 
-### The Linux Kernel Packet Filter
+#### The Linux Kernel Packet Filter
 
 iptables is a user-space utility program that can configure the Linux kernel packet filtering framework as well as NAT and other packet mangling tasks. Various modules can be side-loaded to extend its complex filtering capabilities. 
 
@@ -331,18 +213,18 @@ During Stage-2 of the Cloudformation Stack build process, **cfn-ovpn-cli** insta
 * input ssh is also rate limited
 * ntp only allow to IMDS
 
-### Intrusion Prevention
+#### Intrusion Prevention
 
 fail2ban is an intrusion prevention system that safeguards against network brute-force attacks. It operates in conjunction with 
 the Linux kernel packet filter, i.e. iptables and monitors log files for selected entries to block offending hosts. **cfn-ovpn-cli** configures a standard filter for sshd on port 22 in aggressive mode.
 
 To Do : OpenVPN filter.
 
-### sshd Hardening
+#### sshd Hardening
 
 **cfn-ovpn-cli** not only utilizes an external-facing public EC2 instance as a VPN server but also as a Bastion Host, specifically providing access to the PKI residing within its private network. Because of its exposure to potential attacks, the onus is to minimize any chance of penetration, increase the defense of the system and reduce any potential risks from zero day exploits.
 
-Pertaining to the the golden image _Amazon Linux 2_, only non-default settings are discussed here.
+Pertaining to the the Golden Image _Amazon Linux 2_, only non-default settings are discussed here.
 
 - The following straightforward changes are made to the default configuration:
 
@@ -484,7 +366,7 @@ The `yum-cron` service is configured to automatically keep the system up-to-date
 
 ## Telemetry
 
-The _Amazon Linux 2_ golden image uses _systemd-journald_ as well as _rsyslog_ for event logging. Important log streams are configured, assembled and dispatched to _Amazon CloudWatch Logs_ and the _systemd_ journal is made persistent across reboots. To restrict the volume of local log data, the utility _logrotate_ is configured to compress, rotate and eventually truncate the relevant streams.
+The _Amazon Linux 2_ Golden Image uses _systemd-journald_ as well as _rsyslog_ for event logging. Important log streams are configured, assembled and dispatched to _Amazon CloudWatch Logs_ and the _systemd_ journal is made persistent across reboots. To restrict the volume of local log data, the utility _logrotate_ is configured to compress, rotate and eventually truncate the relevant streams.
 
 ### Amazon CloudWatch Logs
 
