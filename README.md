@@ -15,7 +15,7 @@ A hardened, fault-tolerant and highly-available, multi-client, dual-protocol, Cl
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 
-**********
+***
 
 <p>
   <img src="./docs/images/disclaimer.png" align="left" width="30px"/>
@@ -24,7 +24,7 @@ A hardened, fault-tolerant and highly-available, multi-client, dual-protocol, Cl
 **Disclaimer:**<br/>
 This Document is a work-in-progress. Some sections maybe absent or incomplete.
 
-**********
+***
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ This Document is a work-in-progress. Some sections maybe absent or incomplete.
 - one ssh key in the AWS Region where the infrastructure is to be built.
 - a Route 53 Hosted Zone.
 
-**********
+***
 
 <details>  
   <summary><b>Click to View Sample CLI Output:</b></summary>
@@ -45,7 +45,7 @@ This Document is a work-in-progress. Some sections maybe absent or incomplete.
 
 **Full Demo CLI Output can be found Here**
 
-**********
+***
 
 Table of Contents
 =================
@@ -55,7 +55,8 @@ Table of Contents
   * [Encryption](#encryption)
   * [Networking](#networking)
 - [Public Key Infrastructure](#public-key-infrastructure)
-- [Cloudformation](#cloudformation)
+- [Program Methodology](#program-methodology)
+- [Orchestration](#orchestration)
 - [Network Security](#network-security)
   * [AWS Network ACLs](#aws-network-acls)
   * [AWS Security Groups](#aws-security-groups)
@@ -69,30 +70,20 @@ Table of Contents
 - [Telemetry](#telemetry)
   * [Amazon CloudWatch Logs](#amazon-cloudwatch-logs)
   * [rsyslog](#rsyslog)
+- [Analytics](#analytics)
 - [Error Handling](#error-handling)
 - [Conclusion](#conclusion)
 - [To Do List](#to-do-list)
 
-**********
+***
 
 ## Introduction
 
-**cfn-ovpn-cli** is a Bash shell script that creates a Cloud-based Virtual Private Network (VPN) application as well as an isolated Public Key Infrastructure (PKI) Certification Authority (CA). This gives rise to a secure personal mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is employed to provision and configure various AWS resources through an assortment of API calls and AWS Cloudformation templates.
+**cfn-ovpn-cli** is a Bash shell script that creates a Cloud-based Virtual Private Network (VPN) application as well as an isolated Public Key Infrastructure (PKI) Certification Authority (CA) ~~for multi-client X.509 authentication~~. 
 
+This facilitates a secure personal mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is employed to provision and configure various AWS resources through an assortment of API calls and AWS Cloudformation templates.
 
-## Bash Program Methodology
-
-##### What follows is an overview of the program structure:
-
-The first part of the shell script requests an assortment of parameters from the Script-Caller; pertaining to the project prerequisites and other program environment variables. Before any further processing or API calls are made, some rudimentary error checking and validation is performed on the project environment to pick up on any silly mistakes or obvious errors.
-
-The next part of the script then builds a mix of IAM Control Access Policies and EC2 Instance Profiles of least privilege as well as operating system, utility and client configuration files. These artefacts and other significant project documents are then uploaded into Cloud Storage as reference material for further operational activities as well as an archive of record.
-
-The Cloud infrastructure provisioning process now commences and takes the form of a three stage AWS CloudFormation Stack creation and update procedure. The First-Stage involves the provisioning of the idempotent architectural elements while the Second-Stage comprises the creation of two custom configured interrelated Golden Amazon Machine Image (AMI) snapshots. Each of which, represents either the Public or Private component of the system; namely the internet facing OpenVPN Server and the isolated PKI framework element, respectively. The final piece of the puzzle, i.e. Third-Stage is the creation of a fault-tolerant, auto-scaling, load-balanced server appliance based off of the preconfigured Public Golden AMI snapshot. 
-
-Lastly, the script generates and collates locally, an assortment of OpenVPN client configuration archives for convenient distribution.
-
-**********
+***
 
 ## OpenVPN
 
@@ -153,7 +144,7 @@ Question here from the Security Interview Questionnaire about TLS ...
 #### Security
 #### Extensibility
 
-**********
+***
 
 ## Public Key Infrastructure
 
@@ -180,11 +171,25 @@ This is described in more detail in the [Cloudformation](#cloudformation) sectio
 
 > To do: Explain the issue surrounding <export RANDFILE=/tmp/.rnd>
 
-**********
+***
 
-## Cloudformation
+## Program Methodology
 
-AWS Cloudformation is a service that provisions and configures Cloud resources that are declared in a template file. The template defines a collection of elements as a single unit called a Stack, simplifying the management of Cloud infrastructure.
+AWS CLI one-liner..., Bash..., convenient integration with Linux OS...
+
+The first part of the shell script requests an assortment of parameters from the Script-Caller; pertaining to the project prerequisites and other program environment variables. Before any further processing or API calls are made, some rudimentary error checking and validation is performed on the project environment to pick up on any silly mistakes or obvious errors.
+
+The next part of the script then builds a mix of IAM Control Access Policies and EC2 Instance Profiles of least privilege as well as operating system, utility and client configuration files. These artefacts and other significant project documents are then uploaded into Cloud Storage as reference material for further operational activities as well as an archive of record.
+
+The Cloud infrastructure provisioning process now commences and takes the form of a three stage AWS CloudFormation Stack creation and update procedure. The First-Stage involves the provisioning of the idempotent architectural elements while the Second-Stage comprises the creation of two custom configured interrelated Golden Amazon Machine Image (AMI) snapshots. Each of which, represents either the Public or Private component of the system; namely the internet facing OpenVPN Server and the isolated PKI framework element, respectively. The final piece of the puzzle, i.e. Third-Stage is the creation of a fault-tolerant, auto-scaling, load-balanced server appliance based off of the preconfigured Public Golden AMI snapshot. 
+
+Lastly, the script generates and collates locally, an assortment of OpenVPN client configuration archives for convenient distribution.
+
+***
+
+## Orchestration
+
+Orchestration is achieved via ... AWS Cloudformation is a service that provisions and configures Cloud resources that are declared in a template file. The template defines a collection of elements as a single unit called a Stack, simplifying the management of Cloud infrastructure.
 
 **cfn-ovpn-cli** composes a monolithic hierarchical tree structure of nested Cloudformation Stacks, the orchestration of which is achieved in a three-stage Stack creation/update process that is promoted via a counter variable. The crux of the mater is, as noted above, the creation of two custom preconfigured interrelated Golden Amazon Machine Image (AMI) snapshots. The flowchart below illustrates the build process and resource dependencies:
 
@@ -194,7 +199,7 @@ AWS Cloudformation is a service that provisions and configures Cloud resources t
 
 > To DO: Explain how: Requests and Signed Certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. 
 
-**********
+***
 
 ## Network Security
 
@@ -264,7 +269,7 @@ Pertaining to the the Golden Image _Amazon Linux 2_, only non-default settings a
 - Pursuant to [RFC8270](https://tools.ietf.org/html/rfc8270) and other endorsed infosec [recommendations](https://infosec.mozilla.org/guidelines/openssh), Diffie-Hellman moduli of less than 3072 bits are not recommended. As such short moduli are deactivated. 
 - **cfn-ovpn-cli** does not require sftp support, therefore it is disabled.
 
-**********
+***
 
 ## System Hardening
 
@@ -281,7 +286,7 @@ _Amazon Linux 2_ uses `chrony` as its time synchronization service client. By de
 Ancillary: As is discussed else where, Security Groups, iptables also offer lines of defence.
 Include bash function aliases to authorize my ip.
 
-### Access Management
+#### Access Management
 
 AWS IAM (_Identity and Access Management_) is an authentication and authorization web service that is tightly integrated into every facet of the AWS Cloud. It allows for the central management of Access Controls to all AWS services and resources. At the heart of the matter is what is called a Policy Document that defines permissions. It is associated with either an identity or a resource and stipulates what actions are allowed, or not allowed by that identity or resource.
 
@@ -312,7 +317,7 @@ policies/
 | IAM Role | Identity based | Attached to Instance Profiles to delineate what actions can or can not be perform by the EC2 instance itself. 
 | Cloudformation Stack | Special case | A Fail-safe mechanism that defines protected resources from unintentional updates during a Stack update procedure.
 
-### AWS Instance Metadata Service
+#### AWS Instance Metadata Service
 
 The AWS _Instance Metadata Service_ (IMDS) is a special link-local endpoint available on every EC2 instance where static as well as dynamic information related to the instance itself, as well as its network and its storage can be retrieved by any HTTP client. 
 
@@ -355,7 +360,7 @@ IMDSv2 mitigates for these mentioned shortcomings by requiring, a cleverly devis
 **cfn-ovpn-cli** disables, by way of its EC2 Auto Scaling Group Launch Template, the use of IMDSv1 and as a added protection, is futher restricted to only root processes accessing the IMDSv2 service through firewall rules. As a consequence and aside note, the functionality of the useful utility [EC2 Instance Connect](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Connect-using-EC2-Instance-Connect.html) is rendered invalid here because it operates without elevated privileges. 
 
 
-### Package Management
+#### Package Management
 
 Keeping **cfn-ovpn-cli** up-to-date is important because it improves the overall stability of the system by ensuring that critical patches to security holes are applied in a timely manner. It also ensures that bugs are fixed and outdated features are regularly removed, making the nature of the offered service more beneficial.
 
@@ -373,34 +378,43 @@ The Extra Packages for Enterprise Linux (`epel`) repository is a non-standard bu
 Due to packages perhaps being held by more than one repository, `yum-plugin-priorities` is used to enforce ordered protection between conflicting repositories. `epel` is thus set at a lower priority to `amzn2-core`.
 
 The `yum-cron` service is configured to automatically keep the system up-to-date.
-**********
+
+***
 
 ## Telemetry
 
 The _Amazon Linux 2_ Golden Image uses _systemd-journald_ as well as _rsyslog_ for event logging. Important log streams are configured, assembled and dispatched to _Amazon CloudWatch Logs_ and the _systemd_ journal is made persistent across reboots. To restrict the volume of local log data, the utility _logrotate_ is configured to compress, rotate and eventually truncate the relevant streams.
 
-### Amazon CloudWatch Logs
+#### Amazon CloudWatch Logs
 
 Amazon CloudWatch Logs is a web service that provides aggregation and analysis tools for distributed message logging systems. **cfn-ovpn-cli** utilizes _Cloudformation_ to install and configure a _Unified CloudWatch Agent_ that facilitates the collection and retention of operational log events. The Agent is authorized by the IAM _CloudWatchAgentServerPolicy_ managed policy.
 
-### rsyslog
+#### rsyslog
 
 For improved parsing and assisted analysis, **cfn-ovpn-cli** configures custom log-streams for the Linux kernel packet filter (`iptables`) as well the for both the VPN daemon protocol activities. These are diverted to a separate log facility for forwarding to _Amazon Cloudwatch Logs_.
 
-**********
+***
+
+## Analytics
+
+AWS Athena, AWS Glue, ETL
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+***
 
 ## Error Handling
 
 Talk about health-checks etc.
 Health checks are done via the load  balancer and unfortunately I had to install a web-server in order to do health checks. Because vpn port ignores unmatch HMACs is it possible to install cert on load balancer so that health can be determined from the actual vpn app itself?
 
-**********
+***
 
 ## Conclusion
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-**********
+***
 
 ## To Do List
 
@@ -409,3 +423,5 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 - partition iptables logs to S3 Bucket for Athena/Glue Catalogue search.
 - fail2ban on port 1194
 - implement block on port scanners with iptables -m recent reference archlinux doc.
+
+***
