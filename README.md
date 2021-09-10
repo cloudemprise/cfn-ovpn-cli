@@ -96,11 +96,9 @@ Lastly, the script generates and collates locally, an assortment of OpenVPN clie
 
 #### Introduction
 
-[OpenVPN](https://openvpn.net) is a popular open source VPN daemon that is both flexible and relatively easy to setup. It encompasses a multi-client-server architecture that is particularly well suited for small to mid-sized business deployments and is able to pass through NAT gateways and firewalls with easy.
+[OpenVPN](https://openvpn.net) is a popular open source VPN daemon that is both flexible and relatively easy to setup. It comprises a Multi-Client/Socket-Server architecture that is particularly well suited for small to mid-sized business deployments and is able to pass through NAT gateways and firewalls with easy.
 
-OpenVPN incorporates the concept of a control channel and a data channel, both of which are encrypted and secured differently but transverse over the same link. 
-
-Furthermore, OpenVPN uses a virtual network adapter as an interface between the user-level OpenVPN software and the underlying operating system.
+OpenVPN defines the concept of a control channel and a data channel, both of which are encrypted and authenticated differently but pass over the same protocol link. OpenVPN uses a virtual network adapter as an interface between the user-level OpenVPN software and the underlying operating system.
 
 > To do: Confidentiality Integrity Authentication
 
@@ -127,11 +125,23 @@ A consequence of shuffling packets back-and-forth across the user-kernel space b
 
 #### Encryption
 
-To setup a secure connection OpenVPN uses the [Transport Layer Security](https://en.wikipedia.org/wiki/Transport_Layer_Security) (TLS) cryptographic protocol to exchange keys and acquires its cryptographic back-end capabilities from the [OpenSSL](https://en.wikipedia.org/wiki/OpenSSL) encryption library. 
+OpenVPN permits authentication using either a pre-shared secret key, username/password or X.509 certificates. When used in a Multi-Client/Socket-Server configuration, as is the case here with **cfn-ovpn-cli**, OpenVPN allows for the Server to release an authentication certificate for every client through a Public Key Infrastructure (PKI) Certificate Authority (CA) framework.
 
-By using Hash-based Message Authentication Code (HMAC) computations OpenVPN is able to verify both the data integrity and the authentication of a message simultaneously.
+OpenVPN acquires its cryptographic back-end capabilities from the [OpenSSL](https://en.wikipedia.org/wiki/OpenSSL) encryption library for both the control and data channels but can also be compiled with [Mbed TLS](https://www.trustedfirmware.org/projects/mbed-tls) for embedded systems that require small code footprints.
 
-OpenVPN uses the OpenSSL library to provide encryption of both the control and data channels. It lets OpenSSL do all the encryption and authentication work, allowing OpenVPN to use all the ciphers available in the OpenSSL package. It can also use the HMAC packet authentication feature to add an additional layer of security to the connection, referred to as an "HMAC Firewall". 
+To setup a secure control channel OpenVPN uses the Transport Layer Security ([TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security)) cryptographic protocol to negotiation and exchange keys while the data channel is encrypted using a predetermined block cipher.
+
+By using Hash-based Message Authentication Code ([HMAC](https://en.wikipedia.org/wiki/HMAC)) computations OpenVPN is able to verify both the data integrity as well as the authentication of a message simultaneously. Thus giving rise to what is known as the HMAC Firewall, adding an additional layer of security to the connection.
+
+
+>**cfn-ovpn-cli** is setup in the following fashion:
+
+**cfn-ovpn-cli** uses the following parameters:
+
+|   | Control Channel | Data Channel
+| :----: |:---: | :---: 
+| Encryption | secp521r1 | AES-256-GCM
+| Authentication | sha512 | sha512
 
 #### Protocol
 
