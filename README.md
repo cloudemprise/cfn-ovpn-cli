@@ -28,12 +28,9 @@ This Document is a work-in-progress. Some sections maybe absent or incomplete.
 
 ## Prerequisites
 
-- an AWS account with poweruser access.
-- ssh key in infrastructure build Region.
+- an AWS account with Power User access.
+- one ssh key in the AWS Region where the infrastructure is to be built.
 - a Route 53 Hosted Zone.
-- jq version 1.6
-- awscli version 2
-- bash > version 4
 
 **********
 
@@ -55,7 +52,7 @@ Table of Contents
 
 - [Introduction](#introduction)
 - [OpenVPN](#openvpn)
-- [Pulic Key Infrastructure](#public-key-infrastructure)
+- [Public Key Infrastructure](#public-key-infrastructure)
 - [Cloudformation](#cloudformation)
 - [Network Security](#network-security)
   * [AWS Network ACLs](#aws-network-acls)
@@ -78,7 +75,10 @@ Table of Contents
 
 ## Introduction
 
-**cfn-ovpn-cli** is a shell script that creates a Cloud-based Virtual Private Network (VPN) application as well as an isolated Public Key Infrastructure (PKI) Certification Authority (CA). This gives rise to a secure personal mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is employed to provision and configure various AWS resources through an assortment of API calls and AWS Cloudformation templates.
+**cfn-ovpn-cli** is a Bash shell script that creates a Cloud-based Virtual Private Network (VPN) application as well as an isolated Public Key Infrastructure (PKI) Certification Authority (CA). This gives rise to a secure personal mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is employed to provision and configure various AWS resources through an assortment of API calls and AWS Cloudformation templates.
+
+
+## Bash Program Methodology
 
 ##### What follows is an overview of the program structure:
 
@@ -96,7 +96,7 @@ Lastly, the script generates and collates locally, an assortment of OpenVPN clie
 
 #### Introduction
 
-[OpenVPN](https://openvpn.net) is a popular open source VPN daemon that is both flexible and relatively easy to setup. It employs a multiclient-server architecture that is particularly well suited for small to mid-sized business deployments and is able to pass through NAT gateways and firewalls with easy.
+[OpenVPN](https://openvpn.net) is a popular open source VPN daemon that is both flexible and relatively easy to setup. It encompasses a multi-client-server architecture that is particularly well suited for small to mid-sized business deployments and is able to pass through NAT gateways and firewalls with easy.
 
 OpenVPN incorporates the concept of a control channel and a data channel, both of which are encrypted and secured differently but transverse over the same link. 
 
@@ -106,7 +106,7 @@ Furthermore, OpenVPN uses a virtual network adapter as an interface between the 
 
 #### Networking
 
-Acting as an interface between user-space and kernel-space, OpenVPN operates at the back-end of a software-defined network adapter, refered to as the Universal TUN/TAP Driver. This coupling can function as either a fully virtualized Ethernet adapter for any type of Layer 2 traffic (i.e. tap-style), or as a point-to-point connector operating in client-server mode for IP-only traffic (i.e. tun-style) operating at Layer 3. 
+Acting as an interface between user-space and kernel-space, OpenVPN operates at the back-end of a software-defined network adapter, referred to as the Universal TUN/TAP Driver. This coupling can function as either a fully virtualized Ethernet adapter for any type of Layer 2 traffic (i.e. tap-style), or as a point-to-point connector operating in client-server mode for IP-only traffic (i.e. tun-style) operating at Layer 3. 
 
 **cfn-ovpn-cli** is configured for IP-only traffic in tun-style mode for both the TCP as well as the UDP protocols. Conceptually, the tun-style adapter can be illustrated as follows:
 
@@ -117,17 +117,17 @@ Acting as an interface between user-space and kernel-space, OpenVPN operates at 
 The flow of a single packet can be described succinctly as follows:
 
 - a user-space application off-loads a packet to the operating system (OS).
-- using nornal routing rules the OS decides the packet is destined for the VPN TUNnel.
+- using normal routing rules the OS decides the packet is destined for the VPN TUNnel.
 - the packet is then forwarded to the kernel tun device.
 - the kernel tun device then forwards the packet to the user-space OpenVPN process.
 - the OpenVPN process encrypts and signs the packet, fragments it if necessary, and then hands it back to the kernel to be sent to the address of the remote VPN endpoint.
 - the kernel picks up the encrypted packet and forwards it to the remote VPN endpoint, where the same process is carried out in reverse.
 
-A consequence of this back-and-forth packet-scuffle is a performance bottleneck, in terms of both bandwidth and latency, making speeds above 1GB/s impractical.
+A consequence of shuffling packets back-and-forth across the user-kernel space boundary is a performance bottleneck, both in terms of bandwidth and latency, making speeds above 1GB/s impractical.
 
 #### Encryption
 
-To setup a secure connection OpenVPN uses the [Transport Layer Security](https://en.wikipedia.org/wiki/Transport_Layer_Security) (TLS) cryptographic protocol to exchange keys and acquires its cryptographic back-end capabilities from the [OpenSSL](https://en.wikipedia.org/wiki/OpenSSL) encryption library.
+To setup a secure connection OpenVPN uses the [Transport Layer Security](https://en.wikipedia.org/wiki/Transport_Layer_Security) (TLS) cryptographic protocol to exchange keys and acquires its cryptographic back-end capabilities from the [OpenSSL](https://en.wikipedia.org/wiki/OpenSSL) encryption library. 
 
 By using Hash-based Message Authentication Code (HMAC) computations OpenVPN is able to verify both the data integrity and the authentication of a message simultaneously.
 
@@ -136,7 +136,7 @@ OpenVPN uses the OpenSSL library to provide encryption of both the control and d
 #### Protocol
 
 Give an overview here of the handshake and tunnel protocols.
-Question here from the Security Interview Questionair about TLS ... 
+Question here from the Security Interview Questionnaire about TLS ... 
 
 #### Authentication
 #### Security
@@ -152,7 +152,7 @@ A secure VPN requires authentication and this here involves two components:
 
 1. Client/Server Authentication. This ensures that the server and clients are indeed communicating with authorized known entities and not some spoofed fake user/host.
 
-2. A method of hashing each data packet within the system is also established. By authenticating each data packet, the system avoids wasting cpu cycles on decrypting packets that do not meet the authentication rules. Thus preventing many types of attack vectors.
+2. A method of hashing each data packet within the system is also established. By authenticating each data packet, the system avoids wasting CPU cycles on decrypting packets that do not meet the authentication rules. Thus preventing many types of attack vectors.
 
 A system that uses key-based authentication requires a Public Key Infrastructure (PKI). Simply put, a PKI consists of the following:
 
@@ -160,12 +160,12 @@ A system that uses key-based authentication requires a Public Key Infrastructure
 * A separate Public Certificate and Private Key pair for the server.
 * A separate Public Certificate and Private Key pair for each client.
 
-Conveniently, a awesome utility exist just for the purposes of making PKI management really easy, namely [Easy-RSA](https://github.com/OpenVPN/easy-rsa). Easy-RSA is a framework for managing X.509 PKI. It is based around the concept of a trusted root signing authority and the backend is comprised of the OpenSSL cryptographic library.
+Conveniently, a awesome utility exist just for the purposes of making PKI management really easy, namely [Easy-RSA](https://github.com/OpenVPN/easy-rsa). Easy-RSA is a framework for managing X.509 PKI. It is based around the concept of a trusted root signing authority and the back-end is comprised of the OpenSSL cryptographic library.
 
-**cfn-ovpn-cli** builds two interrelated PKIs on hardened virtual linux servers within a VPC in the AWS Cloud. A trusted root CA is created within the isolated private subnet instance, only accessible via a Bastion Host and used exclusively to sign certificate requests. A second PKI is created on the OpenVPN application server itself which resides within the public subnet of the VPC. Here the server as well as the client certificates and Private Keys are generated. Requests and Signed Certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. 
+**cfn-ovpn-cli** builds two interrelated PKIs on hardened virtual Linux servers within a VPC in the AWS Cloud. A trusted root CA is created within the isolated private subnet instance, only accessible via a Bastion Host and used exclusively to sign certificate requests. A second PKI is created on the OpenVPN application server itself which resides within the public subnet of the VPC. Here the server as well as the client certificates and Private Keys are generated. Requests and Signed Certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. 
 
 
-This is described in more detail in the [Cloudformation](#cloudformation) section but suffice to say here, it hinges around the calling of the ec2 create-image API. The CA is further constrained by a passphrase that is securely stored and retrived via the AWS System Manager Parameter Store secrets management protocol. The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
+This is described in more detail in the [Cloudformation](#cloudformation) section but suffice to say here, it hinges around the calling of the ec2 create-image API. The CA is further constrained by a passphrase that is securely stored and retrieved via the AWS System Manager Parameter Store secrets management protocol. The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
 
 > To do: Explain the issue surrounding <export RANDFILE=/tmp/.rnd>
 
@@ -175,7 +175,7 @@ This is described in more detail in the [Cloudformation](#cloudformation) sectio
 
 AWS Cloudformation is a service that provisions and configures Cloud resources that are declared in a template file. The template defines a collection of elements as a single unit called a Stack, simplifying the management of Cloud infrastructure.
 
-**cfn-ovpn-cli** composes a monolithic hierarchical tree structure of nested Cloudformation Stacks, the orchestration of which is achieved in a three-stage Stack creation/update process that is promoted via a counter variable. The crux of the mater is, as noted above, the creation of two custom preconfigured interrelated Golden Amazon Machine Image (AMI) snapshots. The flowchart below illustrates the build process and resouce dependencies:
+**cfn-ovpn-cli** composes a monolithic hierarchical tree structure of nested Cloudformation Stacks, the orchestration of which is achieved in a three-stage Stack creation/update process that is promoted via a counter variable. The crux of the mater is, as noted above, the creation of two custom preconfigured interrelated Golden Amazon Machine Image (AMI) snapshots. The flowchart below illustrates the build process and resource dependencies:
 
   <p align="center">
     <img src="./docs/images/cfn-flowchart.png" width="400">
@@ -187,7 +187,7 @@ AWS Cloudformation is a service that provisions and configures Cloud resources t
 
 ## Network Security
 
-Defense in depth is adopted to provide redundancy and is discussed in more details under the following headings.
+Defence in depth is adopted to provide redundancy and is discussed in more details under the following headings.
 
 #### AWS Network ACLs
 
@@ -197,7 +197,7 @@ Amazon VPC offers a network access control list (NACL) element that provides for
 
 #### AWS Security Groups
 
-While NACLs operate at the network subnet level, security groups act at the instance level. An instane is a unit of compute capacity, eg. virtual machine, container or database etc. Conceptually, a secutity group can be thought of as a virtual statefull firewall, surrounding some computational unit, i.e. instance. 
+While NACLs operate at the network subnet level, security groups act at the instance level. An instance is a unit of compute capacity, eg. virtual machine, container or database etc. Conceptually, a security group can be thought of as a virtual stateful firewall, surrounding some computational unit, i.e. instance. 
 
 A collection of unordered rules decide whether to allow traffic to reach the computation unit or not. An interesting feature of security groups is that they can reference other security groups as their end-point, exhibiting object like characteristics that simplifying rule creation and management.
 
@@ -207,7 +207,7 @@ A collection of unordered rules decide whether to allow traffic to reach the com
 
 iptables is a user-space utility program that can configure the Linux kernel packet filtering framework as well as NAT and other packet mangling tasks. Various modules can be side-loaded to extend its complex filtering capabilities. 
 
-During Stage-2 of the Cloudformation Stack build process, **cfn-ovpn-cli** installs and configures iptables in a statefull posture within the Public and Private Virtual Linux Servers. Strict rules delineate distinct traffic domains for localhost services, the AWS instance metadata service (IMDS) and forwarded NAT VPN client traffic. As a precautionary measure VPN clients are denied routes to the local LAN.
+During Stage-2 of the Cloudformation Stack build process, **cfn-ovpn-cli** installs and configures iptables in a stateful posture within the Public and Private Virtual Linux Servers. Strict rules delineate distinct traffic domains for localhost services, the AWS instance metadata service (IMDS) and forwarded NAT VPN client traffic. As a precautionary measure VPN clients are denied routes to the local LAN.
 
 * input pings are open to the world but rate limited
 * input ssh is also rate limited
@@ -222,7 +222,7 @@ To Do : OpenVPN filter.
 
 #### sshd Hardening
 
-**cfn-ovpn-cli** not only utilizes an external-facing public EC2 instance as a VPN server but also as a Bastion Host, specifically providing access to the PKI residing within its private network. Because of its exposure to potential attacks, the onus is to minimize any chance of penetration, increase the defense of the system and reduce any potential risks from zero day exploits.
+**cfn-ovpn-cli** not only utilizes an external-facing public EC2 instance as a VPN server but also as a Bastion Host, specifically providing access to the PKI residing within its private network. Because of its exposure to potential attacks, the onus is to minimize any chance of penetration, increase the defence of the system and reduce any potential risks from zero day exploits.
 
 Pertaining to the the Golden Image _Amazon Linux 2_, only non-default settings are discussed here.
 
@@ -232,7 +232,7 @@ Pertaining to the the Golden Image _Amazon Linux 2_, only non-default settings a
 | :---- | :--- |
 | `X11Forwarding no` | X11 forwarding is an insecure feature and thus disabled. |
 | `PermitRootLogin no` | Root login is denied. |
-| `AllowUsers ec2-user` | The default linux system user account enabled only. |
+| `AllowUsers ec2-user` | The default Linux system user account enabled only. |
 | `LogLevel VERBOSE` | Comprehensive logging enabled. |
 
 - The following settings combined, explicitly deny all forms of authentication except for Public Key:
@@ -261,20 +261,20 @@ The goal of systems hardening is to reduce security risk by eliminating potentia
 
 **cfn-ovpn-cli** uses the _Amazon Linux 2_ operating system which is based on Red Hat Enterprise Linux (RHEL). It provides a secure, stable and highly performant execution environment as it has been specifically optimized for Cloud computing. It is associated with a long-term security maintenance policy and is tightly integrated with many Amazon Web Services.
 
-Of particular importance, the Amazon EC2 service utilizes a distributed storgage scheme that has at hand various encryption services that secure data at rest and in transit, as well as encrypting snapshots and instances. As **cfn-ovpn-cli** makes use of encryption wherever possible, these capabilities are leveraged to improve the security posture of the system as a whole.
+Of particular importance, the Amazon EC2 service utilizes a distributed storage scheme that has at hand various encryption services that secure data at rest and in transit, as well as encrypting snapshots and instances. As **cfn-ovpn-cli** makes use of encryption wherever possible, these capabilities are leveraged to improve the security posture of the system as a whole.
 
 _Amazon Linux 2_ uses `chrony` as its time synchronization service client. By default, `chrony` configures the _Network Time Protocol_ to use both the **Amazon Time Sync Service**, offered on the link local 169.254.169.123 IP address, as well as public servers accessible via the `pool.ntp.org` project. In the interest of attack surface reduction the public servers are disabled. Firewall routes are delineated accordingly.
 
 * IMDSv2
 
-Ancillary: As is discussed else where, Security Groups, iptables also offer lines of defense.
+Ancillary: As is discussed else where, Security Groups, iptables also offer lines of defence.
 Include bash function aliases to authorize my ip.
 
 ### Access Management
 
 AWS IAM (_Identity and Access Management_) is an authentication and authorization web service that is tightly integrated into every facet of the AWS Cloud. It allows for the central management of Access Controls to all AWS services and resources. At the heart of the matter is what is called a Policy Document that defines permissions. It is associated with either an identity or a resource and stipulates what actions are allowed, or not allowed by that identity or resource.
 
-Of particular note, is a special identity refered to as an IAM Role. It is intended to be assumed by an entity (user, application or service), granting temporary security credentials to perform some limited task. When that entity is an EC2 Instance it is refered to as an Instance Profile.
+Of particular note, is a special identity referred to as an IAM Role. It is intended to be assumed by an entity (user, application or service), granting temporary security credentials to perform some limited task. When that entity is an EC2 Instance it is referred to as an Instance Profile.
 
 As illustrated below, templates are used to create three project-specific policy document types that implement the best practice of Least Privilege:
 
@@ -337,16 +337,16 @@ As per above, IMDSv1 is not protected by any authentication or cryptographic met
 3. Unpatched server-side request forgery vulnerabilities.
 4. Misconfigured-open layer-3 firewalls and network address translations.
 
-**cfn-ovpn-cli** is particularly concerned with number 4 above as the linux kernel packet filter, i.e. iptables is used extensively throughout this application. 
+**cfn-ovpn-cli** is particularly concerned with number 4 above as the Linux kernel packet filter, i.e. iptables is used extensively throughout this application. 
 
-IMDSv2 mitigates for these mentioned shortcomings by requiring, a cleaverly devised, authentication token to be submitted with every service call. A simple HTTP PUT request to IMDSv2 with a TTL hop of 1 will retrieve an ephemeral token.
+IMDSv2 mitigates for these mentioned shortcomings by requiring, a cleverly devised, authentication token to be submitted with every service call. A simple HTTP PUT request to IMDSv2 with a TTL hop of 1 will retrieve an ephemeral token.
 
 **cfn-ovpn-cli** disables, by way of its EC2 Auto Scaling Group Launch Template, the use of IMDSv1 and as a added protection, is futher restricted to only root processes accessing the IMDSv2 service through firewall rules. As a consequence and aside note, the functionality of the useful utility [EC2 Instance Connect](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Connect-using-EC2-Instance-Connect.html) is rendered invalid here because it operates without elevated privileges. 
 
 
 ### Package Management
 
-Keeping **cfn-ovpn-cli** up-to-date is important because it improves the overall stabiltity of the system by ensuring that critical patches to security holes are applied in a timely manner. It also ensures that bugs are fixed and outdated features are regularly removed, making the nature of the offered service more beneficial.
+Keeping **cfn-ovpn-cli** up-to-date is important because it improves the overall stability of the system by ensuring that critical patches to security holes are applied in a timely manner. It also ensures that bugs are fixed and outdated features are regularly removed, making the nature of the offered service more beneficial.
 
 By default, _Amazon Linux 2_ instances launch with the following repositories enabled:
 
@@ -357,7 +357,7 @@ By default, _Amazon Linux 2_ instances launch with the following repositories en
 
 `amzn2extra-docker` is not required and thus disabled.
 
-The Extra Packages for Enterprise Linux (`epel`) repository is a non-standard but popular archive managed by the Fedora Project. It is compatible with _Amazon Linux 2_ and contains the various auxillary packages required by **cfn-ovpn-cli**.
+The Extra Packages for Enterprise Linux (`epel`) repository is a non-standard but popular archive managed by the Fedora Project. It is compatible with _Amazon Linux 2_ and contains the various auxiliary packages required by **cfn-ovpn-cli**.
 
 Due to packages perhaps being held by more than one repository, `yum-plugin-priorities` is used to enforce ordered protection between conflicting repositories. `epel` is thus set at a lower priority to `amzn2-core`.
 
@@ -374,14 +374,14 @@ Amazon CloudWatch Logs is a web service that provides aggregation and analysis t
 
 ### rsyslog
 
-For improved parsing and assisted analysis, **cfn-ovpn-cli** configures custom log-streams for the linux kernel packet filter (`iptables`) as well the for both the VPN daemon protocol activities. These are diverted to a separate log facility for forwarding to _Amazon Cloudwatch Logs_.
+For improved parsing and assisted analysis, **cfn-ovpn-cli** configures custom log-streams for the Linux kernel packet filter (`iptables`) as well the for both the VPN daemon protocol activities. These are diverted to a separate log facility for forwarding to _Amazon Cloudwatch Logs_.
 
 **********
 
 ## Error Handling
 
 Talk about health-checks etc.
-Health checks are done via the load  balancer and unfortunately I had to install a webserver in order to do health checks. Because vpn port ignores unmatch HMACs is it possible to install cert on load balancer so that health can be determined from the actual vpn app itself?
+Health checks are done via the load  balancer and unfortunately I had to install a web-server in order to do health checks. Because vpn port ignores unmatch HMACs is it possible to install cert on load balancer so that health can be determined from the actual vpn app itself?
 
 **********
 
