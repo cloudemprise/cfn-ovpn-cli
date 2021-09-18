@@ -113,8 +113,6 @@ By using Hash-based Message Authentication Code ([HMAC](https://en.wikipedia.org
 The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
 
 
-
-
 #### Networking
 
 Acting as an interface between user-space and kernel-space, OpenVPN operates at the back-end of a software-defined network adapter, referred to as the Universal TUN/TAP Driver. This coupling can function as either a fully virtualized Ethernet adapter for any type of Layer 2 traffic (i.e. tap-style), or as a point-to-point connector operating in client-server mode for IP-only traffic (i.e. tun-style) operating at Layer 3. 
