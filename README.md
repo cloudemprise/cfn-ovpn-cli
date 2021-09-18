@@ -43,7 +43,7 @@ This Document is a work-in-progress. Some sections maybe absent or incomplete.
 
 </details><br/>
 
-**Full Demo CLI Output can be found Here**
+**Full Demo CLI Output can be found ~~Here~~**
 
 ***
 
@@ -79,9 +79,7 @@ Table of Contents
 
 ## Introduction
 
-**cfn-ovpn-cli** is a Bash shell script that creates a Cloud-based Virtual Private Network (VPN) application as well as an isolated Public Key Infrastructure (PKI) Certification Authority (CA) ~~for multi-client X.509 authentication~~. 
-
-This facilitates a secure personal mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is employed to provision and configure various AWS resources through an assortment of API calls and AWS Cloudformation templates.
+**cfn-ovpn-cli** is a Bash shell script that creates a Cloud-based Virtual Private Network (VPN) application as well as an isolated Public Key Infrastructure (PKI) Certification Authority (CA). This facilitates a secure personal mobile Wi-Fi roaming solution. The AWS Command Line Interface (AWS CLI) is employed to provision and configure various AWS resources through an assortment of API calls and AWS Cloudformation templates.
 
 ***
 
@@ -113,6 +111,9 @@ By using Hash-based Message Authentication Code ([HMAC](https://en.wikipedia.org
 
 
 The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
+
+
+
 
 #### Networking
 
