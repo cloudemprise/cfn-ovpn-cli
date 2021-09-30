@@ -52,7 +52,7 @@ Table of Contents
 
 - [Introduction](#introduction)
 - [OpenVPN](#openvpn)
-  * [Introduction](introduction-1)
+  * [Introduction](#introduction-1)
   * [Encryption](#encryption)
   * [Networking](#networking)
 - [Public Key Infrastructure](#public-key-infrastructure)
