@@ -52,6 +52,7 @@ Table of Contents
 
 - [Introduction](#introduction)
 - [OpenVPN](#openvpn)
+  * [Introduction](introduction-1)
   * [Encryption](#encryption)
   * [Networking](#networking)
 - [Public Key Infrastructure](#public-key-infrastructure)
@@ -85,7 +86,9 @@ Table of Contents
 
 ## OpenVPN
 
-[OpenVPN](https://openvpn.net) is a popular open source VPN daemon that is both flexible and relatively easy to setup. It comprises a Multi-Client/Socket-Server architecture that is particularly well suited for small to mid-sized business deployments and is able to pass through NAT gateways and firewalls with easy.
+#### Introduction
+
+**cfn-ovpn-cli** installs OpenVPN in a custom configuration from first principles. This section touches upon the most important concepts of OpenVPN and how they pertain to this Cloud Appliance. Hence, [OpenVPN](https://openvpn.net) is a popular open source VPN daemon that is both flexible and relatively easy to setup. It comprises a Multi-Client/Socket-Server architecture that is particularly well suited for small to mid-sized business deployments and is able to pass through NAT gateways and firewalls with easy.
 
 OpenVPN defines the concept of a control channel and a data channel, both of which are encrypted and authenticated differently but pass over the same protocol link. OpenVPN uses a virtual network adapter as an interface between the user-level OpenVPN software and the underlying operating system.
 
@@ -105,12 +108,16 @@ By using Hash-based Message Authentication Code ([HMAC](https://en.wikipedia.org
 
 |   | Control Channel | Data Channel | HMAC
 | :----: | :---: | :---: | :---:
-| Encryption | secp521r1 | AES-256-GCM |  ???
+| Encryption | secp521r1 | AES-256-GCM |  _
 | Key Size | 4096 | 4096 | ???
-| Authentication | sha512 | sha512 | ???
+| Authentication | sha512 | sha512 | _
 
 
 The elliptical curve secp521r1 key exchange cipher was chosen for smaller key size equivalence and faster execution performance.
+
+
+>**cfn-ovpn-cli** is setup in the following fashion:
+
 
 
 #### Networking

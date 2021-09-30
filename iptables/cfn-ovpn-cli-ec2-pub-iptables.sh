@@ -1,5 +1,10 @@
 #!/bin/bash
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# This is a Bash script that is installed on the public facing AWS EC2 Instance Bastion 
+# Host/OpenVPN Server. It is responsible for the configuration of the stateful Linux 
+# Kernel Packet Filter firewall, responsible for dynamic filtering and Network Address 
+# Translation.
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 META_DATA="169.254.169.254"
 META_NTP="169.254.169.123/32"
