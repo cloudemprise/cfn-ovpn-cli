@@ -109,7 +109,7 @@ By using Hash-based Message Authentication Code ([HMAC](https://en.wikipedia.org
 |   | Control Channel | Data Channel | HMAC
 | :----: | :---: | :---: | :---:
 | Encryption | secp521r1 | AES-256-GCM |  _
-| Key Size | 4096 | 4096 | ???
+| Key Size | 4096 | 4096 | _
 | Authentication | sha512 | sha512 | _
 
 
