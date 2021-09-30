@@ -181,7 +181,7 @@ This is described in more detail in the [Cloudformation](#cloudformation) sectio
 
 ## Program Methodology
 
-AWS CLI one-liner..., Bash..., convenient integration with Linux OS...
+> To do: AWS CLI one-liner..., Bash..., convenient integration with Linux OS...
 
 The first part of the shell script requests an assortment of parameters from the Script-Caller; pertaining to the project prerequisites and other program environment variables. Before any further processing or API calls are made, some rudimentary error checking and validation is performed on the project environment to pick up on any silly mistakes or obvious errors.
 
@@ -203,7 +203,7 @@ Orchestration is achieved via ... AWS Cloudformation is a service that provision
     <img src="./docs/images/cfn-flowchart.png" width="400">
   </p>
 
-> To DO: Explain how: Requests and Signed Certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. 
+> To do: Explain how: Requests and Signed Certificates are intelligently exchanged between these two systems by way of Cloudformation Stack Updates. 
 
 ***
 
