@@ -188,21 +188,21 @@ AMI_ID=$(aws ec2 describe-images --filters Name=name,Values=${AMI_NAME} --owners
   --query 'Images[].ImageId' --profile "$AWS_PROFILE" --region "$AWS_REGION" 2> /dev/null)
 if [[ "$AMI_ID" != "" ]]
 then
-  echo "Project Build AMI Found .......................: $AMI_ID"
+  echo "Public Build AMI Found ........................: $AMI_ID"
   # Get Snapshot ID
   SNAPSHOT_ID=$(aws ec2 describe-images --filters Name=name,Values=${AMI_NAME} \
                 --output text --query 'Images[].BlockDeviceMappings[].Ebs.SnapshotId' \
                 --profile "$AWS_PROFILE" --region "$AWS_REGION")
-  echo "Project Build AMI Snapshot Found ..............: $SNAPSHOT_ID"
+  echo "Public Build AMI Snapshot Found ...............: $SNAPSHOT_ID"
   # Deregister AMI
   aws ec2 deregister-image --image-id "$AMI_ID" --profile "$AWS_PROFILE" --region "$AWS_REGION"
-  echo "Project Build AMI Deregistred .................: OK"
+  echo "Public Build AMI Deregistered .................: OK"
   # Snapshot Deleted
   aws ec2 delete-snapshot --snapshot-id "$SNAPSHOT_ID" --profile "$AWS_PROFILE" --region "$AWS_REGION"
   # ___
-  echo "Project Build AMI Snapshot Deleted ............: OK"
+  echo "Public Build AMI Snapshot Deleted .............: OK"
 else
-  echo "Project Build AMI Not Found ...................: $AMI_NAME"
+  echo "Public Build AMI Not Found ....................: $AMI_NAME"
   #exit 1
 fi
 #.............................
@@ -216,21 +216,21 @@ AMI_ID=$(aws ec2 describe-images --filters Name=name,Values=${AMI_NAME} --owners
   --query 'Images[].ImageId' --profile "$AWS_PROFILE" --region "$AWS_REGION" 2> /dev/null)
 if [[ "$AMI_ID" != "" ]]
 then
-  echo "SSM Automated Updated AMI Found ...............: $AMI_ID"
+  echo "Private Build AMI Found .......................: $AMI_ID"
   # Get Snapshot ID
   SNAPSHOT_ID=$(aws ec2 describe-images --filters Name=name,Values=${AMI_NAME} \
                 --output text --query 'Images[].BlockDeviceMappings[].Ebs.SnapshotId' \
                 --profile "$AWS_PROFILE" --region "$AWS_REGION")
-  echo "SSM Automated Updated AMI Snapshot Found ......: $SNAPSHOT_ID"
+  echo "Private Build AMI Snapshot Found ..............: $SNAPSHOT_ID"
   # Deregister AMI
   aws ec2 deregister-image --image-id "$AMI_ID" --profile "$AWS_PROFILE" --region "$AWS_REGION"
-  echo "SSM Automated Updated AMI Deregistred .........: OK"
+  echo "Private Build AMI Deregistered ................: OK"
   # Snapshot Deleted
   aws ec2 delete-snapshot --snapshot-id "$SNAPSHOT_ID" --profile "$AWS_PROFILE" --region "$AWS_REGION"
   # ___
-  echo "SSM Automated Updated AMI Snapshot Deleted ....: OK"
+  echo "Private Build AMI Snapshot Deleted ............: OK"
 else
-  echo "SSM Automated Updated AMI Not Found ...........: $AMI_NAME"
+  echo "Private Build AMI Not Found ...................: $AMI_NAME"
   #exit 1
 fi
 #.............................

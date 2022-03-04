@@ -85,6 +85,15 @@ Resources:
           HttpTokens: "required"
           HttpPutResponseHopLimit: 1
         # .............................
+        InstanceMarketOptions: 
+          MarketType: "spot"
+          SpotOptions:
+            #BlockDurationMinutes: !Ref SpotBlockDuration
+            # one-time | persistent
+            SpotInstanceType: "one-time"
+            #  hibernate | stop | terminate
+            InstanceInterruptionBehavior: "terminate"
+            #MaxPrice: "0.01000"
         UserData:
           Fn::Base64:
             !Sub |
