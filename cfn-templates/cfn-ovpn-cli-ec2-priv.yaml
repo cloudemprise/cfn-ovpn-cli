@@ -106,6 +106,7 @@ Resources:
       IamInstanceProfile: !Sub "${ProjectName}-priv-iam-ec2-${AWS::Region}"
       ImageId: !Ref PrivateAmiId
       InstanceType: "t2.micro"
+      #InstanceType: "t3.nano"
       KeyName: !Sub "aws.dev.ec2.ssh.key.${AWS::Region}"
       Monitoring: false
       # .............................

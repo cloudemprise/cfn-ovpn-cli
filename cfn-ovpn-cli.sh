@@ -78,13 +78,14 @@ do
     echo "Project Name is valid .........................: $USER_INPUT"
     PROJECT_NAME=$USER_INPUT
     # Doc Store for this project
+    #PROJECT_BUCKET="proj-${PROJECT_NAME}-${AWS_REGION}"
     PROJECT_BUCKET="proj-${PROJECT_NAME}"
     break
   else
     echo "Error! Project Name must be S3 Compatible .....: $USER_INPUT"
   fi
 done
-#.............................
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 #-----------------------------
 # Request Email Address
@@ -109,7 +110,7 @@ done
 
 #-----------------------------
 # Request Domain Name
-AWS_DOMAIN_NAME="cloudemprise.net"
+AWS_DOMAIN_NAME="cloudemprise.com"
 while true
 do
   # -e : stdin from terminal
@@ -147,7 +148,7 @@ echo "FQDN Openvpn Server ...........................: ${PROJECT_NAME}.${AWS_DOM
 # Variable Creation
 #-----------------------------
 # Name given to Cloudformation Stack
-STACK_NAME="cfnstack-$PROJECT_NAME"
+STACK_NAME="$PROJECT_NAME-stack"
 echo "The Stack Name ................................: $STACK_NAME"
 # Get Account(ROOT) ID
 AWS_ACC_ID=$(aws sts get-caller-identity --query Account --output text --profile "$AWS_PROFILE" --region "$AWS_REGION")

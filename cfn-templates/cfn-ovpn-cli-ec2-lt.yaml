@@ -69,7 +69,8 @@ Resources:
       LaunchTemplateName: !Sub "${ProjectName}-launch-template"
       LaunchTemplateData:
         ImageId: !Ref PublicLtAmiId
-        InstanceType: "t2.micro"
+        InstanceType: "t3.nano"
+#        InstanceType: "t2.micro"
         KeyName: !Sub "aws.dev.ec2.ssh.key.${AWS::Region}"
         Monitoring:
           Enabled: false
